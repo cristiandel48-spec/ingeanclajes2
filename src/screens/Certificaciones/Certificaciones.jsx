@@ -307,7 +307,7 @@ export default function Certificaciones({ctx}){
       cantidad: cant,
       elementos,
       sistema: texto,
-      sistemaAuto: false,
+      sistemaAuto: true,
     }));
   };
 
@@ -343,8 +343,23 @@ export default function Certificaciones({ctx}){
       cantidad: 1,
       elementos,
       sistema: texto,
-      sistemaAuto: false,
+      sistemaAuto: true,
     }));
+  };
+
+  const detalleDeActividadSeleccionada = (obraId, key = actividadSeleccionadaKey, refInf = informeRef) => {
+    if (!key) return "";
+    if (key.startsWith("cot-")) {
+      const idx = Number(key.replace("cot-", ""));
+      const item = itemsIndividualesCotizacion(obraId)[idx];
+      return item ? (item.textoRedactado || item.desc || "") : "";
+    }
+    if (key.startsWith("inf-")) {
+      const idx = Number(key.replace("inf-", ""));
+      const act = actividadesIndividualesInforme(obraId, refInf)[idx];
+      return act ? (act.observaciones || act.titulo || "") : "";
+    }
+    return "";
   };
 
   const queSeCertifica = (obraId, fuente = "auto") => {
@@ -373,11 +388,12 @@ export default function Certificaciones({ctx}){
   // Cambia algo del encabezado -tipo, sistema, cantidad, cliente, dirección o
   // fecha- y el párrafo se rehace. Solo mientras nadie lo haya editado a mano:
   // en cuanto se toca, manda lo escrito y esto deja de pisarlo.
-  const aplicarCambio=(patch, refInforme=informeRef, fuente="auto")=>{
+  const aplicarCambio=(patch, refInforme=informeRef, fuente="auto", keyAct=actividadSeleccionadaKey)=>{
     setForm((prev)=>{
       const siguiente={...prev,...patch};
       if(siguiente.sistemaAuto!==false){
-        const detalleTexto = queSeCertifica(siguiente.obraId, fuente);
+        const detalleIndiv = fuente === "auto" ? detalleDeActividadSeleccionada(siguiente.obraId, keyAct, refInforme) : "";
+        const detalleTexto = detalleIndiv || queSeCertifica(siguiente.obraId, fuente);
         const texto=construirTextoSistema({
           tipo:siguiente.tipo,
           tipoSistema:siguiente.tipoSistema,
@@ -409,7 +425,7 @@ export default function Certificaciones({ctx}){
     // se vuelve a traer de la ficha del cliente en vez de usar la que quedo.
     const obraSel=obras.find((x)=>x.id===form.obraId);
     const direccionCliente=buscarDireccionCliente(obraSel, form.cliente) || form.direccion;
-    const detalleTexto = queSeCertifica(form.obraId, fuente);
+    const detalleTexto = (fuente === "auto" ? detalleDeActividadSeleccionada(form.obraId) : "") || queSeCertifica(form.obraId, fuente);
     const texto=construirTextoSistema({
       tipo:form.tipo,
       tipoSistema:form.tipoSistema,
@@ -585,7 +601,7 @@ export default function Certificaciones({ctx}){
       }
       let nodo = document.getElementById("pz");
       const topeQr = Date.now() + 1200;
-      while (Date.now() < topeQr && (!nodo || !nodo.querySelector('img[alt="QR Validaci?n"]'))) {
+      while (Date.now() < topeQr && (!nodo || !nodo.querySelector('img[alt="QR Validación"]'))) {
         await new Promise((r) => setTimeout(r, 50));
         nodo = document.getElementById("pz");
       }
@@ -752,7 +768,7 @@ export default function Certificaciones({ctx}){
           </div>
 
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
-            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");setActividadSeleccionadaKey("");const o=obras.find(x=>x.id===id);const f=fechaDeLaObra(id);const c=sistemasDesdeCotizacionDeObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:buscarDireccionCliente(o),nit:buscarNit(o),cantidad:c?.cantidadTotal || 1,...(f?{fecha:f}:{})}, "");}} style={SI}>{obrasMasNuevasPrimero(obras).map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");setActividadSeleccionadaKey("");const o=obras.find(x=>x.id===id);const f=fechaDeLaObra(id);const c=sistemasDesdeCotizacionDeObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:buscarDireccionCliente(o),nit:buscarNit(o),cantidad:c?.cantidadTotal || 1,...(f?{fecha:f}:{})}, "", "auto", "");}} style={SI}>{obrasMasNuevasPrimero(obras).map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             {/* Una obra con varias sedes lleva un informe por sede, y de cada
                 uno sale su propia certificacion. Aqui se elige cual. */}
             {informesDeObra(form.obraId).length > 1 && (
@@ -817,14 +833,13 @@ export default function Certificaciones({ctx}){
             <div><LBL>Tipo</LBL><select value={form.tipo} onChange={e=>{
               const t=e.target.value;
               const esEsc = t === "Certificación de Escaleras";
+              const nuevoTipoSistema = esEsc ? "Escalera fija" : (form.tipoSistema === "Escalera fija" ? "" : form.tipoSistema);
               aplicarCambio({
                 tipo: t,
-                elementos: getCertDefaultElements(t, form.tipoSistema),
-                ...(esEsc ? {
-                  formatoEscalera: true,
-                  tipoSistema: "Escalera fija",
-                  normativa: "ANSI ASC A14.5-2017 & Resolución 4272 de 2021",
-                } : {})
+                tipoSistema: nuevoTipoSistema,
+                formatoEscalera: esEsc,
+                normativa: esEsc ? "ANSI ASC A14.5-2017 & Resolución 4272 de 2021" : "Resolución 4272 de 2021",
+                elementos: getCertDefaultElements(t, nuevoTipoSistema),
               });
             }} style={SI}>{["Certificación","Recertificación","Certificación de Escaleras"].map(t=><option key={t}>{t}</option>)}</select></div>
             <div><LBL>Número</LBL><input value={form.numero} onChange={e=>setForm({...form,numero:e.target.value})} placeholder="C-2026-001" style={SI}/></div>
@@ -865,7 +880,81 @@ export default function Certificaciones({ctx}){
             </div>
           </div>
 
-          {/* Opciones y parámetros específicos para Certificación de Escaleras */}
+          {/* Selector de actividades y sistemas individuales justo debajo de Dirección del cliente */}
+          {(() => {
+            const itemsCot = itemsIndividualesCotizacion(form.obraId);
+            const actsInf = actividadesIndividualesInforme(form.obraId, informeRef);
+            if (!itemsCot.length && !actsInf.length) return null;
+            return (
+              <div style={{
+                marginBottom: 12,
+                padding: "10px 14px",
+                background: "var(--surface-subtle, #f8fafc)",
+                border: "1px solid var(--border, #e2e8f0)",
+                borderRadius: 8,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 4 }}>
+                  <LBL>⚡ Certificar por actividad o sistema individual</LBL>
+                  <span style={{ fontSize: 10.5, fontWeight: 500, color: "var(--text-tertiary, #94a3b8)" }}>
+                    Haz una certificación por cada sistema
+                  </span>
+                </div>
+                <select
+                  value={actividadSeleccionadaKey}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setActividadSeleccionadaKey(val);
+                    if (!val) {
+                      const c = sistemasDesdeCotizacionDeObra(form.obraId);
+                      const tBase = form.tipo === "Certificación de Escaleras" ? "Certificación" : form.tipo;
+                      aplicarCambio({
+                        tipo: tBase,
+                        tipoSistema: "",
+                        formatoEscalera: false,
+                        normativa: "Resolución 4272 de 2021",
+                        cantidad: c?.cantidadTotal || 1,
+                        elementos: getCertDefaultElements(tBase, ""),
+                        sistemaAuto: true,
+                      }, informeRef, "auto", "");
+                      return;
+                    }
+                    if (val.startsWith("cot-")) {
+                      const idx = Number(val.replace("cot-", ""));
+                      const item = itemsCot[idx];
+                      if (item) certificarItemIndividual(item);
+                    } else if (val.startsWith("inf-")) {
+                      const idx = Number(val.replace("inf-", ""));
+                      const act = actsInf[idx];
+                      if (act) certificarActividadIndividual(act);
+                    }
+                  }}
+                  style={SI}
+                >
+                  <option value="">-- Selecciona el sistema o actividad a certificar de esta obra --</option>
+                  {itemsCot.length > 0 && (
+                    <optgroup label="📋 Ítems contratados en cotización">
+                      {itemsCot.map((item, idx) => (
+                        <option key={`cot-${idx}`} value={`cot-${idx}`}>
+                          {iconoPorSistema(item.tipoSistema)} {item.desc} ({item.cant} {item.unidad})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {actsInf.length > 0 && (
+                    <optgroup label="📝 Actividades ejecutadas en informe">
+                      {actsInf.map((act, idx) => (
+                        <option key={`inf-${idx}`} value={`inf-${idx}`}>
+                          {iconoPorSistema(act.tipoSistema)} {act.titulo || act.observaciones}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              </div>
+            );
+          })()}
+
+          {/* Parámetros Oficiales de Escaleras (formato fijo de 3 hojas) */}
           {(form.formatoEscalera || form.tipo === "Certificación de Escaleras" || form.tipoSistema === "Escalera fija") && (
             <div style={{
               background: "#eff6ff",
@@ -879,28 +968,6 @@ export default function Certificaciones({ctx}){
                   <span>🪜</span>
                   <span>Parámetros Oficiales de Escaleras (ANSI ASC A14.5-2017)</span>
                 </span>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#1e40af" }}>Formato:</span>
-                  <select
-                    value={form.formatoEscalera !== false ? "3" : "1"}
-                    onChange={(e) => setForm(p => ({ ...p, formatoEscalera: e.target.value === "3" }))}
-                    style={{
-                      ...SI,
-                      width: "auto",
-                      minWidth: 260,
-                      padding: "4px 10px",
-                      fontSize: 11.5,
-                      fontWeight: 600,
-                      color: "#1e40af",
-                      borderColor: "#93c5fd",
-                      background: "#ffffff",
-                      borderRadius: 6,
-                    }}
-                  >
-                    <option value="3">🪜 Formato Oficial Técnico (3 hojas · ANSI ASC A14.5)</option>
-                    <option value="1">📄 Formato Estándar (1 hoja)</option>
-                  </select>
-                </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 10 }}>
                 <div>
@@ -977,67 +1044,6 @@ export default function Certificaciones({ctx}){
             </div>
           </div>
           <div style={{marginBottom:12}}>
-            {/* Selector de actividades y sistemas individuales de la obra en lista desplegable */}
-            {(() => {
-              const itemsCot = itemsIndividualesCotizacion(form.obraId);
-              const actsInf = actividadesIndividualesInforme(form.obraId, informeRef);
-              if (!itemsCot.length && !actsInf.length) return null;
-              return (
-                <div style={{
-                  marginBottom: 12,
-                  padding: "10px 14px",
-                  background: "var(--surface-subtle, #f8fafc)",
-                  border: "1px solid var(--border, #e2e8f0)",
-                  borderRadius: 8,
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 4 }}>
-                    <LBL>⚡ Certificar por actividad o sistema individual</LBL>
-                    <span style={{ fontSize: 10.5, fontWeight: 500, color: "var(--text-tertiary, #94a3b8)" }}>
-                      Haz una certificación por cada sistema
-                    </span>
-                  </div>
-                  <select
-                    value={actividadSeleccionadaKey}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setActividadSeleccionadaKey(val);
-                      if (!val) return;
-                      if (val.startsWith("cot-")) {
-                        const idx = Number(val.replace("cot-", ""));
-                        const item = itemsCot[idx];
-                        if (item) certificarItemIndividual(item);
-                      } else if (val.startsWith("inf-")) {
-                        const idx = Number(val.replace("inf-", ""));
-                        const act = actsInf[idx];
-                        if (act) certificarActividadIndividual(act);
-                      }
-                    }}
-                    style={SI}
-                  >
-                    <option value="">-- Selecciona el sistema o actividad a certificar de esta obra --</option>
-                    {itemsCot.length > 0 && (
-                      <optgroup label="📋 Ítems contratados en cotización">
-                        {itemsCot.map((item, idx) => (
-                          <option key={`cot-${idx}`} value={`cot-${idx}`}>
-                            {iconoPorSistema(item.tipoSistema)} {item.desc} ({item.cant} {item.unidad})
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                    {actsInf.length > 0 && (
-                      <optgroup label="📝 Actividades ejecutadas en informe">
-                        {actsInf.map((act, idx) => (
-                          <option key={`inf-${idx}`} value={`inf-${idx}`}>
-                            {iconoPorSistema(act.tipoSistema)} {act.titulo || act.observaciones}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                  </select>
-                </div>
-              );
-            })()}
-
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
               <LBL>Sistema certificado</LBL>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
@@ -1047,7 +1053,7 @@ export default function Certificaciones({ctx}){
                     onClick={() => {
                       const c = sistemasDesdeCotizacionDeObra(form.obraId);
                       if (c?.texto) {
-                        aplicarCambio({ cantidad: c.cantidadTotal, sistemaAuto: true }, informeRef, "cotizacion");
+                        setActividadSeleccionadaKey(""); aplicarCambio({ cantidad: c.cantidadTotal, sistemaAuto: true }, informeRef, "cotizacion", "");
                       }
                     }}
                     style={{
@@ -1068,7 +1074,7 @@ export default function Certificaciones({ctx}){
                 {(observacionesDesdeInformes(informes, form.obraId, informeRef) || actividadesDesdeInformes(informes, form.obraId, informeRef)) && (
                   <button
                     type="button"
-                    onClick={() => aplicarCambio({ sistemaAuto: true }, informeRef, "informe")}
+                    onClick={() => { setActividadSeleccionadaKey(""); aplicarCambio({ sistemaAuto: true }, informeRef, "informe", ""); }}
                     style={{
                       background: "var(--surface-subtle, #f2f4f7)",
                       color: "var(--text-main, #1e293b)",

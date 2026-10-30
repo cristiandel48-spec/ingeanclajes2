@@ -91,13 +91,12 @@ export const CAPACIDAD_CARGA_ESCALERA = {
 
 export function esCertificacionEscalera(cert) {
   if (!cert) return false;
-  if (cert.formatoEscalera === true) return true;
-  if (cert.formatoEscalera === false) return false;
   const tipo = String(cert.tipo || "").toLowerCase();
   const tipoSis = String(cert.tipoSistema || "").toLowerCase();
+  if (tipo.includes("escalera") || tipoSis.includes("escalera")) return true;
+  if (cert.formatoEscalera === true) return true;
+  if (cert.formatoEscalera === false) return false;
   const sis = String(cert.sistema || "").toLowerCase();
-  if (tipo.includes("escalera")) return true;
-  if (tipoSis.includes("escalera")) return true;
   if (sis.includes("escalera") && (sis.includes("ansi") || sis.includes("a14.5") || sis.includes("gato") || sis.includes("artico") || sis.includes("metro"))) return true;
   return false;
 }
@@ -296,10 +295,10 @@ export const buildCertForm = (overrides={})=>{
   const tipo = overrides.tipo || "Certificación";
   const tipoSistema = overrides.tipoSistema || "";
   const fecha = overrides.fecha || today();
-  const formatoEscalera = overrides.formatoEscalera ?? (
+  const esTipoEscalera =
     String(tipo).toLowerCase().includes("escalera") ||
-    String(tipoSistema).toLowerCase().includes("escalera")
-  );
+    String(tipoSistema).toLowerCase().includes("escalera");
+  const formatoEscalera = esTipoEscalera ? true : Boolean(overrides.formatoEscalera);
   return {
     // Antes venia fijo en "OB-001": si esa obra no existia, el desplegable
     // mostraba otra pero se guardaba un id inexistente, y el cliente y la
@@ -342,5 +341,6 @@ export const buildCertForm = (overrides={})=>{
     proxMantAuto: true,
     elementos: getCertDefaultElements(tipo, tipoSistema, overrides.elementos),
     ...overrides,
+    ...(esTipoEscalera ? { formatoEscalera: true } : {}),
   };
 };

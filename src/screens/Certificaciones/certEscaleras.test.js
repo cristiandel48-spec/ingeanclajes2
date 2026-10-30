@@ -16,9 +16,11 @@ vi.mock("../../lib/pdfHojas", async (importOriginal) => {
 });
 
 describe("Certificación de Escaleras", () => {
-  it("detecta correctamente una certificación de escaleras", () => {
+  it("detecta correctamente una certificación de escaleras (siempre fijo en formato 3 hojas)", () => {
     expect(esCertificacionEscalera({ tipo: "Certificación de Escaleras" })).toBe(true);
+    expect(esCertificacionEscalera({ tipo: "Certificación de Escaleras", formatoEscalera: false })).toBe(true);
     expect(esCertificacionEscalera({ tipoSistema: "Escalera fija" })).toBe(true);
+    expect(esCertificacionEscalera({ tipoSistema: "Escalera fija", formatoEscalera: false })).toBe(true);
     expect(esCertificacionEscalera({ formatoEscalera: true })).toBe(true);
     expect(
       esCertificacionEscalera({

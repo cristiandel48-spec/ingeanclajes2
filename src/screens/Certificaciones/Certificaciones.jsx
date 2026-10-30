@@ -255,25 +255,6 @@ export default function Certificaciones({ctx}){
       });
   };
 
-  // Extrae las actividades individuales de los informes de la obra
-  const actividadesIndividualesInforme = (obraId, informeId = "") => {
-    const infs = informesFuente(informes, obraId, informeId);
-    return infs.flatMap((inf) =>
-      (inf.actividades || []).map((act, idx) => {
-        const texto = String(act.observaciones || act.titulo || "").trim();
-        const tipoSis = detectarTipoSistema(texto);
-        return {
-          id: act.id || `${inf.id}-act-${idx}`,
-          titulo: act.titulo || `Actividad ${idx + 1}`,
-          observaciones: act.observaciones || "",
-          texto: texto,
-          informeId: inf.id,
-          tipoSistema: tipoSis,
-        };
-      })
-    ).filter((a) => a.texto);
-  };
-
   const certificarItemIndividual = (item) => {
     const tipoSis = item.tipoSistema || form.tipoSistema || "";
     const esEsc = tipoSis === "Escalera fija";
@@ -311,55 +292,11 @@ export default function Certificaciones({ctx}){
     }));
   };
 
-  const certificarActividadIndividual = (act) => {
-    const detalle = act.observaciones || act.titulo;
-    const tipoSis = act.tipoSistema || detectarTipoSistema(detalle);
-    const esEsc = tipoSis === "Escalera fija";
-    const elementos = getCertDefaultElements(esEsc ? "Certificación de Escaleras" : form.tipo, tipoSis);
-    const mLong = detalle.match(/(\d+(?:[.,]\d+)?)\s*(?:m\b|mts\b|metros)/i);
-    const longDetectada = mLong ? `${mLong[1]} metros` : (esEsc ? "5.5 metros" : "");
-    const norm = esEsc ? "ANSI ASC A14.5-2017 & Resolución 4272 de 2021" : (form.normativa?.includes("ANSI ASC") ? "Resolución 4272 de 2021" : form.normativa);
-    const tipoFinal = esEsc ? "Certificación de Escaleras" : (form.tipo === "Certificación de Escaleras" ? "Certificación" : form.tipo);
-    const texto = construirTextoSistema({
-      tipo: tipoFinal,
-      tipoSistema: tipoSis,
-      cantidad: 1,
-      cliente: form.cliente,
-      nit: form.nit,
-      direccion: form.direccion,
-      fechaLarga: fmtL(form.fecha),
-      normativa: norm,
-      lugar: form.lugar || proyectoDeObra(form.obraId),
-      detalle: detalle,
-    });
-    setForm((prev) => ({
-      ...prev,
-      tipo: tipoFinal,
-      tipoSistema: tipoSis,
-      formatoEscalera: esEsc,
-      longitudEscalera: longDetectada || prev.longitudEscalera || (esEsc ? "5.5 metros" : ""),
-      tipoEscalera: prev.tipoEscalera || "TIPO GATO",
-      normativa: norm,
-      cantidad: 1,
-      elementos,
-      sistema: texto,
-      sistemaAuto: true,
-    }));
-  };
-
-  const detalleDeActividadSeleccionada = (obraId, key = actividadSeleccionadaKey, refInf = informeRef) => {
-    if (!key) return "";
-    if (key.startsWith("cot-")) {
-      const idx = Number(key.replace("cot-", ""));
-      const item = itemsIndividualesCotizacion(obraId)[idx];
-      return item ? (item.textoRedactado || item.desc || "") : "";
-    }
-    if (key.startsWith("inf-")) {
-      const idx = Number(key.replace("inf-", ""));
-      const act = actividadesIndividualesInforme(obraId, refInf)[idx];
-      return act ? (act.observaciones || act.titulo || "") : "";
-    }
-    return "";
+  const detalleDeActividadSeleccionada = (obraId, key = actividadSeleccionadaKey) => {
+    if (!key || !key.startsWith("cot-")) return "";
+    const idx = Number(key.replace("cot-", ""));
+    const item = itemsIndividualesCotizacion(obraId)[idx];
+    return item ? (item.textoRedactado || item.desc || "") : "";
   };
 
   const queSeCertifica = (obraId, fuente = "auto") => {
@@ -392,7 +329,7 @@ export default function Certificaciones({ctx}){
     setForm((prev)=>{
       const siguiente={...prev,...patch};
       if(siguiente.sistemaAuto!==false){
-        const detalleIndiv = fuente === "auto" ? detalleDeActividadSeleccionada(siguiente.obraId, keyAct, refInforme) : "";
+        const detalleIndiv = fuente === "auto" ? detalleDeActividadSeleccionada(siguiente.obraId, keyAct) : "";
         const detalleTexto = detalleIndiv || queSeCertifica(siguiente.obraId, fuente);
         const texto=construirTextoSistema({
           tipo:siguiente.tipo,
@@ -880,11 +817,10 @@ export default function Certificaciones({ctx}){
             </div>
           </div>
 
-          {/* Selector de actividades y sistemas individuales justo debajo de Dirección del cliente */}
+          {/* Selector de sistemas individuales contratados en cotización justo debajo de Dirección del cliente */}
           {(() => {
             const itemsCot = itemsIndividualesCotizacion(form.obraId);
-            const actsInf = actividadesIndividualesInforme(form.obraId, informeRef);
-            if (!itemsCot.length && !actsInf.length) return null;
+            if (!itemsCot.length) return null;
             return (
               <div style={{
                 marginBottom: 12,
@@ -922,33 +858,18 @@ export default function Certificaciones({ctx}){
                       const idx = Number(val.replace("cot-", ""));
                       const item = itemsCot[idx];
                       if (item) certificarItemIndividual(item);
-                    } else if (val.startsWith("inf-")) {
-                      const idx = Number(val.replace("inf-", ""));
-                      const act = actsInf[idx];
-                      if (act) certificarActividadIndividual(act);
                     }
                   }}
                   style={SI}
                 >
                   <option value="">-- Selecciona el sistema o actividad a certificar de esta obra --</option>
-                  {itemsCot.length > 0 && (
-                    <optgroup label="📋 Ítems contratados en cotización">
-                      {itemsCot.map((item, idx) => (
-                        <option key={`cot-${idx}`} value={`cot-${idx}`}>
-                          {iconoPorSistema(item.tipoSistema)} {item.desc} ({item.cant} {item.unidad})
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                  {actsInf.length > 0 && (
-                    <optgroup label="📝 Actividades ejecutadas en informe">
-                      {actsInf.map((act, idx) => (
-                        <option key={`inf-${idx}`} value={`inf-${idx}`}>
-                          {iconoPorSistema(act.tipoSistema)} {act.titulo || act.observaciones}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
+                  <optgroup label="📋 Ítems contratados en cotización">
+                    {itemsCot.map((item, idx) => (
+                      <option key={`cot-${idx}`} value={`cot-${idx}`}>
+                        {iconoPorSistema(item.tipoSistema)} {item.desc} ({item.cant} {item.unidad})
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
             );

@@ -1662,6 +1662,28 @@ export default function Informes({ctx}){
                           <span style={{ fontSize: 11.5, fontWeight: 700, color: "#18181b" }}>
                             {act.titulo || "Actividad Ejecutada"}
                           </span>
+                          <button
+                            type="button"
+                            onClick={() => irAPantalla("certificaciones", {
+                              obraId: sel?.obraId,
+                              informeId: sel?.id,
+                              itemDesc: act.observaciones || act.titulo
+                            })}
+                            style={{
+                              background: "#f0fdf4",
+                              border: "1px solid #bbf7d0",
+                              color: "#166534",
+                              borderRadius: 5,
+                              padding: "2px 7px",
+                              fontSize: 10,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              marginLeft: 8,
+                            }}
+                            title="Crear certificación para esta actividad específica"
+                          >
+                            📜 Certificar
+                          </button>
                         </div>
                         {act.fecha && (
                           <span style={{ fontSize: 9, color: "#71717a", fontVariantNumeric: "tabular-nums" }}>

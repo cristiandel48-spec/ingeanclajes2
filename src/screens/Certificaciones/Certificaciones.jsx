@@ -8,7 +8,7 @@ import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { buildCertForm, construirTextoSistema, getCertDefaultElements, unAnoDespues } from "./certConfig";
 import { buscarDireccionFiscalCliente, sanitizarCertificado } from "./certSanitizer";
-import { redactarSistemasDesdeCotizacion } from "../../lib/certificacionTexto";
+import { redactarSistemasDesdeCotizacion, esItemAdministrativo, formatearItemParaCertificado } from "../../lib/certificacionTexto";
 import { fmtD, fmtL, scrollAppToTop } from "../../lib/format";
 import { normalizarRazonSocial, normalizarFrase, normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
 import { clienteDeObra, claveRazonSocial } from "../../lib/quienRecibe";
@@ -75,6 +75,24 @@ const observacionesDesdeInformes = (informes, obraId, informeId = "")=>{
     .map((t)=>t.replace(/[.\s]+$/, ""));
   return [...new Set(textos)].join(". ");
 };
+
+
+function detectarTipoSistema(texto = "") {
+  const t = String(texto || "").toLowerCase();
+  if (/escalera|escala/i.test(t)) return "Escalera fija";
+  if (/l[ií]nea\s+de\s+vida\s+vertical|\blvv\b/i.test(t)) return "Línea de vida vertical";
+  if (/l[ií]nea\s+de\s+vida\s+horizontal|\blvh\b/i.test(t)) return "Líneas de vida horizontales";
+  if (/anclaje|punto|artico/i.test(t)) return "Puntos de anclaje";
+  return "";
+}
+
+function iconoPorSistema(tipoSistema = "") {
+  if (tipoSistema === "Escalera fija") return "🪜";
+  if (tipoSistema === "Línea de vida vertical") return "🪢";
+  if (tipoSistema === "Líneas de vida horizontales") return "↔️";
+  if (tipoSistema === "Puntos de anclaje") return "⚓";
+  return "⚙️";
+}
 
 export default function Certificaciones({ctx}){
   const isMobile = useIsMobile();
@@ -210,6 +228,104 @@ export default function Certificaciones({ctx}){
   //    automáticamente: "cuatro (4) líneas de vida horizontales de 12 m...".
   // 2. Si no, se toma la observación escrita a mano en el informe de actividades.
   // 3. Como respaldo, las actividades registradas.
+
+  // Extrae los ítems individuales de la cotización vinculada para poder certificar cada uno por separado
+  const itemsIndividualesCotizacion = (obraId) => {
+    const o = (obras || []).find((x) => x.id === obraId);
+    if (!o?.cotizacionId) return [];
+    const cot = (cotizaciones || []).find((c) => c.id === o.cotizacionId);
+    if (!cot) return [];
+    const items = Array.isArray(cot.items) ? cot.items : [];
+    return items
+      .filter((it) => !esItemAdministrativo(it?.desc || it?.descripcion || ""))
+      .map((it, idx) => {
+        const cant = Number(it.cant || it.cantidad || 1);
+        const desc = it.desc || it.descripcion || "";
+        const textoRedactado = formatearItemParaCertificado(it);
+        const tipoSis = detectarTipoSistema(desc);
+        return {
+          id: it.id || `item-${idx}`,
+          cant,
+          desc,
+          unidad: it.unit || it.unidad || "UND",
+          textoRedactado: textoRedactado || desc,
+          tipoSistema: tipoSis,
+        };
+      });
+  };
+
+  // Extrae las actividades individuales de los informes de la obra
+  const actividadesIndividualesInforme = (obraId, informeId = "") => {
+    const infs = informesFuente(informes, obraId, informeId);
+    return infs.flatMap((inf) =>
+      (inf.actividades || []).map((act, idx) => {
+        const texto = String(act.observaciones || act.titulo || "").trim();
+        const tipoSis = detectarTipoSistema(texto);
+        return {
+          id: act.id || `${inf.id}-act-${idx}`,
+          titulo: act.titulo || `Actividad ${idx + 1}`,
+          observaciones: act.observaciones || "",
+          texto: texto,
+          informeId: inf.id,
+          tipoSistema: tipoSis,
+        };
+      })
+    ).filter((a) => a.texto);
+  };
+
+  const certificarItemIndividual = (item) => {
+    const tipoSis = item.tipoSistema || form.tipoSistema || "";
+    const elementos = getCertDefaultElements(form.tipo, tipoSis);
+    const detalle = item.textoRedactado || item.desc;
+    const cant = Number(item.cant) || 1;
+    const texto = construirTextoSistema({
+      tipo: form.tipo,
+      tipoSistema: tipoSis,
+      cantidad: cant,
+      cliente: form.cliente,
+      nit: form.nit,
+      direccion: form.direccion,
+      fechaLarga: fmtL(form.fecha),
+      normativa: form.normativa,
+      lugar: form.lugar || proyectoDeObra(form.obraId),
+      detalle: detalle,
+    });
+    setForm((prev) => ({
+      ...prev,
+      tipoSistema: tipoSis,
+      cantidad: cant,
+      elementos,
+      sistema: texto,
+      sistemaAuto: false,
+    }));
+  };
+
+  const certificarActividadIndividual = (act) => {
+    const detalle = act.observaciones || act.titulo;
+    const tipoSis = act.tipoSistema || detectarTipoSistema(detalle);
+    const elementos = getCertDefaultElements(form.tipo, tipoSis);
+    const texto = construirTextoSistema({
+      tipo: form.tipo,
+      tipoSistema: tipoSis,
+      cantidad: 1,
+      cliente: form.cliente,
+      nit: form.nit,
+      direccion: form.direccion,
+      fechaLarga: fmtL(form.fecha),
+      normativa: form.normativa,
+      lugar: form.lugar || proyectoDeObra(form.obraId),
+      detalle: detalle,
+    });
+    setForm((prev) => ({
+      ...prev,
+      tipoSistema: tipoSis,
+      cantidad: 1,
+      elementos,
+      sistema: texto,
+      sistemaAuto: false,
+    }));
+  };
+
   const queSeCertifica = (obraId, fuente = "auto") => {
     const desdeCot = sistemasDesdeCotizacionDeObra(obraId);
     const obsInf = observacionesDesdeInformes(informes, obraId, informeRef);
@@ -302,19 +418,19 @@ export default function Certificaciones({ctx}){
     if(sel && !nueva) scrollAppToTop("auto");
   }, [sel?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const abrirNuevaCertificacion = (tipo="Certificación", obraId=null)=>{
+  const abrirNuevaCertificacion = (tipo="Certificación", obraId=null, itemDesc = "", itemCant = 0)=>{
     const obra = obras.find((x)=>x.id===obraId) || obras[0] || null;
     setEditId(null);
     setNuevoElem("");
     setInformeRef("");
-    // La cantidad y la fecha tambien se traen de una: son los dos datos que se
-    // copiaban a mano de la cotizacion y del informe.
     const fechaObra = fechaDeLaObra(obra?.id);
     const cotDeObra = sistemasDesdeCotizacionDeObra(obra?.id);
-    const cantSugerida = cotDeObra?.cantidadTotal || 1;
+    const cantSugerida = itemCant || (itemDesc ? 1 : (cotDeObra?.cantidadTotal || 1));
+    const tipoSis = itemDesc ? detectarTipoSistema(itemDesc) : "";
     const nuevo = buildCertForm({
       tipo,
-      elementos:getCertDefaultElements(tipo),
+      tipoSistema: tipoSis,
+      elementos: getCertDefaultElements(tipo, tipoSis),
       obraId: obra?.id || "",
       cliente: obra?.cliente || "",
       direccion: buscarDireccionCliente(obra),
@@ -323,9 +439,10 @@ export default function Certificaciones({ctx}){
       ...(fechaObra ? {fecha:fechaObra} : {}),
     });
     if(obra?.id){
+      const detalleTexto = itemDesc || queSeCertifica(obra.id);
       const t = construirTextoSistema({
         tipo: nuevo.tipo,
-        tipoSistema: nuevo.tipoSistema,
+        tipoSistema: tipoSis,
         cantidad: nuevo.cantidad,
         cliente: nuevo.cliente,
         nit: nuevo.nit,
@@ -333,9 +450,10 @@ export default function Certificaciones({ctx}){
         fechaLarga: fmtL(nuevo.fecha),
         normativa: nuevo.normativa,
         lugar: nuevo.lugar || proyectoDeObra(obra.id),
-        detalle: queSeCertifica(obra.id),
+        detalle: detalleTexto,
       });
       if(t) nuevo.sistema = t;
+      if (itemDesc) nuevo.sistemaAuto = false;
     }
     setForm(nuevo);
     setNueva(true);
@@ -344,7 +462,7 @@ export default function Certificaciones({ctx}){
 
   useEffect(() => {
     if (intencion?.pantalla === "certificaciones" && intencion?.obraId) {
-      abrirNuevaCertificacion("Certificación", intencion.obraId);
+      abrirNuevaCertificacion("Certificación", intencion.obraId, intencion.itemDesc || "", intencion.itemCant || 0);
     }
   }, [intencion]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -374,29 +492,30 @@ export default function Certificaciones({ctx}){
     // La alarma se muestra en el banner superior del formulario; no bloquea el guardado según solicitud.
     guardandoRef.current = true;
     try {
-      // La misma obra (y sede) no se certifica dos veces mientras la anterior
-      // siga vigente. Paso con una obra certificada tres veces el mismo dia.
-      // Solo al crear: al editar se deja corregir aunque ya hubiera repetidas.
+      // Una obra puede tener varias certificaciones (por ejemplo una para escalera,
+      // otra para línea de vida vertical y otra para puntos de anclaje).
+      // Si ya existe una certificación con el mismo texto exacto, se consulta para confirmar,
+      // pero NUNCA se bloquea a la persona de crear varias certificaciones por obra.
       const repetida = editId ? null : certificacionRepetida(certs, { ...form, obraId: form.obraId || null });
       if (repetida) {
         const folio = repetida.numero || repetida.id;
-        const ver = await confirmar({
-          titulo: "Esta obra ya está certificada",
-          mensaje: `${repetida.tipo || "La certificación"} ${folio} de ${repetida.cliente || "este cliente"} sigue vigente`
-            + (repetida.proxMant ? ` hasta el ${fmtL(repetida.proxMant)}` : "")
-            + ". No se puede crear otra para la misma obra y sede. Si hay que corregir algo, edita la que ya existe; "
-            + "si es otra sede de la obra, escríbela en el campo de la sede.",
-          textoConfirmar: `Ver ${folio}`,
-          textoCancelar: "Volver al formulario",
-          destructivo: false,
-          conGuardando: false,
-        });
-        if (ver) {
-          setNueva(false);
-          setEditId(null);
-          setSel(repetida);
+        const textoIdentico = String(repetida.sistema || "").trim().toLowerCase() === String(form.sistema || "").trim().toLowerCase();
+        if (textoIdentico) {
+          const crearOtra = await confirmar({
+            titulo: "Ya existe una certificación con este mismo texto",
+            mensaje: `La certificación ${folio} de ${repetida.cliente || "esta obra"} ya tiene registrado exactamente este sistema. ¿Deseas guardar otra certificación adicional de todas formas?`,
+            textoConfirmar: "Sí, guardar adicional",
+            textoCancelar: `Ver ${folio}`,
+            destructivo: false,
+            conGuardando: false,
+          });
+          if (!crearOtra) {
+            setNueva(false);
+            setEditId(null);
+            setSel(repetida);
+            return;
+          }
         }
-        return;
       }
       guardarSinRepetir();
     } finally {
@@ -728,6 +847,79 @@ export default function Certificaciones({ctx}){
             </div>
           </div>
           <div style={{marginBottom:12}}>
+            {/* Selector de actividades y sistemas individuales de la obra */}
+            {(() => {
+              const itemsCot = itemsIndividualesCotizacion(form.obraId);
+              const actsInf = actividadesIndividualesInforme(form.obraId, informeRef);
+              if (!itemsCot.length && !actsInf.length) return null;
+              return (
+                <div style={{
+                  marginBottom: 10,
+                  padding: "9px 12px",
+                  background: "var(--surface-subtle, #f8fafc)",
+                  border: "1px solid var(--border, #e2e8f0)",
+                  borderRadius: 8,
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary, #475569)", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span>⚡ Certificar por actividad o sistema individual:</span>
+                    <span style={{ fontSize: 10, fontWeight: 500, color: "var(--text-tertiary, #94a3b8)" }}>
+                      Haz una certificación por cada sistema
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                    {itemsCot.map((item, idx) => (
+                      <button
+                        key={`item-cot-${idx}`}
+                        type="button"
+                        onClick={() => certificarItemIndividual(item)}
+                        style={{
+                          background: "#ffffff",
+                          border: "1px solid #0284c7",
+                          color: "#0369a1",
+                          borderRadius: 6,
+                          padding: "4px 9px",
+                          fontSize: 11.5,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 5,
+                        }}
+                        title={`Cargar ${item.desc} (${item.cant} ${item.unidad})`}
+                      >
+                        <span>{iconoPorSistema(item.tipoSistema)}</span>
+                        <span>{item.desc} ({item.cant} {item.unidad})</span>
+                      </button>
+                    ))}
+                    {actsInf.map((act, idx) => (
+                      <button
+                        key={`act-inf-${idx}`}
+                        type="button"
+                        onClick={() => certificarActividadIndividual(act)}
+                        style={{
+                          background: "#ffffff",
+                          border: "1px solid #059669",
+                          color: "#047857",
+                          borderRadius: 6,
+                          padding: "4px 9px",
+                          fontSize: 11.5,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 5,
+                        }}
+                        title={`Cargar actividad: ${act.titulo || act.observaciones}`}
+                      >
+                        <span>📋</span>
+                        <span>{act.titulo || act.observaciones}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
               <LBL>Sistema certificado</LBL>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>

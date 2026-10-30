@@ -439,7 +439,26 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                             <strong style={{ fontWeight: 600 }}>{cant}</strong>{" "}
                             <span style={{ color: "var(--text-tertiary)", fontSize: 11 }}>{unidad}</span>
                           </span>
-                          <span style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--text-primary)" }}>{desc}</span>
+                          <span style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--text-primary)", flex: 1 }}>{desc}</span>
+                          <button
+                            type="button"
+                            onClick={() => irAPantalla("certificaciones", { obraId, itemDesc: desc, itemCant: cant })}
+                            style={{
+                              background: "#f0fdf4",
+                              border: "1px solid #bbf7d0",
+                              color: "#166534",
+                              borderRadius: 6,
+                              padding: "3px 8px",
+                              fontSize: 11,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              whiteSpace: "nowrap",
+                              marginLeft: 8,
+                            }}
+                            title={`Crear certificación específica para: ${desc}`}
+                          >
+                            📜 Certificar
+                          </button>
                         </div>
                       );
                     })}

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import CertificacionDocumento from "./CertificacionDocumento";
+import { esCertificacionEscalera } from "./certConfig";
 import { printCurrentPz } from "../../lib/print";
 import { fmtD } from "../../lib/format";
 import { descargarDocumentoPdf } from "../../lib/documentoPdf";
@@ -51,6 +52,8 @@ export default function CertificacionDetalle({
 
   if (!cert) return null;
 
+  const esMultiHoja = esCertificacionEscalera(cert);
+
   const imprimir = () => {
     if (typeof onImprimir === "function") {
       onImprimir(cert);
@@ -67,7 +70,12 @@ export default function CertificacionDetalle({
     if (descargando) return;
     setDescargando(true);
     try {
-      const nodo = document.getElementById("pz");
+      let nodo = document.getElementById("pz");
+      const tope = Date.now() + 1200;
+      while (Date.now() < tope && (!nodo || !nodo.querySelector('img[alt="QR Validación"]'))) {
+        await new Promise((r) => setTimeout(r, 50));
+        nodo = document.getElementById("pz");
+      }
       if (!nodo) {
         alert("No se encontró el documento para generar el PDF.");
         return;
@@ -330,7 +338,7 @@ export default function CertificacionDetalle({
               Normativa de Conformidad
             </div>
             <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #334155)", marginTop: 2 }}>
-              Res. 4272 / ANSI Z359
+              {esMultiHoja ? "ANSI ASC A14.5 · NTC 17025 · Res. 4272" : "Res. 4272 / ANSI Z359"}
             </div>
           </div>
 
@@ -377,9 +385,9 @@ export default function CertificacionDetalle({
             width: 816,
             minWidth: 816,
             zoom: escalaEfectiva,
-            boxShadow: "0 8px 30px rgba(15, 23, 42, 0.12)",
+            boxShadow: esMultiHoja ? "none" : "0 8px 30px rgba(15, 23, 42, 0.12)",
             borderRadius: 4,
-            background: "#ffffff",
+            background: esMultiHoja ? "transparent" : "#ffffff",
           }}
         >
           <CertificacionDocumento cert={cert} />

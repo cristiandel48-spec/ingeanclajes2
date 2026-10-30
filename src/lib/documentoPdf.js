@@ -4,7 +4,7 @@
 
 import { mostrarProgreso } from "./dialogos";
 import { dejarPintar } from "./progresoPdf";
-import { ALTO_HOJA, ANCHO_HOJA, abrirEnMarco, cargarLibreriasPdf, esperarRecursos, rehacerImagenes } from "./pdfHojas";
+import { ALTO_HOJA, ANCHO_HOJA, abrirEnMarco, cargarLibreriasPdf, esperarRecursos, pdfDeHojas, rehacerImagenes } from "./pdfHojas";
 import { FUENTE } from "../styles/designTokens";
 
 const PX_A_PT = 72 / 96;
@@ -210,44 +210,26 @@ function calcularCortesPagina(cajas, altoTotal, altoPagina) {
 export async function generarDocumentoPdf(nodo, nombre = "Documento") {
   if (!nodo) throw new Error("No se encontró el documento en pantalla.");
 
-  const { html2canvas, jsPDF } = await cargarLibreriasPdf();
-
   const bleedLeft = Boolean(nodo?.getAttribute && nodo.getAttribute("data-bleed-left") === "true");
   const paginasPrev = nodo.querySelectorAll ? [...nodo.querySelectorAll(".doc-page, .page")] : [];
-  const numHojas = Math.max(1, paginasPrev.length);
-  const anchoDoc = bleedLeft ? ANCHO_HOJA : ANCHO_UTIL;
-  const margenX = bleedLeft ? 0 : MARGEN * PX_A_PT;
-  const margenY = bleedLeft ? 0 : MARGEN * PX_A_PT;
-  const altoMarco = bleedLeft ? ALTO_HOJA * numHojas : Math.max(ALTO_HOJA, nodo.scrollHeight || 1000);
 
-  const aviso = mostrarProgreso("Generando el PDF…");
-  let marco = null;
-
-  try {
-    const estilosBleed = bleedLeft ? `
+  // Documentos ya divididos en hojas independientes (ej. Certificación de Escaleras de 3 páginas):
+  // usa `pdfDeHojas`, que actualiza el progreso por hoja (`avanceDePdf`), carga Inter, corrige
+  // `object-fit` y fotografía cada `.page` sin desplazamientos ni bloqueo por lienzo contaminado.
+  if (paginasPrev.length > 0) {
+    const estilosMultiHoja = `
       html, body {
         margin: 0 !important;
         padding: 0 !important;
-        background: #fff !important;
+        background: #ffffff !important;
         width: ${ANCHO_HOJA}px !important;
-        height: ${numHojas > 1 ? "auto" : `${ALTO_HOJA}px`} !important;
-        min-height: ${ALTO_HOJA * numHojas}px !important;
-        max-height: ${numHojas > 1 ? "none" : `${ALTO_HOJA}px`} !important;
-        overflow: ${numHojas > 1 ? "visible" : "hidden"} !important;
-        box-sizing: border-box !important;
       }
-      .doc-shell {
-        width: ${ANCHO_HOJA}px !important;
-        height: ${ALTO_HOJA}px !important;
-        min-height: ${ALTO_HOJA}px !important;
-        max-height: ${ALTO_HOJA}px !important;
+      .doc-shell-multi {
+        background: #ffffff !important;
         border: 0 !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
         margin: 0 !important;
         padding: 0 !important;
-        overflow: hidden !important;
-        box-sizing: border-box !important;
+        width: ${ANCHO_HOJA}px !important;
       }
       .doc-page, .page {
         width: ${ANCHO_HOJA}px !important;
@@ -261,13 +243,58 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
         padding: 0 !important;
         overflow: hidden !important;
         box-sizing: border-box !important;
+        background: #ffffff !important;
       }
-      .doc-shell-multi {
-        background: transparent !important;
-        border: 0 !important;
+    `;
+    const htmlMulti = `<!doctype html><html><head><meta charset="utf-8">
+      <style>${HOJA_ESTILOS}${estilosMultiHoja}</style></head>
+      <body>${nodo.outerHTML}</body></html>`;
+
+    const blob = await pdfDeHojas(htmlMulti, {
+      antesDeFotografiar: (doc) => {
+        doc.querySelectorAll(".doc-page").forEach((el) => el.classList.add("page"));
+      },
+      mensajeError: "No se pudo preparar el documento para generar el PDF.",
+      mensajeVacio: "El documento no contiene páginas para exportar.",
+    });
+    return { blob, nombre: `${nombre}.pdf` };
+  }
+
+  const { html2canvas, jsPDF } = await cargarLibreriasPdf();
+
+  const anchoDoc = bleedLeft ? ANCHO_HOJA : ANCHO_UTIL;
+  const margenX = bleedLeft ? 0 : MARGEN * PX_A_PT;
+  const margenY = bleedLeft ? 0 : MARGEN * PX_A_PT;
+  const altoMarco = bleedLeft ? ALTO_HOJA : Math.max(ALTO_HOJA, nodo.scrollHeight || 1000);
+
+  const aviso = mostrarProgreso("Generando el PDF…");
+  let marco = null;
+
+  try {
+    const estilosBleed = bleedLeft ? `
+      html, body {
         margin: 0 !important;
         padding: 0 !important;
+        background: #fff !important;
         width: ${ANCHO_HOJA}px !important;
+        height: ${ALTO_HOJA}px !important;
+        min-height: ${ALTO_HOJA}px !important;
+        max-height: ${ALTO_HOJA}px !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+      }
+      .doc-shell, .doc-page {
+        width: ${ANCHO_HOJA}px !important;
+        height: ${ALTO_HOJA}px !important;
+        min-height: ${ALTO_HOJA}px !important;
+        max-height: ${ALTO_HOJA}px !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
       }
     ` : "";
 
@@ -279,51 +306,14 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
     marco = abierto.marco;
     const { doc } = abierto;
     await esperarRecursos(doc, abierto.ventana);
-    await new Promise((listo) => setTimeout(listo, 140));
+    await new Promise((listo) => setTimeout(listo, 120));
 
     const raiz = doc.body.firstElementChild;
     if (!raiz) throw new Error("No se pudo leer el documento generado.");
 
-    const paginas = [...raiz.querySelectorAll(".doc-page, .page")];
-    if (paginas.length > 0) {
-      const pdf = new jsPDF({ unit: "px", format: [ANCHO_HOJA, ALTO_HOJA], orientation: "portrait" });
-      for (let i = 0; i < paginas.length; i++) {
-        aviso.hoja(i + 1, paginas.length);
-        await dejarPintar();
-        try {
-          rehacerImagenes(paginas[i], abierto.ventana);
-        } catch { /* ignore */ }
-
-        if (abierto.ventana && typeof abierto.ventana.scrollTo === "function") {
-          abierto.ventana.scrollTo(0, paginas[i].offsetTop || (i * ALTO_HOJA));
-        }
-
-        const pLienzo = await html2canvas(paginas[i], {
-          scale: ESCALA_DIBUJO,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: "#ffffff",
-          logging: false,
-          width: ANCHO_HOJA,
-          height: ALTO_HOJA,
-          windowWidth: ANCHO_HOJA,
-          windowHeight: altoMarco,
-        });
-
-        if (i > 0) pdf.addPage([ANCHO_HOJA, ALTO_HOJA], "portrait");
-        pdf.addImage(
-          pLienzo.toDataURL("image/jpeg", 0.95),
-          "JPEG",
-          0,
-          0,
-          ANCHO_HOJA,
-          ALTO_HOJA,
-          undefined,
-          "FAST"
-        );
-      }
-      return { blob: pdf.output("blob"), nombre: `${nombre}.pdf` };
-    }
+    try {
+      rehacerImagenes(raiz, abierto.ventana);
+    } catch { /* ignore */ }
 
     const altoTotal = bleedLeft ? ALTO_HOJA : raiz.scrollHeight;
 
@@ -405,39 +395,6 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
     }
 
     return { blob: pdf.output("blob"), nombre: `${nombre}.pdf` };
-  } catch (errIframe) {
-    console.warn("Fallo en renderizado aislado de marco, ejecutando captura directa:", errIframe);
-    const paginasDirectas = nodo.querySelectorAll ? [...nodo.querySelectorAll(".doc-page, .page")] : [];
-    if (paginasDirectas.length > 0) {
-      const { jsPDF: JsPDFCls, html2canvas: h2c } = await cargarLibreriasPdf();
-      const pdf = new JsPDFCls({ unit: "px", format: [ANCHO_HOJA, ALTO_HOJA], orientation: "portrait" });
-      for (let i = 0; i < paginasDirectas.length; i++) {
-        aviso.hoja(i + 1, paginasDirectas.length);
-        await dejarPintar();
-        const pLienzo = await h2c(paginasDirectas[i], {
-          scale: 2.5,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: "#ffffff",
-          logging: false,
-          width: ANCHO_HOJA,
-          height: ALTO_HOJA,
-        });
-        if (i > 0) pdf.addPage([ANCHO_HOJA, ALTO_HOJA], "portrait");
-        pdf.addImage(
-          pLienzo.toDataURL("image/jpeg", 0.95),
-          "JPEG",
-          0,
-          0,
-          ANCHO_HOJA,
-          ALTO_HOJA,
-          undefined,
-          "FAST"
-        );
-      }
-      return { blob: pdf.output("blob"), nombre: `${nombre}.pdf` };
-    }
-    throw errIframe;
   } finally {
     marco?.remove();
     aviso.cerrar();

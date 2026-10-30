@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   esCertificacionEscalera,
   PRUEBAS_ESCALERAS_ANSI,
@@ -6,6 +6,14 @@ import {
   buildCertForm,
   getCertDefaultElements,
 } from "./certConfig";
+
+vi.mock("../../lib/pdfHojas", async (importOriginal) => {
+  const real = await importOriginal();
+  return {
+    ...real,
+    pdfDeHojas: vi.fn(async () => new Blob(["%PDF-1.4"], { type: "application/pdf" })),
+  };
+});
 
 describe("Certificación de Escaleras", () => {
   it("detecta correctamente una certificación de escaleras", () => {
@@ -63,5 +71,21 @@ describe("Certificación de Escaleras", () => {
     expect(elems).toContain("Largueros perfil estructural");
     expect(elems).toContain("Guardacuerpo de protección (jaula de seguridad)");
     expect(elems).toContain("Línea de vida vertical cable de acero Ø 8mm");
+  });
+
+  it("genera el PDF de 3 páginas delegando hojas múltiples a pdfDeHojas sin fallar por progreso", async () => {
+    const { generarDocumentoPdf } = await import("../../lib/documentoPdf");
+    const { pdfDeHojas } = await import("../../lib/pdfHojas");
+
+    const nodoMock = {
+      outerHTML: '<div id="pz" data-bleed-left="true" class="doc-shell-multi"><div class="doc-page page">1</div><div class="doc-page page">2</div><div class="doc-page page">3</div></div>',
+      getAttribute: (attr) => (attr === "data-bleed-left" ? "true" : null),
+      querySelectorAll: () => [{}, {}, {}],
+    };
+
+    const resultado = await generarDocumentoPdf(nodoMock, "Certificacion CERT-040");
+    expect(pdfDeHojas).toHaveBeenCalledTimes(1);
+    expect(resultado.nombre).toBe("Certificacion CERT-040.pdf");
+    expect(resultado.blob).toBeInstanceOf(Blob);
   });
 });

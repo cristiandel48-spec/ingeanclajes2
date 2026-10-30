@@ -583,7 +583,12 @@ export default function Certificaciones({ctx}){
         setSel(c);
         await new Promise((r) => setTimeout(r, 260));
       }
-      const nodo = document.getElementById("pz");
+      let nodo = document.getElementById("pz");
+      const topeQr = Date.now() + 1200;
+      while (Date.now() < topeQr && (!nodo || !nodo.querySelector('img[alt="QR Validaci?n"]'))) {
+        await new Promise((r) => setTimeout(r, 50));
+        nodo = document.getElementById("pz");
+      }
       if (!nodo) {
         alert("No se encontró el documento para generar el PDF.");
         return;

@@ -36,59 +36,78 @@ export function printCurrentPz(title = "Documento"){
     html, body {
       margin: 0 !important;
       padding: 0 !important;
-      background: #fff !important;
+      background: #f1f5f9;
       color: #111;
       font-family: ${FUENTE};
-      width: 8.5in;
     }
-    #print-toolbar, #print-toolbar + div { display: none !important; }
-    .doc-shell {
-      background: #fff;
-      color: #111;
-      width: 8.5in !important;
-      height: 11in !important;
-      min-height: 11in !important;
-      max-height: 11in !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      border: none !important;
-      box-shadow: none !important;
-      border-radius: 0 !important;
-      position: relative !important;
-      overflow: hidden !important;
-      box-sizing: border-box !important;
-      page-break-after: avoid !important;
-      break-after: avoid !important;
+    @media screen {
+      .doc-shell {
+        margin: 18px auto 32px !important;
+        box-shadow: 0 8px 28px rgba(15, 23, 42, 0.12) !important;
+      }
+      .doc-shell-multi {
+        width: 816px !important;
+        margin: 18px auto 32px !important;
+      }
+      .doc-page {
+        margin: 0 auto 24px !important;
+        box-shadow: 0 8px 28px rgba(15, 23, 42, 0.12) !important;
+      }
     }
-    .doc-shell-multi {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      width: 8.5in !important;
-    }
-    .doc-page {
-      background: #fff !important;
-      color: #111 !important;
-      width: 8.5in !important;
-      height: 11in !important;
-      min-height: 11in !important;
-      max-height: 11in !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      border: none !important;
-      box-shadow: none !important;
-      border-radius: 0 !important;
-      position: relative !important;
-      overflow: hidden !important;
-      box-sizing: border-box !important;
-      page-break-after: always !important;
-      break-after: page !important;
-    }
-    .doc-page:last-child {
-      page-break-after: avoid !important;
-      break-after: avoid !important;
+    @media print {
+      html, body {
+        background: #fff !important;
+        width: 8.5in !important;
+      }
+      #print-toolbar, #print-toolbar + div { display: none !important; }
+      .doc-shell {
+        background: #fff !important;
+        color: #111 !important;
+        width: 8.5in !important;
+        height: 11in !important;
+        min-height: 11in !important;
+        max-height: 11in !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        position: relative !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      .doc-shell-multi {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 8.5in !important;
+      }
+      .doc-page {
+        background: #fff !important;
+        color: #111 !important;
+        width: 8.5in !important;
+        height: 11in !important;
+        min-height: 11in !important;
+        max-height: 11in !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        position: relative !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+        page-break-after: always !important;
+        break-after: page !important;
+      }
+      .doc-page:last-child {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
     }
   ` : `
     ${cssHojaImpresion({ vistaPrevia: false })}

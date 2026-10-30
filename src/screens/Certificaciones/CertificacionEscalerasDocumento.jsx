@@ -551,24 +551,83 @@ export default function CertificacionEscalerasDocumento({ cert: certRaw }) {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════════
-          PÁGINA 3: VIGENCIA ARL, RECOMENDACIONES, TRAZABILIDAD, FIRMA Y QR
+          PÁGINA 3: RECOMENDACIONES, VIGENCIA ARL, TRAZABILIDAD, FIRMA Y QR
           ══════════════════════════════════════════════════════════════════════════ */}
       {renderHojaBase(
         3,
         <>
-          <div style={{ marginBottom: 14 }}>
+          <div>
             <div style={TITULO_SECCION_STYLE}>
               <span>6.</span>
               <span>Vigencia Técnica y Recomendaciones</span>
             </div>
 
-            {/* Tarjeta de Vigencia Técnica ARL (idéntica a CertificacionDocumento) */}
+            {/* Recomendaciones Técnicas (mismo sombreado #f8fafc y tipografía que CertificacionDocumento) */}
+            <div
+              style={{
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: 6,
+                padding: "12px 15px",
+                marginBottom: 14,
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 800,
+                  marginBottom: 6,
+                  fontSize: 11.5,
+                  color: "#0f172a",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.3,
+                }}
+              >
+                RECOMENDACIONES PARA TENER EN CUENTA
+              </div>
+              <div style={{ fontSize: 11.2, lineHeight: 1.5, marginBottom: 6, textAlign: "justify", color: "#334155" }}>
+                A continuación, se realizan algunas recomendaciones para preservar en buen estado los sistemas anticaídas y escaleras certificados en dicha obra:
+              </div>
+              <ul style={{ marginLeft: 16, fontSize: 11.2, lineHeight: 1.54, marginBottom: 8, color: "#334155", paddingLeft: 0 }}>
+                <li style={{ margin: "4px 0" }}>
+                  Dar aviso de inmediato en caso de registrarse algún evento de caída o impacto para su respectiva valoración y diagnóstico.
+                </li>
+                <li style={{ margin: "4px 0" }}>
+                  Conectar como máximo dos (2) personas por cada línea de vida o en cada tramo entre soportes laterales e intermedios.
+                </li>
+                <li style={{ margin: "4px 0" }}>
+                  No modificar ningún elemento del sistema ni de la escalera, ya que puede perder sus funciones y generar riesgo para los usuarios.
+                </li>
+                <li style={{ margin: "4px 0" }}>
+                  Limpiar de inmediato las estructuras u otros elementos que entren en contacto con químicos en el área.
+                </li>
+              </ul>
+              <div style={{ fontSize: 11, textAlign: "justify", lineHeight: 1.5, color: "#475569", marginBottom: 8 }}>
+                Estas recomendaciones son de carácter técnico; su cumplimiento es obligatorio para minimizar el riesgo en trabajo en alturas. Se debe realizar el próximo mantenimiento preventivo de todo el sistema máximo dentro de un (1) año contado a partir de la expedición del presente documento (antes del {fmtL(proxMant)}).
+              </div>
+              <div
+                style={{
+                  fontSize: 10.8,
+                  textAlign: "justify",
+                  lineHeight: 1.48,
+                  color: "#334155",
+                  background: "#ffffff",
+                  padding: "8px 11px",
+                  borderRadius: 5,
+                  border: "1px solid #e2e8f0",
+                }}
+              >
+                <strong style={{ color: "#0f172a" }}>Nota técnica:</strong> Si la línea de vida o la estructura es impactada, ya sea de manera intencional o accidental, la revisión y reparación del sistema tendrá un costo adicional para garantizar su correcto funcionamiento y la seguridad de los usuarios.
+              </div>
+            </div>
+
+            {/* Tarjeta de Vigencia Técnica ARL (ubicada después de la nota técnica) */}
             <div
               style={{
                 background: "#f0fdf4",
                 border: "1px solid #bbf7d0",
                 borderRadius: 6,
                 padding: "9px 14px",
+                marginBottom: 16,
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -610,64 +669,6 @@ export default function CertificacionEscalerasDocumento({ cert: certRaw }) {
                   Antes del {fmtL(proxMant)}
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Recomendaciones Técnicas (mismo sombreado #f8fafc y tipografía que CertificacionDocumento) */}
-          <div
-            style={{
-              background: "#f8fafc",
-              border: "1px solid #e2e8f0",
-              borderRadius: 6,
-              padding: "12px 15px",
-              marginBottom: 16,
-            }}
-          >
-            <div
-              style={{
-                fontWeight: 800,
-                marginBottom: 6,
-                fontSize: 11.5,
-                color: "#0f172a",
-                textTransform: "uppercase",
-                letterSpacing: 0.3,
-              }}
-            >
-              RECOMENDACIONES PARA TENER EN CUENTA
-            </div>
-            <div style={{ fontSize: 11.2, lineHeight: 1.5, marginBottom: 6, textAlign: "justify", color: "#334155" }}>
-              A continuación, se realizan algunas recomendaciones para preservar en buen estado los sistemas anticaídas y escaleras certificados en dicha obra:
-            </div>
-            <ul style={{ marginLeft: 16, fontSize: 11.2, lineHeight: 1.54, marginBottom: 8, color: "#334155", paddingLeft: 0 }}>
-              <li style={{ margin: "4px 0" }}>
-                Dar aviso de inmediato en caso de registrarse algún evento de caída o impacto para su respectiva valoración y diagnóstico.
-              </li>
-              <li style={{ margin: "4px 0" }}>
-                Conectar como máximo dos (2) personas por cada línea de vida o en cada tramo entre soportes laterales e intermedios.
-              </li>
-              <li style={{ margin: "4px 0" }}>
-                No modificar ningún elemento del sistema ni de la escalera, ya que puede perder sus funciones y generar riesgo para los usuarios.
-              </li>
-              <li style={{ margin: "4px 0" }}>
-                Limpiar de inmediato las estructuras u otros elementos que entren en contacto con químicos en el área.
-              </li>
-            </ul>
-            <div style={{ fontSize: 11, textAlign: "justify", lineHeight: 1.5, color: "#475569", marginBottom: 8 }}>
-              Estas recomendaciones son de carácter técnico; su cumplimiento es obligatorio para minimizar el riesgo en trabajo en alturas. Se debe realizar el próximo mantenimiento preventivo de todo el sistema máximo dentro de un (1) año contado a partir de la expedición del presente documento (antes del {fmtL(proxMant)}).
-            </div>
-            <div
-              style={{
-                fontSize: 10.8,
-                textAlign: "justify",
-                lineHeight: 1.48,
-                color: "#334155",
-                background: "#ffffff",
-                padding: "8px 11px",
-                borderRadius: 5,
-                border: "1px solid #e2e8f0",
-              }}
-            >
-              <strong style={{ color: "#0f172a" }}>Nota técnica:</strong> Si la línea de vida o la estructura es impactada, ya sea de manera intencional o accidental, la revisión y reparación del sistema tendrá un costo adicional para garantizar su correcto funcionamiento y la seguridad de los usuarios.
             </div>
           </div>
 

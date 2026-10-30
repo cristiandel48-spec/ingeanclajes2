@@ -297,7 +297,7 @@ function embellecerTextoCompletoCertificacion(texto) {
 
   // 1. Extraer dirección (puede estar al final tras la solicitud o antes de ella)
   let direccion = "";
-  const mDir = remaining.match(/(?:,\s*|\s+)(?:con\s+DIRECCI[OÓ]N:\s*|con\s+direcci[oó]n\s+en\s+(?:la\s+|el\s+)?|ubicad[ao]\s+en\s+(?:la\s+|el\s+)?)([\s\S]+?)(?=(?:,\s*(?:a\s+solicitud\s+de|por\s+encargo\s+de|para|con\s+NIT|instalados\s+en|fueron\s+inspeccionados|cumplen\s+a\s+cabalidad))|$)/i);
+  const mDir = remaining.match(/(?:,\s*|\s+)(?:con\s+DIRECCI[OÓ]N:\s*|con\s+direcci[oó]n(?:\s+en)?\s*(?:la\s+|el\s+)?|ubicad[ao]\s+en\s*(?:la\s+|el\s+)?)([\s\S]+?)(?=(?:,\s*(?:a\s+solicitud\s+de|por\s+encargo\s+de|para|con\s+NIT|instalados\s+en|fueron\s+inspeccionados|cumplen\s+a\s+cabalidad))|$)/i);
   if (mDir) {
     direccion = mDir[1].trim();
     remaining = remaining.slice(0, mDir.index) + remaining.slice(mDir.index + mDir[0].length);
@@ -360,9 +360,8 @@ function embellecerTextoCompletoCertificacion(texto) {
     partes.push(`con NIT: ${cleanNit}`);
   }
   if (cleanDir) {
-    const dirSinPrefijo = cleanDir.replace(/^(con\s+direcci[oó]n\s+en\s+(la\s+|el\s+)?|ubicad[ao]\s+en\s+(la\s+|el\s+)?|en\s+(la\s+|el\s+)?)/i, "").trim();
-    const prefijoArticulo = /^(calle|carrera|cra|cl\b|diagonal|transversal|avenida|av\b)/i.test(dirSinPrefijo) ? "la " : "";
-    partes.push(`con dirección en ${prefijoArticulo}${dirSinPrefijo}`);
+    const dirSinPrefijo = cleanDir.replace(/^(?:con\s+direcci[oó]n(?:\s+en)?\s*(?:la\s+|el\s+)?|con\s+direcci[oó]n\s+|ubicad[ao]\s+en\s*(?:la\s+|el\s+)?|en\s*(?:la\s+|el\s+)?|la\s+|el\s+)/i, "").trim();
+    partes.push(`con dirección ${dirSinPrefijo}`);
   }
 
   const textoCierre = ", fueron inspeccionados y verificados técnicamente, encontrándose estructuralmente conformes, operativos y aptos para trabajo seguro en alturas, cumpliendo a cabalidad con los requisitos de la Resolución 4272 de 2021 del Ministerio del Trabajo y los estándares de ingeniería aplicables.";

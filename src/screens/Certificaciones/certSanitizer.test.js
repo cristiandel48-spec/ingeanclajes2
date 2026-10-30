@@ -108,11 +108,21 @@ describe("certSanitizer", () => {
       expect(res).not.toContain("la sede");
     });
 
-    it("ubica la dirección fiscal después del cliente con 'con dirección en' y una sola vez", () => {
+    it("ubica la dirección fiscal después del cliente con 'con dirección' sin 'en la' ni 'la'", () => {
       const res = sanitizarTextoSistema(textoDelUsuario, "CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA", "COM CAUCASIA EPM");
-      expect(res).toContain("instalados en la obra COM CAUCASIA EPM, a solicitud de LUIS JAVIER GALEANO MURILLO (NIT: 71705357-9), con dirección en la CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA, fueron inspeccionados");
+      expect(res).toContain("instalados en la obra COM CAUCASIA EPM, a solicitud de LUIS JAVIER GALEANO MURILLO (NIT: 71705357-9), con dirección CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA, fueron inspeccionados");
+      expect(res).not.toContain("con dirección en");
+      expect(res).not.toContain("en la CALLE");
       const count = (res.match(/ENVIGADO/g) || []).length;
       expect(count).toBe(1);
+    });
+
+    it("maneja direcciones con Diagonal sin anteponer 'en la'", () => {
+      const textoDiagonal = "CERTIFICA que los sistemas de protección contra caídas consistentes en: treinta (30) líneas de vida horizontales, instalados en la obra BODEGA 39 CENTRAL DE EMPRESAS Y NEGOCIOS, a solicitud de PRODUCTOS ALIMENTICIOS SOL DE ORIENTE (NIT: 811035319-7), con dirección en la DIAGONAL 50B #43-64, fueron inspeccionados...";
+      const res = sanitizarTextoSistema(textoDiagonal, "DIAGONAL 50B #43-64", "BODEGA 39 CENTRAL DE EMPRESAS Y NEGOCIOS");
+      expect(res).toContain("con dirección DIAGONAL 50B #43-64");
+      expect(res).not.toContain("en la DIAGONAL");
+      expect(res).not.toContain("con dirección en");
     });
 
     it("es 100% idempotente: no duplica en pases sucesivos", () => {
@@ -120,7 +130,7 @@ describe("certSanitizer", () => {
       for (let i = 0; i < 5; i++) {
         res = sanitizarTextoSistema(res, "CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA", "COM CAUCASIA EPM");
       }
-      expect(res).toContain("instalados en la obra COM CAUCASIA EPM, a solicitud de LUIS JAVIER GALEANO MURILLO (NIT: 71705357-9), con dirección en la CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA, fueron inspeccionados");
+      expect(res).toContain("instalados en la obra COM CAUCASIA EPM, a solicitud de LUIS JAVIER GALEANO MURILLO (NIT: 71705357-9), con dirección CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA, fueron inspeccionados");
       const count = (res.match(/ENVIGADO/g) || []).length;
       expect(count).toBe(1);
     });
@@ -141,7 +151,7 @@ describe("certSanitizer", () => {
 
       const certSaneado = sanitizarCertificado(certViejo, { clientes: mockClientes, obras: mockObras });
       expect(certSaneado.direccion).toBe("CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA");
-      expect(certSaneado.sistema).toContain("instalados en la obra COM CAUCASIA EPM, a solicitud de LUIS JAVIER GALEANO MURILLO (NIT: 71705357-9), con dirección en la CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA, fueron inspeccionados");
+      expect(certSaneado.sistema).toContain("instalados en la obra COM CAUCASIA EPM, a solicitud de LUIS JAVIER GALEANO MURILLO (NIT: 71705357-9), con dirección CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA, fueron inspeccionados");
       const count = (certSaneado.sistema.match(/ENVIGADO/g) || []).length;
       expect(count).toBe(1);
     });

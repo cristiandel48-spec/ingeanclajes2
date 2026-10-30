@@ -46,7 +46,7 @@ const renderTextoSistema = (cert)=>{
     const mLugar = afterVerbo.match(/instalados\s+en\s+(?:la\s+obra\s+|la\s+sede\s+|el\s+proyecto\s+)?([^,]+)/i);
     const lugarTexto = mLugar ? mLugar[1].trim() : (cert?.lugar || "");
 
-    const mDir = afterVerbo.match(/(?:con\s+direcci[oó]n\s+en|ubicad[ao]\s+en)\s+(?:la\s+|el\s+)?([\s\S]+?)(?=,\s*fueron\s+inspeccionados|$)/i);
+    const mDir = afterVerbo.match(/(?:con\s+direcci[oó]n(?:\s+en)?|ubicad[ao]\s+en)\s*(?:la\s+|el\s+)?([\s\S]+?)(?=,\s*fueron\s+inspeccionados|$)/i);
     const dirTexto = mDir ? mDir[1].trim() : (cert?.direccion || "");
 
     const mCli = afterVerbo.match(/a\s+solicitud\s+de\s+([^(,]+?)(?:\s*\(NIT:\s*([^)]+)\))?(?:,|$)/i);

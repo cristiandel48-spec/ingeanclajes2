@@ -198,9 +198,8 @@ export const construirTextoSistema = ({
 
   const dirLimpia = String(direccion || "").trim().replace(/[.\s]+$/, "");
   if (dirLimpia) {
-    const dirSinPrefijo = dirLimpia.replace(/^(con\s+direcci[oó]n\s+en\s+(?:la\s+|el\s+)?|ubicad[ao]\s+en\s+(?:la\s+|el\s+)?|en\s+(?:la\s+|el\s+)?)/i, "").trim();
-    const prefijoArticulo = /^(calle|carrera|cra|cl\b|diagonal|transversal|avenida|av\b)/i.test(dirSinPrefijo) ? "la " : "";
-    partes.push(`con dirección en ${prefijoArticulo}${enMayuscula(dirSinPrefijo)}`);
+    const dirSinPrefijo = dirLimpia.replace(/^(?:con\s+direcci[oó]n(?:\s+en)?\s*(?:la\s+|el\s+)?|con\s+direcci[oó]n\s+|ubicad[ao]\s+en\s*(?:la\s+|el\s+)?|en\s*(?:la\s+|el\s+)?|la\s+|el\s+)/i, "").trim();
+    partes.push(`con dirección ${enMayuscula(dirSinPrefijo)}`);
   }
 
   void fecha; void fechaLarga;

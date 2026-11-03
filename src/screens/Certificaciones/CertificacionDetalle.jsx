@@ -6,7 +6,8 @@ import { fmtD } from "../../lib/format";
 import { descargarDocumentoPdf } from "../../lib/documentoPdf";
 import { nombreDocumento } from "../../lib/nombreArchivo";
 import { useIsMobile } from "../../hooks/useMediaQuery";
-import { B } from "../../styles/tokens";
+import Button from "../../components/ui/Button";
+import SegmentedControl from "../../components/ui/SegmentedControl";
 
 export default function CertificacionDetalle({
   cert,
@@ -131,116 +132,47 @@ export default function CertificacionDetalle({
           </span>
         </div>
 
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
           {typeof onVolver === "function" && !accionesEnBarra && (
-            <button
-              type="button"
-              style={{ ...B("var(--fill)", "var(--text-primary)"), fontSize: 12, padding: "6px 13px" }}
-              onClick={onVolver}
-              title="Volver al listado"
-            >
-              ← Volver
-            </button>
+            <Button variante="texto" tam="sm" icono="flechaIzq" onClick={onVolver} title="Volver al listado">
+              Volver
+            </Button>
           )}
 
-          {/* Control segmentado Apple: Ajustar / 100% */}
-          <div
-            style={{
-              background: "var(--fill)",
-              padding: 3,
-              borderRadius: 10,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 2,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setModo("auto")}
-              title="Ajusta el documento al ancho de la pantalla"
-              style={{
-                background: modo === "auto" ? "var(--surface)" : "transparent",
-                color: modo === "auto" ? "var(--text-primary)" : "var(--text-secondary)",
-                border: "none",
-                borderRadius: 7,
-                padding: isMobile ? "4px 9px" : "5px 11px",
-                fontSize: 11.5,
-                fontWeight: modo === "auto" ? 600 : 500,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                boxShadow: modo === "auto" ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              Ajustar ({Math.round(escala * 100)}%)
-            </button>
-            <button
-              type="button"
-              onClick={() => setModo("real")}
-              title="Muestra el documento al 100% de tamaño real"
-              style={{
-                background: modo === "real" ? "var(--surface)" : "transparent",
-                color: modo === "real" ? "var(--text-primary)" : "var(--text-secondary)",
-                border: "none",
-                borderRadius: 7,
-                padding: isMobile ? "4px 9px" : "5px 11px",
-                fontSize: 11.5,
-                fontWeight: modo === "real" ? 600 : 500,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                boxShadow: modo === "real" ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
-              }}
-            >
-              100% Lectura
-            </button>
-          </div>
+          <SegmentedControl
+            etiqueta="Tamaño del documento"
+            valor={modo}
+            onChange={setModo}
+            opciones={[
+              { id: "auto", label: `Ajustar (${Math.round(escala * 100)}%)` },
+              { id: "real", label: "100% Lectura" },
+            ]}
+          />
 
-          <button
-            type="button"
+          <Button
+            variante="texto"
+            tam="sm"
+            aria-pressed={previewExpandido}
             onClick={() => setPreviewExpandido((prev) => !prev)}
             title={previewExpandido ? "Minimizar horizontalmente" : "Maximizar horizontalmente"}
-            style={{
-              ...B(previewExpandido ? "#1d1d1f" : "var(--fill)", "#ffffff"),
-              fontSize: 11.5,
-              padding: isMobile ? "5px 10px" : "6px 12px",
-            }}
           >
             {previewExpandido ? "Minimizar" : "Maximizar"}
-          </button>
+          </Button>
 
           {!accionesEnBarra && typeof onEditar === "function" && (
-            <button
-              type="button"
-              style={{ ...B("var(--fill)", "var(--text-primary)"), fontSize: 12, padding: "6px 13px" }}
-              onClick={() => onEditar(cert)}
-            >
+            <Button variante="texto" tam="sm" onClick={() => onEditar(cert)}>
               Editar
-            </button>
+            </Button>
           )}
 
           {!accionesEnBarra && (
             <>
-              <button
-                type="button"
-                style={{
-                  ...B("#1d1d1f", "#ffffff"),
-                  fontSize: 12,
-                  padding: "6px 14px",
-                  cursor: descargando ? "wait" : "pointer",
-                }}
-                disabled={descargando}
-                onClick={descargarPdf}
-              >
-                {descargando ? "Generando…" : "Descargar PDF"}
-              </button>
-
-              <button
-                type="button"
-                style={{ ...B("var(--fill)", "var(--text-primary)"), fontSize: 12, padding: "6px 13px" }}
-                onClick={imprimir}
-              >
+              <Button variante="texto" tam="sm" onClick={imprimir}>
                 Imprimir
-              </button>
+              </Button>
+              <Button variante="oscuro" tam="sm" icono="descargar" disabled={descargando} onClick={descargarPdf}>
+                {descargando ? "Generando…" : "Descargar PDF"}
+              </Button>
             </>
           )}
         </div>

@@ -893,11 +893,11 @@ export default function Certificaciones({ctx}){
                   }}
                   style={SI}
                 >
-                  <option value="TIPO GATO">TIPO GATO</option>
-                  <option value="TIPO GATO CON LÍNEA DE VIDA VERTICAL">TIPO GATO CON LÍNEA DE VIDA VERTICAL</option>
-                  <option value="TIPO GATO CON JAULA DE SEGURIDAD">TIPO GATO CON JAULA DE SEGURIDAD</option>
-                  <option value="ESCALERA MARINERA">ESCALERA MARINERA</option>
-                  <option value="ESCALERA FIJA VERTICAL">ESCALERA FIJA VERTICAL</option>
+                  <option value="TIPO GATO">Tipo gato</option>
+                  <option value="TIPO GATO CON LÍNEA DE VIDA VERTICAL">Tipo gato con línea de vida vertical</option>
+                  <option value="TIPO GATO CON JAULA DE SEGURIDAD">Tipo gato con jaula de seguridad</option>
+                  <option value="ESCALERA MARINERA">Escalera marinera</option>
+                  <option value="ESCALERA FIJA VERTICAL">Escalera fija vertical</option>
                   <option value="OTRO">Otro tipo de escalera…</option>
                 </select>
                 {form.tipoEscalera && !["TIPO GATO", "TIPO GATO CON LÍNEA DE VIDA VERTICAL", "TIPO GATO CON JAULA DE SEGURIDAD", "ESCALERA MARINERA", "ESCALERA FIJA VERTICAL"].includes(form.tipoEscalera) && (
@@ -950,38 +950,38 @@ export default function Certificaciones({ctx}){
               <LBL>Sistema certificado</LBL>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
                 {sistemasDesdeCotizacionDeObra(form.obraId)?.texto && (
-                  <button
-                    type="button"
+                  <Button
+                    variante="texto"
+                    tam="sm"
                     onClick={() => {
                       const c = sistemasDesdeCotizacionDeObra(form.obraId);
                       if (c?.texto) {
                         setActividadSeleccionadaKey(""); aplicarCambio({ cantidad: c.cantidadTotal, sistemaAuto: true }, informeRef, "cotizacion", "");
                       }
                     }}
-                    style={{...B("var(--fill)","var(--text-primary)"),fontSize:11.5,padding:"5px 11px"}}
                     title="Cargar todos los sistemas contratados desde la cotización vinculada"
                   >
                     Desde cotización ({obras.find(o=>o.id===form.obraId)?.cotizacionId ? (cotizaciones.find(c=>c.id===obras.find(o=>o.id===form.obraId)?.cotizacionId)?.numero || "Cot") : "Cot"})
-                  </button>
+                  </Button>
                 )}
                 {(observacionesDesdeInformes(informes, form.obraId, informeRef) || actividadesDesdeInformes(informes, form.obraId, informeRef)) && (
-                  <button
-                    type="button"
+                  <Button
+                    variante="texto"
+                    tam="sm"
                     onClick={() => { setActividadSeleccionadaKey(""); aplicarCambio({ sistemaAuto: true }, informeRef, "informe", ""); }}
-                    style={{...B("var(--fill)","var(--text-primary)"),fontSize:11.5,padding:"5px 11px"}}
                     title="Cargar la redacción registrada en el informe de actividades"
                   >
                     Desde informe
-                  </button>
+                  </Button>
                 )}
                 <BotonCorregir
                   valor={form.sistema}
                   onChange={(v)=>setForm(p=>({...p,sistema:normalizarTextoCertificacion(v),sistemaAuto:false}))}
                   compacto
                 />
-                <button type="button" onClick={()=>rehacerTexto("auto")} style={{...B("var(--fill)","var(--text-primary)"),fontSize:11.5,padding:"5px 11px"}}>
+                <Button variante="texto" tam="sm" onClick={()=>rehacerTexto("auto")}>
                   Rehacer
-                </button>
+                </Button>
               </div>
             </div>
             <textarea
@@ -1077,8 +1077,8 @@ export default function Certificaciones({ctx}){
                 placeholder="Escribe un componente y presiona Enter para agregar…"
                 style={{...SI,fontSize:13,flex:1}}
               />
-              <button
-                type="button"
+              <Button
+                variante="secondary"
                 onClick={()=>{
                   if(nuevoElem.trim()){
                     const val=corregirOrtografiaLocal(nuevoElem.trim());
@@ -1086,25 +1086,19 @@ export default function Certificaciones({ctx}){
                     setNuevoElem("");
                   }
                 }}
-                style={{...B("var(--fill)","var(--text-primary)"),padding:"8px 16px",fontSize:12.5,flexShrink:0}}
+                style={{flexShrink:0}}
               >
                 + Agregar
-              </button>
+              </Button>
             </div>
           </div>
           <div style={{display:"flex",gap:10,marginTop:18,paddingTop:14,borderTop:"1px solid var(--separator)"}}>
-            <button
-              style={{...B("#1d1d1f","#ffffff"),padding:"9px 22px",fontSize:13}}
-              onClick={guardar}
-            >
+            <Button variante="oscuro" tam="lg" onClick={guardar}>
               {editId ? "Guardar cambios" : "Guardar certificación"}
-            </button>
-            <button
-              style={{...B("var(--fill)","var(--text-primary)"),padding:"9px 18px",fontSize:13}}
-              onClick={()=>{setNueva(false);setEditId(null);}}
-            >
+            </Button>
+            <Button variante="texto" onClick={()=>{setNueva(false);setEditId(null);}}>
               Cancelar
-            </button>
+            </Button>
           </div>
         </div>
       )}

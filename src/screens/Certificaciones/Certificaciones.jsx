@@ -104,7 +104,8 @@ function detectarTipoSistema(texto = "") {
 export default function Certificaciones({ctx}){
   const isMobile = useIsMobile();
   const {certs,setCerts,obras,clientes,cotizaciones,informes,intencion,limpiarIntencion,irAPantalla}=ctx;
-  // Para el candado del acta: sin acta firmada por el cliente no se certifica.
+  // Estado de firma de las actas, solo para el aviso del formulario: sin acta
+  // firmada se avisa, pero igual se puede certificar.
   const { estados: estadosActas, listo: estadosActasListos } = useEstadosFirmaActas();
   const [sel,setSel]=useState(null);
   const puedeEliminar = esCamilaSepulveda(ctx?.membresia, ctx?.authUserEmail);
@@ -471,14 +472,8 @@ export default function Certificaciones({ctx}){
 
   const guardar=async()=>{
     if (guardandoRef.current) return;
-    // Requisito obligatorio: no se certifica una obra cuya acta de entrega no
-    // este hecha Y firmada por el cliente. Lo que cierra la entrega es la
-    // firma de quien recibe; sin ella la obra no esta entregada.
-    //
-    // Solo se bloquea al CREAR y cuando ya se sabe el estado de las firmas:
-    // una certificacion vieja se sigue pudiendo corregir, y un corte de red
-    // no puede dejar sin certificar a obras que si estan firmadas.
-    // La alarma se muestra en el banner superior del formulario; no bloquea el guardado según solicitud.
+    // El acta de entrega (FORM-SST-89) no bloquea el guardado: si falta o el
+    // cliente no la ha firmado, solo se avisa en el banner superior del formulario.
     guardandoRef.current = true;
     try {
       // Una obra puede tener varias certificaciones (por ejemplo una para escalera,

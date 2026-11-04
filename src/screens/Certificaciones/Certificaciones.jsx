@@ -11,7 +11,7 @@ import { buscarDireccionFiscalCliente, limpiarDireccionFiscal, sanitizarCertific
 import { redactarSistemasDesdeCotizacion, esItemAdministrativo, formatearItemParaCertificado, itemsDeCotizacionActiva } from "../../lib/certificacionTexto";
 import { fmtD, fmtL, scrollAppToTop } from "../../lib/format";
 import { normalizarRazonSocial, normalizarFrase, normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
-import { clienteDeObra, claveRazonSocial } from "../../lib/quienRecibe";
+import { clienteDeObra, claveRazonSocial, destinatarioDeInforme } from "../../lib/quienRecibe";
 import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import BotonCorregir from "../../components/ui/BotonCorregir";
 import { printCurrentPz } from "../../lib/print";
@@ -539,8 +539,20 @@ export default function Certificaciones({ctx}){
   // de impresion de Chrome. Igual que la cotizacion y el informe.
   const [descargandoPdf, setDescargandoPdf] = useState(false);
 
+  // Sin NIT y correo del cliente no se imprime ni se descarga. Sin aviso: el
+  // equipo ya lo sabe. El correo es el mismo al que van los informes.
+  const puedeImprimir = (c) => {
+    if (!c) return false;
+    const obra = obras.find((o) => o.id === c.obraId) || null;
+    const nit = String(c.nit || buscarNit(obra, c.cliente) || "").trim();
+    const cotizacion = obra?.cotizacionId ? (cotizaciones || []).find((x) => x.id === obra.cotizacionId) : null;
+    const correo = destinatarioDeInforme({ obra: obra || { cliente: c.cliente, nit }, cotizacion, clientes }).email;
+    return Boolean(nit && correo);
+  };
+  const selImprimible = puedeImprimir(sel);
+
   const descargarPdf = async (c = sel) => {
-    if (!c || descargandoPdf) return;
+    if (!c || descargandoPdf || !puedeImprimir(c)) return;
     setDescargandoPdf(true);
     try {
       if (!sel || sel.id !== c.id) {
@@ -572,6 +584,7 @@ export default function Certificaciones({ctx}){
   };
 
   const imprimir = (c) => {
+    if (!puedeImprimir(c)) return;
     setSel(c);
     setTimeout(() => printCurrentPz("Certificación " + (c?.numero || c?.id || "")), 250);
   };
@@ -590,7 +603,7 @@ export default function Certificaciones({ctx}){
         <Button variante="texto" tam="sm" onClick={() => accionesCertRef.current.editarCertificacion(sel)}>
           Editar
         </Button>
-        <Button variante="texto" tam="sm" onClick={() => accionesCertRef.current.imprimir(sel)}>
+        <Button variante="texto" tam="sm" disabled={!selImprimible} onClick={() => accionesCertRef.current.imprimir(sel)}>
           Imprimir
         </Button>
         <Button
@@ -598,7 +611,7 @@ export default function Certificaciones({ctx}){
           tam="sm"
           icono="descargar"
           style={{ marginLeft: 6 }}
-          disabled={descargandoPdf}
+          disabled={descargandoPdf || !selImprimible}
           onClick={() => accionesCertRef.current.descargarPdf(sel)}
         >
           {descargandoPdf ? "Generando…" : "Descargar PDF"}
@@ -639,7 +652,7 @@ export default function Certificaciones({ctx}){
         </button>
       </div>
     ) : null,
-    [sel, nueva, descargandoPdf]
+    [sel, nueva, descargandoPdf, selImprimible]
   );
   useTituloPantalla(sel && !nueva ? `Certificación ${sel.numero || sel.id}` : null);
 

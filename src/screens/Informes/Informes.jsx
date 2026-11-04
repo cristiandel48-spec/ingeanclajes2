@@ -700,8 +700,8 @@ export default function Informes({ctx}){
   };
 
   // El PDF que se le envia al cliente sale de `sel`: tiene que estar completo.
-  // Solo al enviar a firma se solicita el correo si falta; guardar, imprimir y
-  // descargar PDF nunca bloquean a los usuarios.
+  // Solo al enviar a firma se solicita el correo si falta. Imprimir y
+  // descargar PDF quedan deshabilitados sin NIT y correo (ver puedeImprimir).
   const abrirEnvioFirma = async () => {
     const completo = await informeCompleto(sel);
     if (!completo) return;
@@ -714,8 +714,20 @@ export default function Informes({ctx}){
     setModalFirma(true);
   };
 
+  // Sin NIT y correo del cliente no se imprime ni se descarga. Sin aviso: el
+  // equipo ya lo sabe. El correo es el mismo al que se envia para firma.
+  const puedeImprimir = (inf) => {
+    if (!inf) return false;
+    const obra = obras?.find((o) => o.id === inf.obraId);
+    const ficha = clienteDeObra(clientes, obra || { cliente: inf.cliente || inf.contratante || "", nit: inf.nit });
+    const cot = cotizaciones?.find((c) => c.id === (inf.cotizacionId || obra?.cotizacionId));
+    const nit = String(inf.nit || obra?.nit || ficha?.nit || cot?.nit || "").trim();
+    return Boolean(nit && correoValido(enriquecerInforme(inf).contactoEmail));
+  };
+  const selImprimible = puedeImprimir(sel);
+
   const descargarPdf = async (infEntrada = sel) => {
-    if (!infEntrada || generandoPdf) return;
+    if (!infEntrada || generandoPdf || !puedeImprimir(infEntrada)) return;
     const inf = await informeCompleto(infEntrada);
     if (!inf) return;
     // Firmado por el cliente: se entrega el PDF que recibio con la constancia
@@ -748,7 +760,7 @@ export default function Informes({ctx}){
   };
 
   const imprimirInforme = async (infEntrada = sel) => {
-    if (!infEntrada) return;
+    if (!infEntrada || !puedeImprimir(infEntrada)) return;
     const inf = await informeCompleto(infEntrada);
     if (!inf) return;
     const listo = enriquecerInforme(inf);
@@ -785,7 +797,7 @@ export default function Informes({ctx}){
       <div style={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "nowrap" }}>
         <Button variante="texto" tam="sm" icono="flechaIzq" onClick={() => setSel(null)}>Informes</Button>
         <Button variante="texto" tam="sm" onClick={() => accionesInformeRef.current.editar()}>Editar</Button>
-        <Button variante="texto" tam="sm" onClick={() => accionesInformeRef.current.imprimir()} title="Abre la pestaña de impresión del navegador">
+        <Button variante="texto" tam="sm" disabled={!selImprimible} onClick={() => accionesInformeRef.current.imprimir()} title="Abre la pestaña de impresión del navegador">
           Imprimir
         </Button>
         <Button variante="texto" tam="sm" onClick={() => accionesInformeRef.current.enviarFirma()} title="Envía el informe al cliente para que firme el recibido">
@@ -796,7 +808,7 @@ export default function Informes({ctx}){
           tam="sm"
           icono="descargar"
           style={{ marginLeft: 6 }}
-          disabled={generandoPdf}
+          disabled={generandoPdf || !selImprimible}
           onClick={() => accionesInformeRef.current.descargar()}
           title="Descarga el informe oficial en PDF directamente"
         >
@@ -804,7 +816,7 @@ export default function Informes({ctx}){
         </Button>
       </div>
     ) : null,
-    [sel, nuevo, editId, generandoPdf, enviosFirma]
+    [sel, nuevo, editId, generandoPdf, enviosFirma, selImprimible]
   );
   useTituloPantalla(viendoInforme ? `Informe ${String(sel?.id || sel?.numero || "").trim()}`.trim() : null);
 

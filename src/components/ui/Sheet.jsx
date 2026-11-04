@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import Button from "./Button";
 
 // Hoja / dialogo del sistema.
@@ -36,7 +36,9 @@ export default function Sheet({
   // correrlo y le robaba el foco al campo (se mandaba al primero de la
   // hoja): solo dejaba borrar una letra. Se guarda en una ref.
   const onCerrarRef = useRef(onCerrar);
-  onCerrarRef.current = onCerrar;
+  useLayoutEffect(() => {
+    onCerrarRef.current = onCerrar;
+  }, [onCerrar]);
 
   useEffect(() => {
     if (!abierta) return undefined;

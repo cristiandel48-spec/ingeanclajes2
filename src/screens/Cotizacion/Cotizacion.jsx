@@ -55,15 +55,6 @@ function obraTieneTrabajo(o, { informes = [], certs = [] } = {}) {
   );
 }
 
-// El documento no sale sin NIT ni correo del cliente: los dos datos van
-// impresos en la cotizacion y son los que despues se usan para facturar y
-// para mandarsela. Vale tanto para el cliente en edicion como para una
-// cotizacion ya guardada: ambos traen los campos con el mismo nombre.
-function tieneNitYCorreo(datos){
-  return Boolean(String(datos?.nit || "").trim()) &&
-    Boolean(String(datos?.contactoEmail || "").trim());
-}
-
 export default function Cotizacion({ctx}){
   const {cotizaciones,setCotizaciones,obras,setObras,clientes,setClientes,empresaConfig,asegurarDetalle,cotDraft,setCotDraft,intencion,limpiarIntencion}=ctx;
   // Lo que cuelga de una obra, para no retirarla si ya tiene documentos.
@@ -744,7 +735,6 @@ export default function Cotizacion({ctx}){
   const [bajandoPdf,setBajandoPdf]=useState(null);
   const descargarPdf = async (cotizacion)=>{
     if(bajandoPdf) return;
-    if(!tieneNitYCorreo(cotizacion)) return;
     setBajandoPdf(cotizacion.id);
     try{
       const {blob,nombre} = await generarCotizacionPdf(cotizacion,{firmaImg,sello:selloCotizacion});
@@ -759,7 +749,6 @@ export default function Cotizacion({ctx}){
 
   const descargarPdfDesdeEditor = async ()=>{
     if(bajandoPdf) return;
-    if(!tieneNitYCorreo(cl)) return;
     setBajandoPdf("editor");
     try{
       const guardada = persistCotizacion({volverALista:false});
@@ -835,7 +824,7 @@ export default function Cotizacion({ctx}){
             tam="sm"
             icono="descargar"
             style={{ marginLeft: 6 }}
-            disabled={Boolean(bajandoPdf) || !tieneNitYCorreo(previewCot)}
+            disabled={Boolean(bajandoPdf)}
             onClick={() => accionesCotRef.current.descargar()}
           >
             {bajandoPdf ? "Generando…" : "Descargar PDF"}
@@ -1646,7 +1635,7 @@ export default function Cotizacion({ctx}){
           <Button
             variante="texto"
             tam="sm"
-            disabled={Boolean(bajandoPdf) || !tieneNitYCorreo(cl)}
+            disabled={Boolean(bajandoPdf)}
             onClick={descargarPdfDesdeEditor}
             title="Descarga el documento de la cotización en formato PDF directamente"
           >

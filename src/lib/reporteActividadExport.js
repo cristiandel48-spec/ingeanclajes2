@@ -8,7 +8,7 @@ import { registrarInterEnPdf } from "./fuenteInter";
 import { construirXlsx, TIPO_XLSX } from "./xlsxSimple";
 import { TIPOS_REPORTE, filasPorUsuarioYMes, tituloMes, tituloPeriodo, valorCasilla } from "./reporteActividad";
 
-const TITULO = "Reporte de actividad por usuario";
+const TITULO = "Reporte de tareas ejecutadas por usuarios";
 
 const fechaLarga = (fecha) =>
   fecha.toLocaleDateString("es-CO", { day: "2-digit", month: "long", year: "numeric", timeZone: "America/Bogota" });

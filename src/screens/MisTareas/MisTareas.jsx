@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { CD } from "../../styles/tokens";
 import { confirmar } from "../../lib/dialogos";
+import { puedeVerReporteActividad } from "../../lib/permisos";
+import { AccesoReporteActividad } from "../../components/ReporteActividad";
 
 // Lista de chequeo personal estilo Recordatorios de Apple. Cada usuario ve
 // solo la suya (la nube filtra por dueño); al marcar una tarea se tacha sola.
@@ -41,6 +43,14 @@ function nuevoId() {
 }
 
 const ESTILOS = `
+.mt-marco { display: flex; justify-content: center; align-items: flex-start; gap: 20px; }
+.mt-lado { width: 112px; flex-shrink: 0; padding-top: 22px; }
+@media (max-width: 1100px) {
+  .mt-marco { flex-direction: column; align-items: stretch; gap: 12px; }
+  .mt-marco > .mt-card { flex: none !important; align-self: center; }
+  .mt-lado { width: auto; padding: 0 4px; display: flex; justify-content: center; }
+  .mt-lado--vacio { display: none; }
+}
 .mt-fila { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 11px 6px; border-radius: 10px; transition: background .15s ease; }
 .mt-fila + .mt-fila::before { content: ""; position: absolute; top: 0; left: 40px; right: 6px; height: 1px; background: var(--border, #eaecf0); }
 .mt-fila:hover { background: var(--surface-subtle, #f6f7f9); }
@@ -467,10 +477,20 @@ export default function MisTareas({ ctx }) {
     setDeshacer(null);
   };
 
+  // El icono del reporte del equipo va al lado de la tarjeta, no dentro: solo
+  // le aparece a Camila Sepúlveda. Para los demas no hay columnas laterales y
+  // la pantalla queda igual que siempre.
+  const conReporte = puedeVerReporteActividad(ctx?.membresia);
+
   return (
-    <div style={{ width: "100%", padding: "4px 0 24px" }}>
-    <div className="mt-card" style={{ ...CD, padding: "28px 28px 20px", maxWidth: 860, margin: "0 auto", width: "100%" }}>
-      <style>{ESTILOS}</style>
+    <div className={conReporte ? "mt-marco" : undefined} style={{ width: "100%", padding: "4px 0 24px" }}>
+    <style>{ESTILOS}</style>
+    {conReporte && (
+      <div className="mt-lado">
+        <AccesoReporteActividad ctx={ctx} />
+      </div>
+    )}
+    <div className="mt-card" style={{ ...CD, padding: "28px 28px 20px", maxWidth: 860, margin: conReporte ? 0 : "0 auto", width: "100%", flex: "0 1 860px", minWidth: 0 }}>
 
       {/* Encabezado */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 22 }}>
@@ -1078,6 +1098,8 @@ export default function MisTareas({ ctx }) {
           </div>
         )}
       </div>
+      {/* Columna vacia del mismo ancho, para que la tarjeta siga centrada. */}
+      {conReporte && <div className="mt-lado mt-lado--vacio" aria-hidden="true" />}
     </div>
   );
 }

@@ -19,9 +19,10 @@ import {
 // certificaciones y ejecuciones de obra hizo cada quien en cada mes, con
 // descarga en Excel y en PDF.
 //
-// Es solo para Camila Sepulveda. Se abre desde el menu de la cuenta (arriba a
-// la derecha), que esta en todas las pantallas sin importar el rol. Estuvo
-// como boton dentro de «Mis tareas» y ahi estorbaba: no es una tarea.
+// Es solo para Camila Sepulveda. Se abre desde un icono propio en «Mis
+// tareas», al lado de la tarjeta de la lista: es el unico modulo que tiene
+// todo el mundo sin importar su rol. Estuvo como boton DENTRO de la tarjeta,
+// debajo del titulo, y ahi estorbaba: no es una tarea.
 
 const CORREO_VALIDO = /^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/;
 
@@ -190,15 +191,15 @@ function HojaReporte({ ctx, onCerrar }) {
       const resumen = TIPOS_REPORTE
         .map((t) => `- ${t.label}: ${valorCasilla(reporte.filaTotal, reporte.totales.general, t.id)}`)
         .join("\n");
-      const deQuien = reporte.soloUsuario ? ` de ${reporte.soloUsuario}` : " por usuario";
+      const deQuien = reporte.soloUsuario ? ` por ${reporte.soloUsuario}` : " por usuarios";
       await enviarCotizacionPorCorreo({
         para: destino,
-        asunto: `Reporte de actividad${deQuien} - ${periodoTexto}`,
+        asunto: `Reporte de tareas ejecutadas${deQuien} - ${periodoTexto}`,
         mensaje:
-          `Hola,\n\nAdjunto el reporte de actividad${deQuien} de Ingeanclajes, período ${periodoTexto}.\n\n` +
+          `Hola,\n\nAdjunto el reporte de tareas ejecutadas${deQuien} de Ingeanclajes, período ${periodoTexto}.\n\n` +
           `Documentos creados en el período:\n${resumen}\n\n` +
           `El detalle por persona y por mes va en el PDF adjunto.\n\nCordialmente,\nINGEANCLAJES S.A.S.`,
-        numero: "REPORTE DE ACTIVIDAD",
+        numero: "REPORTE DE TAREAS",
         nombreArchivo: salida.nombreArchivoReporte(reporte, "pdf"),
         pdfBase64: await blobABase64(blob),
       });
@@ -217,7 +218,7 @@ function HojaReporte({ ctx, onCerrar }) {
         <div className="ra-cabeza">
           <div style={{ minWidth: 0 }}>
             <div className="ra-eyebrow">Equipo</div>
-            <h2 className="ra-titulo" id="ra-titulo">Reporte de actividad por usuario</h2>
+            <h2 className="ra-titulo" id="ra-titulo">Reporte de tareas ejecutadas por usuarios</h2>
             <div className="ra-sub">
               {tituloPeriodo(reporte.desde, reporte.hasta)} · {reporte.soloUsuario ? `solo ${reporte.soloUsuario}` : "documentos creados por cada persona"}
             </div>
@@ -347,6 +348,43 @@ function HojaReporte({ ctx, onCerrar }) {
         </div>
       </div>
     </div>
+  );
+}
+
+const ESTILOS_ACCESO = `
+.ra-acceso { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 112px; padding: 4px; border: 0; background: transparent; cursor: pointer; font: inherit; color: var(--text-secondary); -webkit-tap-highlight-color: transparent; }
+.ra-acceso__icono { width: 60px; height: 60px; border-radius: 15px; display: flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(180deg, #7D7AFF 0%, #5856D6 100%); box-shadow: inset 0 0 0 .5px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.28), 0 6px 14px -4px rgba(88,86,214,.55), 0 1px 2px rgba(16,24,40,.12); transform-origin: center bottom; transition: transform 90ms cubic-bezier(.2,.9,.3,1.25), box-shadow 150ms ease; }
+.ra-acceso__nombre { font-size: 12px; line-height: 15px; font-weight: 600; text-align: center; letter-spacing: -.005em; transition: color 150ms ease; }
+.ra-acceso:hover .ra-acceso__icono { transform: scale(1.1); box-shadow: inset 0 0 0 .5px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.28), 0 12px 22px -6px rgba(88,86,214,.6), 0 2px 4px rgba(16,24,40,.12); }
+.ra-acceso:hover .ra-acceso__nombre { color: var(--text-primary); }
+.ra-acceso:active .ra-acceso__icono { transform: scale(.96); }
+.ra-acceso:focus-visible { outline: none; }
+.ra-acceso:focus-visible .ra-acceso__icono { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px #5856D6; }
+@media (prefers-reduced-motion: reduce) { .ra-acceso__icono { transition: none; } }
+`;
+
+// El acceso al reporte: un icono como los de las apps del Mac, con su nombre
+// debajo. Solo le aparece a Camila Sepulveda; para los demas no pinta nada.
+export function AccesoReporteActividad({ ctx, className = "" }) {
+  const [abierto, setAbierto] = useState(false);
+  if (!puedeVerReporteActividad(ctx?.membresia)) return null;
+
+  return (
+    <>
+      <style>{ESTILOS_ACCESO}</style>
+      <button type="button" className={`ra-acceso ${className}`.trim()} onClick={() => setAbierto(true)}>
+        <span className="ra-acceso__icono" aria-hidden="true">
+          {/* Barras que suben: lo que hizo cada quien, mes a mes. */}
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+            <path d="M6 19v-5" />
+            <path d="M12 19V9" />
+            <path d="M18 19V5" />
+          </svg>
+        </span>
+        <span className="ra-acceso__nombre">Reporte de tareas ejecutadas por usuarios</span>
+      </button>
+      {abierto && <ReporteActividad ctx={ctx} onCerrar={() => setAbierto(false)} />}
+    </>
   );
 }
 

@@ -7,6 +7,7 @@ import { puedeVerReporteActividad, sinCuentasSoporte } from "../lib/permisos";
 import {
   TIPOS_REPORTE,
   armarReporteActividad,
+  filtrarReportePorUsuario,
   mesActualColombia,
   restarMeses,
   tituloMes,
@@ -54,7 +55,8 @@ const ESTILOS = `
 .ra-filtros { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .ra-rango { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-tertiary); }
 .ra-rango input { height: 36px; border: 0; border-radius: 10px; background: var(--fill); color: var(--text-primary); font: inherit; font-size: 13px; padding: 0 10px; outline: none; }
-.ra-rango input:focus-visible { box-shadow: 0 0 0 3px var(--accent-tint); }
+.ra-rango select { height: 36px; border: 0; border-radius: 10px; background: var(--fill); color: var(--text-primary); font: inherit; font-size: 13px; padding: 0 10px; outline: none; max-width: 220px; }
+.ra-rango input:focus-visible, .ra-rango select:focus-visible { box-shadow: 0 0 0 3px var(--accent-tint); }
 .ra-tarjetas { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 18px 0 20px; }
 .ra-tarjeta { background: var(--surface-subtle); border-radius: 14px; padding: 14px 16px; }
 .ra-cifra { font-size: 26px; line-height: 30px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
@@ -89,7 +91,7 @@ const ESTILOS = `
   .ra-pie { padding: 12px 16px calc(16px + var(--safe-bottom, 0px)); }
   .ra-acciones { width: 100%; }
   .ra-acciones .ui-btn { flex: 1; }
-  .ra-rango input, .ra-correo input { font-size: 16px; height: 44px; }
+  .ra-rango input, .ra-rango select, .ra-correo input { font-size: 16px; height: 44px; }
 }
 `;
 
@@ -122,6 +124,7 @@ function HojaReporte({ ctx, onCerrar }) {
   const [correoAbierto, setCorreoAbierto] = useState(false);
   const [para, setPara] = useState("");
   const [enviadoA, setEnviadoA] = useState("");
+  const [soloUsuario, setSoloUsuario] = useState("");
 
   // Los nombres del equipo. Si no llegan, el reporte sale igual con el nombre
   // que quedo guardado en cada documento.
@@ -145,10 +148,13 @@ function HojaReporte({ ctx, onCerrar }) {
     setHasta(mesActual);
   };
 
-  const reporte = useMemo(
+  const reporteEquipo = useMemo(
     () => armarReporteActividad({ cotizaciones, informes, certs, obras, agenda, agendaDe, usuarios, desde, hasta }),
     [cotizaciones, informes, certs, obras, agenda, agendaDe, usuarios, desde, hasta]
   );
+  // Lo que se ve es lo que se descarga y lo que se envia: con una persona
+  // elegida, la pantalla, el Excel, el PDF y el correo son solo de ella.
+  const reporte = useMemo(() => filtrarReportePorUsuario(reporteEquipo, soloUsuario), [reporteEquipo, soloUsuario]);
   const hayDatos = reporte.totales.general.total > 0;
 
   const descargar = async (formato) => {
@@ -181,12 +187,15 @@ function HojaReporte({ ctx, onCerrar }) {
       const salida = await import("../lib/reporteActividadExport");
       const blob = await salida.generarReportePdf(reporte);
       const periodoTexto = tituloPeriodo(reporte.desde, reporte.hasta);
-      const resumen = TIPOS_REPORTE.map((t) => `- ${t.label}: ${reporte.totales.general[t.id]}`).join("\n");
+      const resumen = TIPOS_REPORTE
+        .map((t) => `- ${t.label}: ${valorCasilla(reporte.filaTotal, reporte.totales.general, t.id)}`)
+        .join("\n");
+      const deQuien = reporte.soloUsuario ? ` de ${reporte.soloUsuario}` : " por usuario";
       await enviarCotizacionPorCorreo({
         para: destino,
-        asunto: `Reporte de actividad por usuario - ${periodoTexto}`,
+        asunto: `Reporte de actividad${deQuien} - ${periodoTexto}`,
         mensaje:
-          `Hola,\n\nAdjunto el reporte de actividad por usuario de Ingeanclajes, período ${periodoTexto}.\n\n` +
+          `Hola,\n\nAdjunto el reporte de actividad${deQuien} de Ingeanclajes, período ${periodoTexto}.\n\n` +
           `Documentos creados en el período:\n${resumen}\n\n` +
           `El detalle por persona y por mes va en el PDF adjunto.\n\nCordialmente,\nINGEANCLAJES S.A.S.`,
         numero: "REPORTE DE ACTIVIDAD",
@@ -209,7 +218,9 @@ function HojaReporte({ ctx, onCerrar }) {
           <div style={{ minWidth: 0 }}>
             <div className="ra-eyebrow">Equipo</div>
             <h2 className="ra-titulo" id="ra-titulo">Reporte de actividad por usuario</h2>
-            <div className="ra-sub">{tituloPeriodo(reporte.desde, reporte.hasta)} · documentos creados por cada persona</div>
+            <div className="ra-sub">
+              {tituloPeriodo(reporte.desde, reporte.hasta)} · {reporte.soloUsuario ? `solo ${reporte.soloUsuario}` : "documentos creados por cada persona"}
+            </div>
           </div>
           <Button variante="tertiary" soloIcono icono="cerrar" aria-label="Cerrar" onClick={onCerrar} />
         </div>
@@ -236,12 +247,19 @@ function HojaReporte({ ctx, onCerrar }) {
                 onChange={(e) => { if (e.target.value) { setHasta(e.target.value); setPeriodo(""); } }}
               />
             </label>
+            <label className="ra-rango">
+              Usuario
+              <select value={reporte.soloUsuario || ""} onChange={(e) => setSoloUsuario(e.target.value)}>
+                <option value="">Todo el equipo</option>
+                {reporteEquipo.filas.map((f) => <option key={f.usuario} value={f.usuario}>{f.usuario}</option>)}
+              </select>
+            </label>
           </div>
 
           <div className="ra-tarjetas">
             {TIPOS_REPORTE.map((t) => (
               <div className="ra-tarjeta" key={t.id}>
-                <div className="ra-cifra">{reporte.totales.general[t.id]}</div>
+                <div className="ra-cifra">{valorCasilla(reporte.filaTotal, reporte.totales.general, t.id)}</div>
                 <div className="ra-etiqueta">{t.label}</div>
               </div>
             ))}
@@ -277,7 +295,7 @@ function HojaReporte({ ctx, onCerrar }) {
                   {hayDatos && (
                     <tr className="ra-total">
                       <td>Total del período</td>
-                      <Casillas conteo={reporte.totales.general} />
+                      <Casillas fila={reporte.filaTotal} conteo={reporte.totales.general} />
                     </tr>
                   )}
                 </tbody>

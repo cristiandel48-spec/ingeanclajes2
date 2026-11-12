@@ -232,6 +232,27 @@ export function armarReporteActividad({
 }
 
 /**
+ * El mismo reporte, pero de una sola persona: su fila, sus totales y su
+ * detalle. Es lo que se descarga cuando se filtra por usuario. Si la persona
+ * no esta en el reporte (cambio el periodo y ya no aparece), se devuelve
+ * completo.
+ */
+export function filtrarReportePorUsuario(reporte, usuario) {
+  const fila = usuario ? reporte.filas.find((f) => clave(f.usuario) === clave(usuario)) : null;
+  if (!fila) return reporte;
+  return {
+    ...reporte,
+    filas: [fila],
+    totales: { porMes: fila.porMes, general: fila.totales },
+    detalle: reporte.detalle.filter((d) => d.usuario === fila.usuario),
+    soloUsuario: fila.usuario,
+    // De quien es la linea de totales: si no es el dueño de la agenda, sus
+    // visitas tambien van sin dato en el total.
+    filaTotal: fila,
+  };
+}
+
+/**
  * Lo que se escribe en una casilla: la cifra, o «—» en las visitas de quien
  * no es el dueño de la agenda (no se sabe cuantas tiene; ver SIN_DATO).
  */

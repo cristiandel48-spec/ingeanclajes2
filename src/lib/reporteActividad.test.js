@@ -6,6 +6,7 @@ import {
   armarReporteActividad,
   fechaColombia,
   filasPorUsuarioYMes,
+  filtrarReportePorUsuario,
   listaMeses,
   restarMeses,
   tituloMes,
@@ -172,6 +173,43 @@ describe("visitas de la agenda", () => {
     expect(valorCasilla(de("Juan Pérez"), de("Juan Pérez").totales, "cotizaciones")).toBe(2);
     // El total general no es de nadie: siempre es la cifra.
     expect(valorCasilla(undefined, reporte.totales.general, "visitas")).toBe(3);
+  });
+});
+
+describe("filtro por usuario", () => {
+  const equipo = armarReporteActividad(DATOS);
+  const soloJuan = filtrarReportePorUsuario(equipo, "Juan Pérez");
+
+  it("deja solo a esa persona, con sus totales y su detalle", () => {
+    expect(soloJuan.filas.map((f) => f.usuario)).toEqual(["Juan Pérez"]);
+    expect(soloJuan.totales.general.total).toBe(3);
+    expect(soloJuan.totales.general.cotizaciones).toBe(2);
+    expect(soloJuan.detalle).toHaveLength(3);
+    expect(soloJuan.detalle.every((d) => d.usuario === "Juan Pérez")).toBe(true);
+    expect(soloJuan.meses).toEqual(equipo.meses);
+  });
+
+  it("no toca el reporte del equipo", () => {
+    expect(equipo.filas.length).toBeGreaterThan(1);
+    expect(equipo.totales.general.total).toBe(6);
+  });
+
+  it("sin usuario, o con uno que no esta, queda el reporte completo", () => {
+    expect(filtrarReportePorUsuario(equipo, "")).toBe(equipo);
+    expect(filtrarReportePorUsuario(equipo, "Nadie")).toBe(equipo);
+  });
+
+  it("el archivo y el Excel dicen de quien es", async () => {
+    expect(nombreArchivoReporte(soloJuan, "pdf")).toBe("Reporte-actividad-Juan-Perez-2026-10_a_2026-11.pdf");
+    const hojas = hojasDelReporte(soloJuan, new Date("2026-11-12T15:00:00Z"));
+    expect(hojas[0].filas[1][0].v).toContain("Usuario: Juan Pérez");
+    // Solo sus lineas: una por mes, mas el encabezado, la cabecera y el total.
+    expect(hojas[0].filas.filter((f) => f[0] === "Juan Pérez")).toHaveLength(2);
+    expect(hojas[0].filas.some((f) => f[0] === "Camila Sepúlveda")).toBe(false);
+  });
+
+  it("las visitas de quien no es el dueño de la agenda van sin dato tambien en el total", () => {
+    expect(valorCasilla(soloJuan.filaTotal, soloJuan.totales.general, "visitas")).toBe(SIN_DATO);
   });
 });
 

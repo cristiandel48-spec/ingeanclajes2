@@ -3,7 +3,7 @@
 // Va aparte del conteo (reporteActividad.js) y se carga solo al pulsar el
 // boton: JSZip y jsPDF pesan, y casi nadie abre este reporte.
 
-import { downloadGeneratedFile } from "./download";
+import { downloadGeneratedFile, sanitizeFileName } from "./download";
 import { registrarInterEnPdf } from "./fuenteInter";
 import { construirXlsx, TIPO_XLSX } from "./xlsxSimple";
 import { TIPOS_REPORTE, filasPorUsuarioYMes, tituloMes, tituloPeriodo, valorCasilla } from "./reporteActividad";
@@ -15,7 +15,10 @@ const fechaLarga = (fecha) =>
 
 export function nombreArchivoReporte(reporte, extension) {
   const periodo = reporte.desde === reporte.hasta ? reporte.desde : `${reporte.desde}_a_${reporte.hasta}`;
-  return `Reporte-actividad-${periodo}.${extension}`;
+  // Filtrado por una persona, su nombre va en el archivo para no confundirlo
+  // con el de todo el equipo.
+  const persona = reporte.soloUsuario ? `${sanitizeFileName(reporte.soloUsuario)}-` : "";
+  return `Reporte-actividad-${persona}${periodo}.${extension}`;
 }
 
 export function notaVisitas(reporte) {
@@ -35,7 +38,7 @@ export function hojasDelReporte(reporte, generadoEn = new Date()) {
   const cifras = (conteo, fila) => [...TIPOS_REPORTE.map((t) => valorCasilla(fila, conteo, t.id)), conteo.total || 0];
   const cabecera = [
     [{ v: TITULO, s: "titulo" }],
-    [{ v: `Período: ${tituloPeriodo(reporte.desde, reporte.hasta)}`, s: "tenue" }],
+    [{ v: `Período: ${tituloPeriodo(reporte.desde, reporte.hasta)}${reporte.soloUsuario ? ` · Usuario: ${reporte.soloUsuario}` : " · Todo el equipo"}`, s: "tenue" }],
     [{ v: `Generado el ${fechaLarga(generadoEn)}`, s: "tenue" }],
     [{ v: notaVisitas(reporte), s: "tenue" }],
     [],
@@ -49,7 +52,7 @@ export function hojasDelReporte(reporte, generadoEn = new Date()) {
       ...cabecera,
       ["Usuario", "Mes", ...etiquetas, "Total"].map(enc),
       ...filasPorUsuarioYMes(reporte).map((l) => [l.usuario, tituloMes(l.mes), ...cifras(l, l.fila)]),
-      [neg("Total"), neg(""), ...cifras(reporte.totales.general).map(neg)],
+      [neg("Total"), neg(""), ...cifras(reporte.totales.general, reporte.filaTotal).map(neg)],
     ],
   };
 
@@ -61,7 +64,7 @@ export function hojasDelReporte(reporte, generadoEn = new Date()) {
       ...cabecera,
       ["Usuario", ...etiquetas, "Total"].map(enc),
       ...reporte.filas.map((f) => [f.usuario, ...cifras(f.totales, f)]),
-      [neg("Total"), ...cifras(reporte.totales.general).map(neg)],
+      [neg("Total"), ...cifras(reporte.totales.general, reporte.filaTotal).map(neg)],
     ],
   };
 
@@ -152,7 +155,11 @@ export async function generarReportePdf(reporte, generadoEn = new Date()) {
   letra("bold", 22, TINTA);
   doc.text(TITULO, izq, 92);
   letra("normal", 10, SUAVE);
-  doc.text(tituloPeriodo(reporte.desde, reporte.hasta), izq, 110);
+  doc.text(
+    `${tituloPeriodo(reporte.desde, reporte.hasta)} · ${reporte.soloUsuario || "Todo el equipo"}`,
+    izq,
+    110
+  );
   letra("normal", 9, TENUE);
   doc.text(`Generado el ${fechaLarga(generadoEn)}`, der, 110, { align: "right" });
 
@@ -164,7 +171,7 @@ export async function generarReportePdf(reporte, generadoEn = new Date()) {
     doc.setFillColor(...RELLENO);
     doc.roundedRect(x, 128, anchoTarjeta, 58, 8, 8, "F");
     letra("bold", 20, TINTA);
-    doc.text(String(reporte.totales.general[t.id] || 0), x + 9, 156);
+    doc.text(String(valorCasilla(reporte.filaTotal, reporte.totales.general, t.id)), x + 9, 156);
     letra("normal", 7, SUAVE);
     doc.text(t.label, x + 9, 173);
   });
@@ -209,7 +216,7 @@ export async function generarReportePdf(reporte, generadoEn = new Date()) {
     y += 18;
     letra("bold", 10.5, TINTA);
     doc.text("Total del período", izq, y);
-    cifras(reporte.totales.general, "bold", TINTA);
+    cifras(reporte.totales.general, "bold", TINTA, reporte.filaTotal);
   }
 
   const paginas = doc.getNumberOfPages();

@@ -18,6 +18,24 @@ function fechaCorta(iso) {
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 }
 
+const MESES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
+// "2026-11-09" -> "2026-11" (vacío si la tarea no tiene fecha)
+function mesClave(iso) {
+  if (!iso || iso.length < 7) return "";
+  return iso.slice(0, 7);
+}
+
+// "2026-11" -> "Noviembre 2026"
+function mesTitulo(clave) {
+  if (!clave) return "Sin fecha";
+  const [anio, mes] = clave.split("-");
+  return `${MESES[Number(mes) - 1] || mes} ${anio}`;
+}
+
 function nuevoId() {
   return `TP-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
@@ -179,6 +197,73 @@ function FilaTarea({ tarea, onToggle, onGuardarTexto, onEliminar }) {
   );
 }
 
+// Caja colapsable que sirve igual para una lista desplegable o para un mes.
+function BloqueColapsable({ titulo, hechas, total, colapsada, onToggle, acciones, children }) {
+  return (
+    <div
+      style={{
+        border: "1px solid var(--border, rgba(0, 0, 0, 0.07))",
+        borderRadius: 14,
+        overflow: "hidden",
+        background: "var(--surface, #ffffff)",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+      }}
+    >
+      <div
+        onClick={onToggle}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "9px 12px",
+          background: "var(--surface-subtle, #f8f9fa)",
+          cursor: "pointer",
+          userSelect: "none",
+          borderBottom: colapsada ? "none" : "1px solid var(--border, rgba(0,0,0,0.05))",
+          transition: "background 0.12s ease",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.04)")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "var(--surface-subtle, #f8f9fa)")}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <span
+            style={{
+              fontSize: 10,
+              color: "var(--text-muted, #667085)",
+              display: "inline-block",
+              transform: colapsada ? "none" : "rotate(90deg)",
+              transition: "transform 0.15s ease",
+            }}
+          >
+            ▶
+          </span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)" }}>{titulo}</span>
+          <span
+            style={{
+              fontSize: 10.5,
+              fontWeight: 600,
+              color: "var(--text-muted, #667085)",
+              background: "rgba(0,0,0,0.05)",
+              padding: "1px 6px",
+              borderRadius: 999,
+            }}
+          >
+            {hechas}/{total}
+          </span>
+        </div>
+
+        {acciones && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }} onClick={(e) => e.stopPropagation()}>
+            {acciones}
+          </div>
+        )}
+      </div>
+
+      {!colapsada && <div style={{ padding: "4px 8px 8px" }}>{children}</div>}
+    </div>
+  );
+}
+
 export default function MisTareas({ ctx }) {
   const lista = ctx?.tareasPersonales;
   const tareas = useMemo(() => (Array.isArray(lista) ? lista : []), [lista]);
@@ -202,6 +287,22 @@ export default function MisTareas({ ctx }) {
   });
   const [seccionActiva, setSeccionActiva] = useState("General");
   const [seccionesColapsadas, setSeccionesColapsadas] = useState({});
+
+  // Agrupación de la lista: por lista desplegable o por mes de la tarea.
+  const [agrupacion, setAgrupacion] = useState(() => {
+    try {
+      return localStorage.getItem("ingeanclajes_agrupacion_tareas") === "mes" ? "mes" : "lista";
+    } catch { /* sin almacenamiento del navegador: se sigue igual */ }
+    return "lista";
+  });
+  const [mesesColapsados, setMesesColapsados] = useState({});
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("ingeanclajes_agrupacion_tareas", agrupacion);
+    } catch { /* sin almacenamiento del navegador: se sigue igual */ }
+  }, [agrupacion]);
+
   const [menuPlusAbierto, setMenuPlusAbierto] = useState(false);
   const [modalSeccion, setModalSeccion] = useState(false);
   const [nombreNuevaSeccion, setNombreNuevaSeccion] = useState("");
@@ -261,6 +362,33 @@ export default function MisTareas({ ctx }) {
     if (filtro === "completadas") return tareas.filter((t) => t.completada);
     return tareas;
   }, [tareas, filtro]);
+
+  // Meses de mayor a menor; "Sin fecha" siempre de último.
+  const mesActual = hoyIso().slice(0, 7);
+  const gruposMes = useMemo(() => {
+    const mapa = new Map();
+    const grupo = (clave) => {
+      if (!mapa.has(clave)) mapa.set(clave, { clave, total: 0, hechas: 0, visibles: [] });
+      return mapa.get(clave);
+    };
+    tareas.forEach((t) => {
+      const g = grupo(mesClave(t.fecha));
+      g.total += 1;
+      if (t.completada) g.hechas += 1;
+    });
+    visibles.forEach((t) => grupo(mesClave(t.fecha)).visibles.push(t));
+    return Array.from(mapa.values()).sort((a, b) => {
+      if (!a.clave) return 1;
+      if (!b.clave) return -1;
+      return b.clave.localeCompare(a.clave);
+    });
+  }, [tareas, visibles]);
+
+  // Por defecto solo queda abierto el mes en curso.
+  const mesColapsado = (clave) => mesesColapsados[clave] ?? clave !== mesActual;
+  const toggleColapsarMes = (clave) => {
+    setMesesColapsados((prev) => ({ ...prev, [clave]: !mesColapsado(clave) }));
+  };
 
   const ofrecerDeshacer = (eliminadas, mensaje) => {
     clearTimeout(timerDeshacer.current);
@@ -590,6 +718,27 @@ export default function MisTareas({ ctx }) {
             </div>
           )}
 
+          {tareas.length > 0 && (
+            <div className="mt-seg" role="tablist" title="Cómo se agrupan las tareas">
+              {[
+                { id: "lista", label: "Por lista" },
+                { id: "mes", label: "Por mes" },
+              ].map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={agrupacion === g.id}
+                  className={agrupacion === g.id ? "activo" : ""}
+                  onClick={() => setAgrupacion(g.id)}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {agrupacion === "lista" && (
           <button
             type="button"
             onClick={() => {
@@ -622,6 +771,7 @@ export default function MisTareas({ ctx }) {
             <span>+</span>
             <span>Nueva lista desplegable</span>
           </button>
+          )}
         </div>
 
         {hechas > 0 && (
@@ -676,116 +826,90 @@ export default function MisTareas({ ctx }) {
         </div>
       ) : (
         <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 12 }}>
-          {todasLasSecciones.map((sec) => {
-            const tareasSec = visibles.filter((t) => (t.seccion || "General") === sec);
-            const totalSec = tareas.filter((t) => (t.seccion || "General") === sec).length;
-            const hechasSec = tareas.filter((t) => (t.seccion || "General") === sec && t.completada).length;
-            const colapsada = !!seccionesColapsadas[sec];
+          {agrupacion === "mes"
+            ? gruposMes.map((g) => {
+                // Con un filtro activo, un mes sin tareas visibles no se muestra.
+                if (filtro !== "todas" && g.visibles.length === 0) return null;
 
-            // Si hay filtro activo y la sección no tiene tareas visibles, no mostrarla en esa vista
-            if (filtro !== "todas" && tareasSec.length === 0) return null;
-
-            return (
-              <div
-                key={sec}
-                style={{
-                  border: "1px solid var(--border, rgba(0, 0, 0, 0.07))",
-                  borderRadius: 14,
-                  overflow: "hidden",
-                  background: "var(--surface, #ffffff)",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
-                }}
-              >
-                {/* Encabezado colapsable de la Lista Desplegable */}
-                <div
-                  onClick={() => toggleColapsarSeccion(sec)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "9px 12px",
-                    background: "var(--surface-subtle, #f8f9fa)",
-                    cursor: "pointer",
-                    userSelect: "none",
-                    borderBottom: colapsada ? "none" : "1px solid var(--border, rgba(0,0,0,0.05))",
-                    transition: "background 0.12s ease",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.04)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "var(--surface-subtle, #f8f9fa)")}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span
-                      style={{
-                        fontSize: 10,
-                        color: "var(--text-muted, #667085)",
-                        display: "inline-block",
-                        transform: colapsada ? "none" : "rotate(90deg)",
-                        transition: "transform 0.15s ease",
-                      }}
-                    >
-                      ▶
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)" }}>
-                      {sec}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 10.5,
-                        fontWeight: 600,
-                        color: "var(--text-muted, #667085)",
-                        background: "rgba(0,0,0,0.05)",
-                        padding: "1px 6px",
-                        borderRadius: 999,
-                      }}
-                    >
-                      {hechasSec}/{totalSec}
-                    </span>
-                  </div>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }} onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSeccionActiva(sec);
-                        inputRef.current?.focus();
-                      }}
-                      style={{
-                        border: "none",
-                        background: "transparent",
-                        color: NARANJA,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        cursor: "pointer",
-                        padding: "2px 6px",
-                        borderRadius: 6,
-                      }}
-                      title={`Escribir tarea en ${sec}`}
-                    >
-                      + Tarea
-                    </button>
-                    {sec !== "General" && (
-                      <button
-                        type="button"
-                        onClick={() => eliminarSeccion(sec)}
-                        style={{
-                          border: "none",
-                          background: "transparent",
-                          color: "var(--text-muted, #98a2b3)",
-                          cursor: "pointer",
-                          fontSize: 14,
-                          padding: "1px 5px",
-                        }}
-                        title="Eliminar esta lista desplegable"
-                      >
-                        ×
-                      </button>
+                return (
+                  <BloqueColapsable
+                    key={g.clave || "sin-fecha"}
+                    titulo={mesTitulo(g.clave)}
+                    hechas={g.hechas}
+                    total={g.total}
+                    colapsada={mesColapsado(g.clave)}
+                    onToggle={() => toggleColapsarMes(g.clave)}
+                  >
+                    {g.visibles.length === 0 ? (
+                      <div style={{ padding: "12px 10px", fontSize: 12, color: "var(--text-muted, #98a2b3)", textAlign: "center", fontStyle: "italic" }}>
+                        Sin tareas en este mes.
+                      </div>
+                    ) : (
+                      g.visibles.map((t) => (
+                        <FilaTarea key={t.id} tarea={t} onToggle={toggle} onGuardarTexto={guardarTexto} onEliminar={eliminar} />
+                      ))
                     )}
-                  </div>
-                </div>
+                  </BloqueColapsable>
+                );
+              })
+            : todasLasSecciones.map((sec) => {
+                const tareasSec = visibles.filter((t) => (t.seccion || "General") === sec);
+                const totalSec = tareas.filter((t) => (t.seccion || "General") === sec).length;
+                const hechasSec = tareas.filter((t) => (t.seccion || "General") === sec && t.completada).length;
 
-                {/* Contenido de la Lista Desplegable (Tareas) */}
-                {!colapsada && (
-                  <div style={{ padding: "4px 8px 8px" }}>
+                // Si hay filtro activo y la sección no tiene tareas visibles, no mostrarla en esa vista
+                if (filtro !== "todas" && tareasSec.length === 0) return null;
+
+                return (
+                  <BloqueColapsable
+                    key={sec}
+                    titulo={sec}
+                    hechas={hechasSec}
+                    total={totalSec}
+                    colapsada={!!seccionesColapsadas[sec]}
+                    onToggle={() => toggleColapsarSeccion(sec)}
+                    acciones={
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSeccionActiva(sec);
+                            inputRef.current?.focus();
+                          }}
+                          style={{
+                            border: "none",
+                            background: "transparent",
+                            color: NARANJA,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            padding: "2px 6px",
+                            borderRadius: 6,
+                          }}
+                          title={`Escribir tarea en ${sec}`}
+                        >
+                          + Tarea
+                        </button>
+                        {sec !== "General" && (
+                          <button
+                            type="button"
+                            onClick={() => eliminarSeccion(sec)}
+                            style={{
+                              border: "none",
+                              background: "transparent",
+                              color: "var(--text-muted, #98a2b3)",
+                              cursor: "pointer",
+                              fontSize: 14,
+                              padding: "1px 5px",
+                            }}
+                            title="Eliminar esta lista desplegable"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </>
+                    }
+                  >
                     {tareasSec.length === 0 ? (
                       <div style={{ padding: "12px 10px", fontSize: 12, color: "var(--text-muted, #98a2b3)", textAlign: "center", fontStyle: "italic" }}>
                         Sin tareas en esta lista. Haz clic en '+ Tarea' arriba para añadir una.
@@ -795,11 +919,9 @@ export default function MisTareas({ ctx }) {
                         <FilaTarea key={t.id} tarea={t} onToggle={toggle} onGuardarTexto={guardarTexto} onEliminar={eliminar} />
                       ))
                     )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                  </BloqueColapsable>
+                );
+              })}
         </div>
       )}
 

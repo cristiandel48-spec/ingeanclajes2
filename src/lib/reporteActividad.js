@@ -59,6 +59,52 @@ export function fechaColombia(valor) {
   return new Date(t - 5 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
+/** «15:05» -> «3:05 PM». Lo que no parece una hora se deja como viene. */
+export function horaLegible(valor) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(valor || "").trim());
+  if (!m) return String(valor || "").trim();
+  const h = Number(m[1]);
+  if (h > 23) return String(valor).trim();
+  return `${h % 12 || 12}:${m[2]} ${h < 12 ? "AM" : "PM"}`;
+}
+
+// «3:05 PM» -> «15:05», solo para ordenar.
+function hora24(texto) {
+  const m = /^(\d{1,2}):(\d{2}) (AM|PM)$/.exec(texto || "");
+  if (!m) return "";
+  const h = (Number(m[1]) % 12) + (m[3] === "PM" ? 12 : 0);
+  return `${String(h).padStart(2, "0")}:${m[2]}`;
+}
+
+/**
+ * Hora en Colombia («3:05 PM») de una fecha guardada con hora. Una fecha sin
+ * hora («2026-11-03») no tiene hora que mostrar.
+ */
+export function horaColombia(valor) {
+  if (!valor) return "";
+  const texto = String(valor).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) return "";
+  const t = new Date(texto).getTime();
+  if (Number.isNaN(t)) return "";
+  return horaLegible(new Date(t - 5 * 60 * 60 * 1000).toISOString().slice(11, 16));
+}
+
+/** «2026-11-03» -> «03/11/2026». */
+export function fechaLegible(dia) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dia || ""));
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : String(dia || "");
+}
+
+/**
+ * El detalle agrupado por tipo de documento, en el orden del reporte, y sin
+ * los tipos que no tienen nada. Cada grupo va del mas reciente al mas viejo.
+ */
+export function detallePorTipo(reporte) {
+  return TIPOS_REPORTE
+    .map((t) => ({ ...t, items: reporte.detalle.filter((d) => d.tipo === t.id) }))
+    .filter((g) => g.items.length > 0);
+}
+
 export function mesActualColombia(ahora = new Date()) {
   return fechaColombia(ahora.toISOString()).slice(0, 7);
 }
@@ -147,7 +193,16 @@ export function armarReporteActividad({
   const totales = { porMes: {}, general: conteoVacio() };
   const detalle = [];
 
-  const contar = (tipo, { nombre, userId, fecha, codigo, referencia }) => {
+  const lugarDe = (...partes) => {
+    const vistas = [];
+    for (const parte of partes) {
+      const limpia = String(parte || "").trim();
+      if (limpia && !vistas.some((v) => clave(v) === clave(limpia))) vistas.push(limpia);
+    }
+    return vistas.join(", ");
+  };
+
+  const contar = (tipo, { nombre, userId, fecha, codigo, cliente = "", descripcion = "", lugar = "", hora, estado = "" }) => {
     const dia = fechaColombia(fecha);
     const mes = dia.slice(0, 7);
     if (!enRango.has(mes)) return;
@@ -167,9 +222,16 @@ export function armarReporteActividad({
       tipo,
       tipoLabel: TIPOS_REPORTE.find((t) => t.id === tipo)?.singular || tipo,
       codigo: String(codigo || ""),
-      referencia: String(referencia || ""),
+      cliente: String(cliente || "").trim(),
+      // La obra suele llamarse igual que el cliente: no se repite.
+      descripcion: clave(descripcion) === clave(cliente) ? "" : String(descripcion || "").trim(),
+      lugar: String(lugar || "").trim(),
+      // La agenda guarda «pendiente», las cotizaciones «Enviada»: se igualan.
+      estado: String(estado || "").trim().replace(/^./, (letra) => letra.toUpperCase()),
       usuario: fila.usuario,
       fecha: dia,
+      // La hora en que se creo el documento; en una visita, la hora de la cita.
+      hora: hora === undefined ? horaColombia(fecha) : horaLegible(hora),
       mes,
     });
   };
@@ -177,25 +239,28 @@ export function armarReporteActividad({
   for (const c of cotizaciones || []) {
     contar("cotizaciones", {
       nombre: c.creadoPorNombre, userId: c.creadoPor, fecha: c.creadoEn || c.fecha,
-      codigo: c.numero || c.id, referencia: [c.cliente, c.obra].filter(Boolean).join(" · "),
+      codigo: c.numero || c.id, cliente: c.cliente, descripcion: c.obra,
+      lugar: lugarDe(c.direccion, c.ciudad), estado: c.estado,
     });
   }
   for (const i of informes || []) {
     contar("informes", {
       nombre: i.creadoPorNombre, userId: i.creadoPor, fecha: i.creadoEn || i.fechaInforme,
-      codigo: i.id, referencia: i.proyecto || i.localizacion || "",
+      codigo: i.id, descripcion: i.proyecto, lugar: i.localizacion,
     });
   }
   for (const c of certs || []) {
     contar("certificaciones", {
       nombre: c.creadoPorNombre, userId: c.creadoPor, fecha: c.creadoEn || c.fecha,
-      codigo: c.numero || c.id, referencia: [c.cliente, c.sistema].filter(Boolean).join(" · "),
+      codigo: c.numero || c.id, cliente: c.cliente, descripcion: c.sistema || c.tipo,
+      lugar: c.direccion, estado: c.estado,
     });
   }
   for (const o of obras || []) {
     contar("obras", {
       nombre: o.creadoPorNombre, userId: o.creadoPor, fecha: o.creadoEn || o.fechaInicio,
-      codigo: o.id, referencia: [o.proyecto, o.cliente].filter(Boolean).join(" · "),
+      codigo: o.id, cliente: o.cliente, descripcion: o.proyecto,
+      lugar: lugarDe(o.direccion, o.ciudad), estado: o.estado,
     });
   }
 
@@ -209,7 +274,8 @@ export function armarReporteActividad({
       if ((a?.tipo || "visita") !== "visita") continue;
       contar("visitas", {
         nombre: duenoAgenda, userId: null, fecha: a.fecha || a.creadoEn,
-        codigo: a.id, referencia: [a.titulo || a.obra, a.cliente].filter(Boolean).join(" · "),
+        codigo: "", cliente: a.cliente, descripcion: a.titulo || a.obra,
+        lugar: lugarDe(a.obra && a.titulo ? a.obra : "", a.ciudad), hora: a.hora || "", estado: a.estado,
       });
     }
   }
@@ -226,7 +292,8 @@ export function armarReporteActividad({
       return b.totales.total - a.totales.total || a.usuario.localeCompare(b.usuario, "es");
     });
 
-  detalle.sort((a, b) => b.fecha.localeCompare(a.fecha) || a.tipoLabel.localeCompare(b.tipoLabel, "es"));
+  detalle.sort((a, b) =>
+    b.fecha.localeCompare(a.fecha) || hora24(b.hora).localeCompare(hora24(a.hora)) || a.tipoLabel.localeCompare(b.tipoLabel, "es"));
 
   return { desde: meses[meses.length - 1] || "", hasta: meses[0] || "", meses, filas, totales, detalle, visitasDe: duenoAgenda };
 }

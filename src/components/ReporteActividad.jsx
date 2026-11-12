@@ -8,6 +8,8 @@ import { asuntoSeguro } from "../lib/asuntoCorreo";
 import {
   TIPOS_REPORTE,
   armarReporteActividad,
+  detallePorTipo,
+  fechaLegible,
   filtrarReportePorUsuario,
   mesActualColombia,
   restarMeses,
@@ -75,6 +77,16 @@ const ESTILOS = `
 .ra-mes td:first-child { padding-left: 14px; }
 .ra-cero { color: var(--text-quaternary); font-weight: 400; }
 .ra-total td { font-weight: 700; padding: 12px 8px 4px; border-top: 1px solid var(--border-strong); }
+.ra-grupo { margin-bottom: 24px; }
+.ra-grupo__titulo { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-size: 15px; line-height: 20px; font-weight: 600; margin-bottom: 10px; }
+.ra-grupo__cuenta { font-size: 13px; font-weight: 500; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.ra-tabla--detalle th, .ra-tabla--detalle td { text-align: left; }
+.ra-tabla--detalle td { padding: 8px 8px; vertical-align: top; border-top: 1px solid var(--separator); white-space: nowrap; color: var(--text-secondary); }
+.ra-tabla--detalle tbody tr:first-child td { border-top: 0; }
+.ra-tabla--detalle td:nth-child(4), .ra-tabla--detalle td:nth-child(5) { white-space: normal; min-width: 150px; }
+.ra-tabla--detalle td:first-child { color: var(--text-primary); }
+.ra-principal { font-weight: 600; color: var(--text-primary); }
+.ra-secundaria { font-size: 12px; line-height: 16px; color: var(--text-tertiary); margin-top: 1px; }
 .ra-vacio { text-align: center; padding: 36px 16px; font-size: 13px; color: var(--text-tertiary); }
 .ra-pie { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px 24px 20px; border-top: 1px solid var(--separator); }
 .ra-nota { font-size: 12px; line-height: 16px; color: var(--text-tertiary); flex: 1; min-width: 180px; }
@@ -127,6 +139,7 @@ function HojaReporte({ ctx, onCerrar }) {
   const [para, setPara] = useState("");
   const [enviadoA, setEnviadoA] = useState("");
   const [soloUsuario, setSoloUsuario] = useState("");
+  const [vista, setVista] = useState("resumen");
 
   // Los nombres del equipo. Si no llegan, el reporte sale igual con el nombre
   // que quedo guardado en cada documento.
@@ -158,6 +171,10 @@ function HojaReporte({ ctx, onCerrar }) {
   // elegida, la pantalla, el Excel, el PDF y el correo son solo de ella.
   const reporte = useMemo(() => filtrarReportePorUsuario(reporteEquipo, soloUsuario), [reporteEquipo, soloUsuario]);
   const hayDatos = reporte.totales.general.total > 0;
+  // En la vista de detalle, el PDF que se descarga o se envia tambien lo
+  // lleva. El Excel lo trae siempre, en su propia hoja.
+  const conDetalle = vista === "detalle";
+  const grupos = useMemo(() => (conDetalle ? detallePorTipo(reporte) : []), [conDetalle, reporte]);
 
   const descargar = async (formato) => {
     setError("");
@@ -165,7 +182,7 @@ function HojaReporte({ ctx, onCerrar }) {
     try {
       const salida = await import("../lib/reporteActividadExport");
       if (formato === "excel") await salida.descargarReporteExcel(reporte);
-      else await salida.descargarReportePdf(reporte);
+      else await salida.descargarReportePdf(reporte, { conDetalle });
     } catch (fallo) {
       setError(fallo?.message || "No se pudo generar el archivo. Inténtalo de nuevo.");
     } finally {
@@ -187,7 +204,7 @@ function HojaReporte({ ctx, onCerrar }) {
     setDescargando("correo");
     try {
       const salida = await import("../lib/reporteActividadExport");
-      const blob = await salida.generarReportePdf(reporte);
+      const blob = await salida.generarReportePdf(reporte, new Date(), { conDetalle });
       const periodoTexto = tituloPeriodo(reporte.desde, reporte.hasta);
       const resumen = TIPOS_REPORTE
         .map((t) => `- ${t.label}: ${valorCasilla(reporte.filaTotal, reporte.totales.general, t.id)}`)
@@ -207,7 +224,10 @@ function HojaReporte({ ctx, onCerrar }) {
         mensaje:
           `Hola,\n\nAdjunto el reporte de tareas ejecutadas${deQuien} de Ingeanclajes, período ${periodoTexto}.\n\n` +
           `Documentos creados en el período:\n${resumen}\n\n` +
-          `El detalle por persona y por mes va en el PDF adjunto.\n\nCordialmente,\nINGEANCLAJES S.A.S.`,
+          (conDetalle
+            ? "El PDF adjunto trae el resumen por mes y el detalle documento por documento, con fecha, hora, cliente y lugar."
+            : "El detalle por persona y por mes va en el PDF adjunto.") +
+          `\n\nCordialmente,\nINGEANCLAJES S.A.S.`,
         numero: "REPORTE DE TAREAS",
         nombreArchivo: salida.nombreArchivoReporte(reporte, "pdf"),
         pdfBase64: await blobABase64(blob),
@@ -275,7 +295,61 @@ function HojaReporte({ ctx, onCerrar }) {
             ))}
           </div>
 
-          {reporte.filas.length === 0 ? (
+          <div style={{ marginBottom: 16 }}>
+            <SegmentedControl
+              opciones={[{ id: "resumen", label: "Resumen" }, { id: "detalle", label: "Detalle" }]}
+              valor={vista}
+              onChange={setVista}
+              etiqueta="Vista"
+            />
+          </div>
+
+          {conDetalle ? (
+            grupos.length === 0 ? (
+              <div className="ra-vacio">No hay documentos creados en este período.</div>
+            ) : (
+              grupos.map((grupo) => (
+                <section className="ra-grupo" key={grupo.id}>
+                  <div className="ra-grupo__titulo">
+                    <span>{grupo.label}</span>
+                    <span className="ra-grupo__cuenta">{grupo.items.length}</span>
+                  </div>
+                  <div className="ra-tabla-caja">
+                    <table className="ra-tabla ra-tabla--detalle">
+                      <thead>
+                        <tr>
+                          <th>Fecha</th>
+                          <th>Hora</th>
+                          <th>Código</th>
+                          <th>Cliente / detalle</th>
+                          <th>Lugar</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {grupo.items.map((d, i) => {
+                          const secundaria = [d.cliente ? d.descripcion : "", d.estado, reporte.soloUsuario ? "" : d.usuario]
+                            .filter(Boolean)
+                            .join(" · ");
+                          return (
+                            <tr key={`${d.codigo}-${d.fecha}-${i}`}>
+                              <td>{fechaLegible(d.fecha)}</td>
+                              <td className={d.hora ? undefined : "ra-cero"}>{d.hora || "—"}</td>
+                              <td className={d.codigo ? undefined : "ra-cero"}>{d.codigo || "—"}</td>
+                              <td>
+                                <div className="ra-principal">{d.cliente || d.descripcion || "—"}</div>
+                                {secundaria && <div className="ra-secundaria">{secundaria}</div>}
+                              </td>
+                              <td className={d.lugar ? undefined : "ra-cero"}>{d.lugar || "—"}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              ))
+            )
+          ) : reporte.filas.length === 0 ? (
             <div className="ra-vacio">No hay documentos creados en este período.</div>
           ) : (
             <div className="ra-tabla-caja">
@@ -351,7 +425,7 @@ function HojaReporte({ ctx, onCerrar }) {
               Descargar Excel
             </Button>
             <Button icono="descargar" cargando={descargando === "pdf"} disabled={Boolean(descargando)} onClick={() => descargar("pdf")}>
-              Descargar PDF
+              {conDetalle ? "Descargar PDF detallado" : "Descargar PDF"}
             </Button>
           </div>
         </div>

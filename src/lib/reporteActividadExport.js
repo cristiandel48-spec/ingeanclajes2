@@ -6,7 +6,15 @@
 import { downloadGeneratedFile, sanitizeFileName } from "./download";
 import { registrarInterEnPdf } from "./fuenteInter";
 import { construirXlsx, TIPO_XLSX } from "./xlsxSimple";
-import { TIPOS_REPORTE, filasPorUsuarioYMes, tituloMes, tituloPeriodo, valorCasilla } from "./reporteActividad";
+import {
+  TIPOS_REPORTE,
+  detallePorTipo,
+  fechaLegible,
+  filasPorUsuarioYMes,
+  tituloMes,
+  tituloPeriodo,
+  valorCasilla,
+} from "./reporteActividad";
 
 const TITULO = "Reporte de tareas ejecutadas por usuarios";
 
@@ -70,11 +78,14 @@ export function hojasDelReporte(reporte, generadoEn = new Date()) {
 
   const detalle = {
     nombre: "Detalle",
-    anchos: [24, 18, 46, 30, 13, 18],
+    anchos: [24, 16, 32, 34, 34, 14, 26, 13, 11, 18],
     filasFijas: 1,
     filas: [
-      ["Tipo", "Código", "Referencia", "Usuario", "Fecha", "Mes"].map(enc),
-      ...reporte.detalle.map((d) => [d.tipoLabel, d.codigo, d.referencia, d.usuario, { v: d.fecha, s: "fecha" }, tituloMes(d.mes)]),
+      ["Tipo", "Código", "Cliente", "Detalle", "Lugar", "Estado", "Usuario", "Fecha", "Hora", "Mes"].map(enc),
+      ...reporte.detalle.map((d) => [
+        d.tipoLabel, d.codigo, d.cliente, d.descripcion, d.lugar, d.estado, d.usuario,
+        { v: d.fecha, s: "fecha" }, d.hora, tituloMes(d.mes),
+      ]),
     ],
   };
 
@@ -97,7 +108,12 @@ const LINEA = [234, 236, 240];
 const RELLENO = [246, 247, 249];
 const ACENTO = [224, 52, 42];
 
-export async function generarReportePdf(reporte, generadoEn = new Date()) {
+/**
+ * @param {object} [opciones]
+ * @param {boolean} [opciones.conDetalle]  Agrega, despues del resumen, la
+ *   lista documento por documento: fecha, hora, codigo, cliente y lugar.
+ */
+export async function generarReportePdf(reporte, generadoEn = new Date(), { conDetalle = false } = {}) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "letter", orientation: "portrait" });
   await registrarInterEnPdf(doc);
@@ -219,6 +235,88 @@ export async function generarReportePdf(reporte, generadoEn = new Date()) {
     cifras(reporte.totales.general, "bold", TINTA, reporte.filaTotal);
   }
 
+  // ── Detalle: documento por documento ──────────────────────────────────
+  const grupos = conDetalle ? detallePorTipo(reporte) : [];
+  if (grupos.length) {
+    const col = { fecha: izq, hora: izq + 60, codigo: izq + 112, cliente: izq + 182, lugar: izq + 384 };
+    const anchoCol = { codigo: 64, cliente: 194, lugar: der - col.lugar };
+    // Una sola linea: lo que no cabe se corta con puntos suspensivos.
+    const recortar = (texto, w) => {
+      const lineas = doc.splitTextToSize(String(texto || ""), w);
+      return lineas.length > 1 ? `${lineas[0].trimEnd()}…` : lineas[0] || "";
+    };
+    const cabeceraGrupo = (grupo, continua) => {
+      letra("bold", 12, TINTA);
+      doc.text(`${grupo.label}${continua ? " (continuación)" : ""}`, izq, y);
+      letra("normal", 9, TENUE);
+      doc.text(String(grupo.items.length), der, y, { align: "right" });
+      y += 15;
+      letra("bold", 7.5, TENUE);
+      doc.text("FECHA", col.fecha, y);
+      doc.text("HORA", col.hora, y);
+      doc.text("CÓDIGO", col.codigo, y);
+      doc.text("CLIENTE / DETALLE", col.cliente, y);
+      doc.text("LUGAR", col.lugar, y);
+      y += 7;
+      raya(y);
+      y += 3;
+    };
+
+    doc.addPage("letter", "portrait");
+    letra("bold", 8, ACENTO);
+    doc.text("DETALLE", izq, 64);
+    letra("bold", 22, TINTA);
+    doc.text("Documento por documento", izq, 92);
+    letra("normal", 10, SUAVE);
+    doc.text(
+      `${tituloPeriodo(reporte.desde, reporte.hasta)} · ${reporte.soloUsuario || "Todo el equipo"}`,
+      izq,
+      110
+    );
+    y = 142;
+
+    for (const grupo of grupos) {
+      // El titulo de un grupo no se queda solo al pie de la hoja.
+      if (y + 70 > fondo) { doc.addPage("letter", "portrait"); y = 64; }
+      cabeceraGrupo(grupo, false);
+
+      for (const d of grupo.items) {
+        // Segunda linea, en gris: lo que complementa al cliente, el estado y,
+        // si el reporte es de todo el equipo, quien lo hizo.
+        const principal = d.cliente || d.descripcion || "—";
+        const secundaria = [d.cliente ? d.descripcion : "", d.estado, reporte.soloUsuario ? "" : d.usuario]
+          .filter(Boolean)
+          .join(" · ");
+        const alto = secundaria ? 27 : 17;
+        if (y + alto > fondo) {
+          doc.addPage("letter", "portrait");
+          y = 64;
+          cabeceraGrupo(grupo, true);
+        }
+
+        y += 12;
+        letra("normal", 9.5, TINTA);
+        doc.text(fechaLegible(d.fecha), col.fecha, y);
+        letra("normal", 9.5, d.hora ? SUAVE : TENUE);
+        doc.text(d.hora || "—", col.hora, y);
+        letra("normal", 9.5, SUAVE);
+        doc.text(recortar(d.codigo || "—", anchoCol.codigo), col.codigo, y);
+        letra("bold", 9.5, TINTA);
+        doc.text(recortar(principal, anchoCol.cliente), col.cliente, y);
+        letra("normal", 9.5, SUAVE);
+        doc.text(recortar(d.lugar || "—", anchoCol.lugar), col.lugar, y);
+        if (secundaria) {
+          y += 10;
+          letra("normal", 8, TENUE);
+          doc.text(recortar(secundaria, anchoCol.cliente), col.cliente, y);
+        }
+        y += 5;
+        raya(y);
+      }
+      y += 26;
+    }
+  }
+
   const paginas = doc.getNumberOfPages();
   for (let p = 1; p <= paginas; p += 1) {
     doc.setPage(p);
@@ -230,7 +328,8 @@ export async function generarReportePdf(reporte, generadoEn = new Date()) {
   return doc.output("blob");
 }
 
-export async function descargarReportePdf(reporte, generadoEn = new Date()) {
-  const blob = await generarReportePdf(reporte, generadoEn);
-  downloadGeneratedFile(new File([blob], nombreArchivoReporte(reporte, "pdf"), { type: "application/pdf" }));
+export async function descargarReportePdf(reporte, opciones = {}, generadoEn = new Date()) {
+  const blob = await generarReportePdf(reporte, generadoEn, opciones);
+  const nombre = nombreArchivoReporte(reporte, "pdf").replace(/^Reporte-actividad-/, opciones.conDetalle ? "Reporte-actividad-detallado-" : "Reporte-actividad-");
+  downloadGeneratedFile(new File([blob], nombre, { type: "application/pdf" }));
 }

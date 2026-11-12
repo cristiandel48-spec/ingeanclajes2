@@ -4,7 +4,11 @@ import {
   SIN_DATO,
   SIN_REGISTRAR,
   armarReporteActividad,
+  detallePorTipo,
   fechaColombia,
+  fechaLegible,
+  horaColombia,
+  horaLegible,
   filasPorUsuarioYMes,
   filtrarReportePorUsuario,
   listaMeses,
@@ -176,6 +180,62 @@ describe("visitas de la agenda", () => {
   });
 });
 
+describe("detalle documento por documento", () => {
+  const reporte = armarReporteActividad({
+    usuarios: USUARIOS,
+    cotizaciones: [
+      {
+        id: "c1", numero: "COT-001", cliente: "ACME", obra: "ACME", ciudad: "Medellín", direccion: "Calle 10 # 4-20",
+        estado: "Enviada", creadoPor: "u-juan", creadoPorNombre: "Juan Pérez", creadoEn: "2026-11-03T20:05:00Z",
+      },
+      { id: "c2", numero: "COT-002", cliente: "Beta", obra: "Bodega Sur", creadoPor: "u-juan", creadoEn: "2026-11-03T14:30:00Z" },
+    ],
+    certs: [{ id: "k1", numero: "CERT-1", cliente: "ACME", sistema: "Línea de vida", fecha: "2026-11-04", creadoPor: "u-juan" }],
+    agenda: [
+      { id: "AG-1", tipo: "visita", titulo: "Visita técnica", cliente: "Gamma", ciudad: "Envigado", fecha: "2026-11-10", hora: "14:30", estado: "pendiente" },
+      { id: "AG-2", tipo: "visita", cliente: "Delta", fecha: "2026-11-12", hora: "" },
+    ],
+    agendaDe: "Camila Sepulveda",
+    desde: "2026-11",
+    hasta: "2026-11",
+  });
+  const de = (codigo) => reporte.detalle.find((d) => d.codigo === codigo);
+
+  it("trae la hora de creacion en hora de Colombia", () => {
+    // 20:05 UTC son las 3:05 de la tarde en Colombia.
+    expect(de("COT-001").hora).toBe("3:05 PM");
+    expect(de("COT-002").hora).toBe("9:30 AM");
+    expect(horaColombia("2026-11-03T05:00:00Z")).toBe("12:00 AM");
+    expect(horaLegible("12:15")).toBe("12:15 PM");
+  });
+
+  it("un documento que solo tiene fecha no inventa una hora", () => {
+    expect(de("CERT-1").fecha).toBe("2026-11-04");
+    expect(de("CERT-1").hora).toBe("");
+  });
+
+  it("trae cliente, lugar y estado, sin repetir la obra que se llama igual que el cliente", () => {
+    expect(de("COT-001")).toMatchObject({ cliente: "ACME", descripcion: "", lugar: "Calle 10 # 4-20, Medellín", estado: "Enviada" });
+    expect(de("COT-002")).toMatchObject({ cliente: "Beta", descripcion: "Bodega Sur" });
+    expect(de("CERT-1")).toMatchObject({ cliente: "ACME", descripcion: "Línea de vida" });
+  });
+
+  it("de una visita dice a quien, donde y a que hora era la cita", () => {
+    const visitas = reporte.detalle.filter((d) => d.tipo === "visitas");
+    expect(visitas.find((v) => v.cliente === "Gamma")).toMatchObject({
+      fecha: "2026-11-10", hora: "2:30 PM", lugar: "Envigado", descripcion: "Visita técnica", estado: "Pendiente",
+    });
+    expect(visitas.find((v) => v.cliente === "Delta").hora).toBe("");
+  });
+
+  it("agrupa por tipo, en orden, sin los tipos vacios, y del mas reciente al mas viejo", () => {
+    const grupos = detallePorTipo(reporte);
+    expect(grupos.map((g) => g.id)).toEqual(["cotizaciones", "certificaciones", "visitas"]);
+    expect(grupos[0].items.map((d) => d.codigo)).toEqual(["COT-001", "COT-002"]);
+    expect(fechaLegible("2026-11-03")).toBe("03/11/2026");
+  });
+});
+
 describe("filtro por usuario", () => {
   const equipo = armarReporteActividad(DATOS);
   const soloJuan = filtrarReportePorUsuario(equipo, "Juan Pérez");
@@ -244,7 +304,9 @@ describe("archivo de Excel", () => {
 
     // Las fechas del detalle van como fecha de Excel (numero de serie con formato).
     const hoja3 = await zip.file("xl/worksheets/sheet3.xml").async("string");
-    expect(hoja3).toMatch(/<c r="E2" s="4"><v>\d+<\/v><\/c>/);
+    expect(hoja3).toMatch(/<c r="H2" s="4"><v>\d+<\/v><\/c>/);
+    expect(hoja3).toContain("Hora");
+    expect(hoja3).toContain("Lugar");
 
     // XML bien formado en todas las partes.
     for (const [ruta, entrada] of Object.entries(zip.files)) {

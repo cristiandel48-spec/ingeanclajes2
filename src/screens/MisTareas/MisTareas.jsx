@@ -274,7 +274,8 @@ export default function MisTareas({ ctx }) {
   };
 
   const [texto, setTexto] = useState("");
-  const [filtro, setFiltro] = useState("todas"); // "todas" | "pendientes" | "completadas"
+  // Al entrar se arranca en Pendientes: es lo que hay que tachar hoy.
+  const [filtro, setFiltro] = useState("pendientes"); // "todas" | "pendientes" | "completadas"
   const [deshacer, setDeshacer] = useState(null); // { tareas, indice, mensaje }
   const timerDeshacer = useRef(null);
   const inputRef = useRef(null);
@@ -290,12 +291,12 @@ export default function MisTareas({ ctx }) {
   const [seccionActiva, setSeccionActiva] = useState("General");
   const [seccionesColapsadas, setSeccionesColapsadas] = useState({});
 
-  // Agrupación de la lista: por lista desplegable o por mes de la tarea.
+  // Agrupación de la lista: por mes (lo normal) o por lista desplegable.
   const [agrupacion, setAgrupacion] = useState(() => {
     try {
-      return localStorage.getItem("ingeanclajes_agrupacion_tareas") === "mes" ? "mes" : "lista";
+      return localStorage.getItem("ingeanclajes_agrupacion_tareas") === "lista" ? "lista" : "mes";
     } catch { /* sin almacenamiento del navegador: se sigue igual */ }
-    return "lista";
+    return "mes";
   });
   const [mesesColapsados, setMesesColapsados] = useState({});
 

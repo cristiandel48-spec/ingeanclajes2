@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { CD } from "../../styles/tokens";
 import { confirmar } from "../../lib/dialogos";
+import { puedeVerReporteActividad } from "../../lib/permisos";
+import BotonReporteActividad from "../../components/ReporteActividad";
 
 // Lista de chequeo personal estilo Recordatorios de Apple. Cada usuario ve
 // solo la suya (la nube filtra por dueño); al marcar una tarea se tacha sola.
@@ -508,6 +510,12 @@ export default function MisTareas({ ctx }) {
               {nombre ? `${nombre} · ` : ""}Solo tú ves esta lista
             </span>
           </div>
+          {/* Solo le aparece a Camila Sepúlveda; para los demas no pinta nada. */}
+          {puedeVerReporteActividad(ctx?.membresia) && (
+            <div style={{ marginTop: 14 }}>
+              <BotonReporteActividad ctx={ctx} />
+            </div>
+          )}
         </div>
 
         {tareas.length > 0 && (

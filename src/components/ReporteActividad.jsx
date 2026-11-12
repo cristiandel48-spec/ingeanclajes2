@@ -277,6 +277,14 @@ function HojaReporte({ ctx, onCerrar }) {
                 onChange={(e) => { if (e.target.value) { setHasta(e.target.value); setPeriodo(""); } }}
               />
             </label>
+            {/* Junto a los demas controles, y antes del usuario: es lo que
+                decide que se ve y que PDF se descarga. */}
+            <SegmentedControl
+              opciones={[{ id: "resumen", label: "Resumen" }, { id: "detalle", label: "Detalle" }]}
+              valor={vista}
+              onChange={setVista}
+              etiqueta="Vista"
+            />
             <label className="ra-rango">
               Usuario
               <select value={reporte.soloUsuario || ""} onChange={(e) => setSoloUsuario(e.target.value)}>
@@ -293,15 +301,6 @@ function HojaReporte({ ctx, onCerrar }) {
                 <div className="ra-etiqueta">{t.label}</div>
               </div>
             ))}
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <SegmentedControl
-              opciones={[{ id: "resumen", label: "Resumen" }, { id: "detalle", label: "Detalle" }]}
-              valor={vista}
-              onChange={setVista}
-              etiqueta="Vista"
-            />
           </div>
 
           {conDetalle ? (

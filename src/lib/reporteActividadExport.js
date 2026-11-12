@@ -17,6 +17,7 @@ import {
 } from "./reporteActividad";
 
 const TITULO = "Reporte de tareas ejecutadas por usuarios";
+const TITULO_DETALLE = "Informe detallado por documento";
 
 const fechaLarga = (fecha) =>
   fecha.toLocaleDateString("es-CO", { day: "2-digit", month: "long", year: "numeric", timeZone: "America/Bogota" });
@@ -110,8 +111,9 @@ const ACENTO = [224, 52, 42];
 
 /**
  * @param {object} [opciones]
- * @param {boolean} [opciones.conDetalle]  Agrega, despues del resumen, la
- *   lista documento por documento: fecha, hora, codigo, cliente y lugar.
+ * @param {boolean} [opciones.conDetalle]  Informe detallado: primero la lista
+ *   documento por documento (fecha, hora, codigo, cliente y lugar) y, al
+ *   final, el resumen.
  */
 export async function generarReportePdf(reporte, generadoEn = new Date(), { conDetalle = false } = {}) {
   const { jsPDF } = await import("jspdf");
@@ -165,19 +167,28 @@ export async function generarReportePdf(reporte, generadoEn = new Date(), { conD
     });
   };
 
-  // Titulo
-  letra("bold", 8, ACENTO);
-  doc.text("INGEANCLAJES S.A.S.", izq, 64);
-  letra("bold", 22, TINTA);
-  doc.text(TITULO, izq, 92);
-  letra("normal", 10, SUAVE);
-  doc.text(
-    `${tituloPeriodo(reporte.desde, reporte.hasta)} · ${reporte.soloUsuario || "Todo el equipo"}`,
-    izq,
-    110
-  );
-  letra("normal", 9, TENUE);
-  doc.text(`Generado el ${fechaLarga(generadoEn)}`, der, 110, { align: "right" });
+  // Encabezado de una seccion, en la hoja en la que este el documento. La
+  // fecha de generacion solo va en la primera hoja.
+  const portada = (etiqueta, titulo) => {
+    letra("bold", 8, ACENTO);
+    doc.text(etiqueta, izq, 64);
+    letra("bold", 22, TINTA);
+    doc.text(titulo, izq, 92);
+    letra("normal", 10, SUAVE);
+    doc.text(
+      `${tituloPeriodo(reporte.desde, reporte.hasta)} · ${reporte.soloUsuario || "Todo el equipo"}`,
+      izq,
+      110
+    );
+    if (doc.getNumberOfPages() === 1) {
+      letra("normal", 9, TENUE);
+      doc.text(`Generado el ${fechaLarga(generadoEn)}`, der, 110, { align: "right" });
+    }
+  };
+
+  // ── Resumen: cuantos documentos por persona y por mes ─────────────────
+  const dibujarResumen = (etiqueta) => {
+  portada(etiqueta, TITULO);
 
   // Resumen del periodo
   const separacion = 10;
@@ -234,10 +245,11 @@ export async function generarReportePdf(reporte, generadoEn = new Date(), { conD
     doc.text("Total del período", izq, y);
     cifras(reporte.totales.general, "bold", TINTA, reporte.filaTotal);
   }
+  };
 
   // ── Detalle: documento por documento ──────────────────────────────────
   const grupos = conDetalle ? detallePorTipo(reporte) : [];
-  if (grupos.length) {
+  const dibujarDetalle = () => {
     const col = { fecha: izq, hora: izq + 60, codigo: izq + 112, cliente: izq + 182, lugar: izq + 384 };
     const anchoCol = { codigo: 64, cliente: 194, lugar: der - col.lugar };
     // Una sola linea: lo que no cabe se corta con puntos suspensivos.
@@ -262,17 +274,7 @@ export async function generarReportePdf(reporte, generadoEn = new Date(), { conD
       y += 3;
     };
 
-    doc.addPage("letter", "portrait");
-    letra("bold", 8, ACENTO);
-    doc.text("DETALLE", izq, 64);
-    letra("bold", 22, TINTA);
-    doc.text("Documento por documento", izq, 92);
-    letra("normal", 10, SUAVE);
-    doc.text(
-      `${tituloPeriodo(reporte.desde, reporte.hasta)} · ${reporte.soloUsuario || "Todo el equipo"}`,
-      izq,
-      110
-    );
+    portada("INGEANCLAJES S.A.S.", TITULO_DETALLE);
     y = 142;
 
     for (const grupo of grupos) {
@@ -315,13 +317,24 @@ export async function generarReportePdf(reporte, generadoEn = new Date(), { conD
       }
       y += 26;
     }
+  };
+
+  // En el informe detallado va primero el detalle, que es lo que se pidio, y
+  // el resumen cierra el documento en su propia hoja. Sin detalle (o sin
+  // documentos que detallar), el resumen es el documento entero.
+  if (grupos.length) {
+    dibujarDetalle();
+    doc.addPage("letter", "portrait");
+    dibujarResumen("RESUMEN");
+  } else {
+    dibujarResumen("INGEANCLAJES S.A.S.");
   }
 
   const paginas = doc.getNumberOfPages();
   for (let p = 1; p <= paginas; p += 1) {
     doc.setPage(p);
     letra("normal", 8, TENUE);
-    doc.text(`Ingeanclajes · ${TITULO}`, izq, 792 - 36);
+    doc.text(`Ingeanclajes · ${grupos.length ? TITULO_DETALLE : TITULO}`, izq, 792 - 36);
     doc.text(`Página ${p} de ${paginas}`, der, 792 - 36, { align: "right" });
   }
 

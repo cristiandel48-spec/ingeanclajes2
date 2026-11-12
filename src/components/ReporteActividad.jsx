@@ -4,6 +4,7 @@ import Button from "./ui/Button";
 import SegmentedControl from "./ui/SegmentedControl";
 import { enviarCotizacionPorCorreo, listarUsuarios } from "../lib/backend/usuarios";
 import { puedeVerReporteActividad, sinCuentasSoporte } from "../lib/permisos";
+import { asuntoSeguro } from "../lib/asuntoCorreo";
 import {
   TIPOS_REPORTE,
   armarReporteActividad,
@@ -192,9 +193,17 @@ function HojaReporte({ ctx, onCerrar }) {
         .map((t) => `- ${t.label}: ${valorCasilla(reporte.filaTotal, reporte.totales.general, t.id)}`)
         .join("\n");
       const deQuien = reporte.soloUsuario ? ` por ${reporte.soloUsuario}` : " por usuarios";
+      // El asunto va corto y sin tildes ni rayas: uno largo con «ú» y «–» se
+      // partia en dos lineas y el correo llegaba con las cabeceras y el HTML
+      // a la vista (ver asuntoCorreo.js). El periodo completo va en el cuerpo.
+      // «Septiembre 2026» -> «Sep 2026», para que quepa con un nombre largo.
+      const mesCorto = (mes) => tituloMes(mes).replace(/^(\S{3})\S*/, "$1");
+      const periodoAsunto = reporte.desde === reporte.hasta
+        ? tituloMes(reporte.desde)
+        : `${mesCorto(reporte.desde)} a ${mesCorto(reporte.hasta)}`;
       await enviarCotizacionPorCorreo({
         para: destino,
-        asunto: `Reporte de tareas ejecutadas${deQuien} - ${periodoTexto}`,
+        asunto: asuntoSeguro(`Reporte de tareas - ${reporte.soloUsuario || "Equipo"} - ${periodoAsunto}`),
         mensaje:
           `Hola,\n\nAdjunto el reporte de tareas ejecutadas${deQuien} de Ingeanclajes, período ${periodoTexto}.\n\n` +
           `Documentos creados en el período:\n${resumen}\n\n` +

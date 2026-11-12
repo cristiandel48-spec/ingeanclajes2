@@ -16,7 +16,14 @@ export const TIPOS_REPORTE = [
   { id: "informes", label: "Informes de actividades", corto: "Informes", singular: "Informe de actividades" },
   { id: "certificaciones", label: "Certificaciones", corto: "Certificaciones", singular: "Certificación" },
   { id: "obras", label: "Ejecuciones de obra", corto: "Obras", singular: "Ejecución de obra" },
+  { id: "visitas", label: "Visitas agendadas", corto: "Visitas", singular: "Visita" },
 ];
+
+// Las visitas salen de la agenda, y la agenda es privada (migracion 075): la
+// base solo le entrega a cada quien sus propios compromisos. Por eso el
+// reporte solo puede contar las visitas de quien lo esta viendo; en las demas
+// personas no se pone un cero, que seria mentira, sino que se deja sin dato.
+export const SIN_DATO = "—";
 
 export const SIN_REGISTRAR = "Sin registrar";
 
@@ -87,12 +94,15 @@ export function listaMeses(desde, hasta) {
   return meses;
 }
 
-const conteoVacio = () => ({ cotizaciones: 0, informes: 0, certificaciones: 0, obras: 0, total: 0 });
+const conteoVacio = () => ({ cotizaciones: 0, informes: 0, certificaciones: 0, obras: 0, visitas: 0, total: 0 });
 
 /**
  * @param {object} datos
  * @param {Array} datos.cotizaciones, datos.informes, datos.certs, datos.obras
  *   Tal como estan en la aplicacion (con creadoPor, creadoPorNombre, creadoEn).
+ * @param {Array} datos.agenda  Compromisos de la agenda de quien ve el reporte.
+ *   Solo se cuentan las visitas, en el mes para el que estan agendadas.
+ * @param {string} datos.agendaDe  Nombre (o correo) del dueño de esa agenda.
  * @param {Array} datos.usuarios  Miembros del equipo (user_id, nombre, email, activo).
  * @param {string} datos.desde, datos.hasta  Meses «AAAA-MM», incluidos.
  */
@@ -101,6 +111,8 @@ export function armarReporteActividad({
   informes = [],
   certs = [],
   obras = [],
+  agenda = [],
+  agendaDe = "",
   usuarios = [],
   desde,
   hasta,
@@ -187,6 +199,24 @@ export function armarReporteActividad({
     });
   }
 
+  // Visitas: las de la agenda de quien ve el reporte, por la fecha de la
+  // visita. Las estrellitas y demas compromisos (llamadas, reuniones) no son
+  // visitas y no entran.
+  const duenoAgenda = agendaDe ? normalizarNombrePersona(agendaDe, "") : "";
+  if (duenoAgenda) {
+    filaDe(duenoAgenda);
+    for (const a of agenda || []) {
+      if ((a?.tipo || "visita") !== "visita") continue;
+      contar("visitas", {
+        nombre: duenoAgenda, userId: null, fecha: a.fecha || a.creadoEn,
+        codigo: a.id, referencia: [a.titulo || a.obra, a.cliente].filter(Boolean).join(" · "),
+      });
+    }
+  }
+  for (const fila of porUsuario.values()) {
+    fila.visitasVisibles = Boolean(duenoAgenda) && clave(fila.usuario) === clave(duenoAgenda);
+  }
+
   // Primero quien mas hizo; «Sin registrar» siempre al final, y solo si tiene algo.
   const filas = [...porUsuario.values()]
     .filter((f) => f.usuario !== SIN_REGISTRAR || f.totales.total > 0)
@@ -198,7 +228,16 @@ export function armarReporteActividad({
 
   detalle.sort((a, b) => b.fecha.localeCompare(a.fecha) || a.tipoLabel.localeCompare(b.tipoLabel, "es"));
 
-  return { desde: meses[meses.length - 1] || "", hasta: meses[0] || "", meses, filas, totales, detalle };
+  return { desde: meses[meses.length - 1] || "", hasta: meses[0] || "", meses, filas, totales, detalle, visitasDe: duenoAgenda };
+}
+
+/**
+ * Lo que se escribe en una casilla: la cifra, o «—» en las visitas de quien
+ * no es el dueño de la agenda (no se sabe cuantas tiene; ver SIN_DATO).
+ */
+export function valorCasilla(fila, conteo, tipo) {
+  if (tipo === "visitas" && fila && !fila.visitasVisibles) return SIN_DATO;
+  return conteo?.[tipo] || 0;
 }
 
 /**
@@ -209,7 +248,7 @@ export function filasPorUsuarioYMes(reporte) {
   const lineas = [];
   for (const fila of reporte.filas) {
     for (const mes of reporte.meses) {
-      lineas.push({ usuario: fila.usuario, mes, ...(fila.porMes[mes] || conteoVacio()) });
+      lineas.push({ usuario: fila.usuario, mes, fila, ...(fila.porMes[mes] || conteoVacio()) });
     }
   }
   return lineas;

@@ -3,7 +3,8 @@ import Av from "../ui/Av";
 import CambiarMiClave from "./CambiarMiClave";
 import * as backend from "../../lib/backend";
 import { useAppData } from "../../context/AppDataContext";
-import { ROL_LABEL } from "../../lib/permisos";
+import { ROL_LABEL, puedeVerReporteActividad } from "../../lib/permisos";
+import ReporteActividad from "../ReporteActividad";
 import { ListRow, Icono, SheetConfirmacion, useToast } from "../ui";
 import { TIPO, RADIO, CAPA, SOMBRA } from "../../styles/designTokens";
 
@@ -18,7 +19,11 @@ export default function MenuUsuario({ compact = false }) {
   const [confirmandoSalida, setConfirmandoSalida] = useState(false);
   const contenedorRef = useRef(null);
   const aviso = useToast();
-  const { membresia, agenda, authUserEmail, esSuperAdminCristian } = useAppData();
+  const datos = useAppData();
+  const { membresia, agenda, authUserEmail, esSuperAdminCristian } = datos;
+  // Reporte de actividad del equipo: solo le aparece a Camila Sepúlveda.
+  const [viendoReporte, setViendoReporte] = useState(false);
+  const verReporte = puedeVerReporteActividad(membresia);
 
   useEffect(() => {
     if (!backend.isSupabaseConfigured()) return;
@@ -180,6 +185,15 @@ export default function MenuUsuario({ compact = false }) {
             </div>
           </div>
 
+          {verReporte && (
+            <ListRow
+              role="menuitem"
+              titulo="Reporte de actividad del equipo"
+              izquierda={<Icono nombre="documento" size={18} style={{ color: "var(--text-tertiary)" }} />}
+              onClick={() => { setAbierto(false); setViendoReporte(true); }}
+            />
+          )}
+
           <ListRow
             role="menuitem"
             titulo="Cambiar mi contraseña"
@@ -212,6 +226,8 @@ export default function MenuUsuario({ compact = false }) {
       )}
 
       {cambiandoClave && <CambiarMiClave onCerrar={() => setCambiandoClave(false)} />}
+
+      {viendoReporte && <ReporteActividad ctx={datos} onCerrar={() => setViendoReporte(false)} />}
     </div>
   );
 }

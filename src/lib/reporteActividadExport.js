@@ -6,7 +6,7 @@
 import { downloadGeneratedFile } from "./download";
 import { registrarInterEnPdf } from "./fuenteInter";
 import { construirXlsx, TIPO_XLSX } from "./xlsxSimple";
-import { TIPOS_REPORTE, filasPorUsuarioYMes, tituloMes, tituloPeriodo } from "./reporteActividad";
+import { TIPOS_REPORTE, filasPorUsuarioYMes, tituloMes, tituloPeriodo, valorCasilla } from "./reporteActividad";
 
 const TITULO = "Reporte de actividad por usuario";
 
@@ -18,40 +18,49 @@ export function nombreArchivoReporte(reporte, extension) {
   return `Reporte-actividad-${periodo}.${extension}`;
 }
 
+export function notaVisitas(reporte) {
+  return reporte.visitasDe
+    ? `Visitas: solo las de la agenda de ${reporte.visitasDe}. La agenda de cada persona es privada; en los demás aparece «—».`
+    : "Visitas: sin datos de agenda.";
+}
+
 const enc = (v) => ({ v, s: "encabezado" });
 const neg = (v) => ({ v, s: "negrita" });
 
 /** Las hojas del libro, sin generar el archivo. */
 export function hojasDelReporte(reporte, generadoEn = new Date()) {
   const etiquetas = TIPOS_REPORTE.map((t) => t.label);
-  const cifras = (conteo) => [...TIPOS_REPORTE.map((t) => conteo[t.id] || 0), conteo.total || 0];
+  // `fila` dice de quien es la linea: en las visitas de quien no es el dueño
+  // de la agenda va «—» (no se sabe), no un cero.
+  const cifras = (conteo, fila) => [...TIPOS_REPORTE.map((t) => valorCasilla(fila, conteo, t.id)), conteo.total || 0];
   const cabecera = [
     [{ v: TITULO, s: "titulo" }],
     [{ v: `Período: ${tituloPeriodo(reporte.desde, reporte.hasta)}`, s: "tenue" }],
     [{ v: `Generado el ${fechaLarga(generadoEn)}`, s: "tenue" }],
+    [{ v: notaVisitas(reporte), s: "tenue" }],
     [],
   ];
 
   const porMes = {
     nombre: "Por usuario y mes",
-    anchos: [30, 18, 14, 24, 16, 20, 10],
+    anchos: [30, 18, 14, 24, 16, 20, 18, 10],
     filasFijas: cabecera.length + 1,
     filas: [
       ...cabecera,
       ["Usuario", "Mes", ...etiquetas, "Total"].map(enc),
-      ...filasPorUsuarioYMes(reporte).map((l) => [l.usuario, tituloMes(l.mes), ...cifras(l)]),
+      ...filasPorUsuarioYMes(reporte).map((l) => [l.usuario, tituloMes(l.mes), ...cifras(l, l.fila)]),
       [neg("Total"), neg(""), ...cifras(reporte.totales.general).map(neg)],
     ],
   };
 
   const porUsuario = {
     nombre: "Total por usuario",
-    anchos: [30, 14, 24, 16, 20, 10],
+    anchos: [30, 14, 24, 16, 20, 18, 10],
     filasFijas: cabecera.length + 1,
     filas: [
       ...cabecera,
       ["Usuario", ...etiquetas, "Total"].map(enc),
-      ...reporte.filas.map((f) => [f.usuario, ...cifras(f.totales)]),
+      ...reporte.filas.map((f) => [f.usuario, ...cifras(f.totales, f)]),
       [neg("Total"), ...cifras(reporte.totales.general).map(neg)],
     ],
   };
@@ -96,7 +105,7 @@ export async function generarReportePdf(reporte, generadoEn = new Date()) {
   const fondo = 792 - 64;
   // Borde derecho de cada columna de cifras.
   const columnas = [
-    ...TIPOS_REPORTE.map((t, i) => ({ id: t.id, titulo: t.corto, x: [318, 376, 462, 512][i] })),
+    ...TIPOS_REPORTE.map((t, i) => ({ id: t.id, titulo: t.corto, x: [290, 345, 428, 472, 518][i] })),
     { id: "total", titulo: "Total", x: der },
   ];
 
@@ -128,11 +137,11 @@ export async function generarReportePdf(reporte, generadoEn = new Date()) {
     encabezadoTabla();
   };
 
-  const cifras = (conteo, peso, color) => {
+  const cifras = (conteo, peso, color, fila) => {
     columnas.forEach((c) => {
-      const valor = conteo[c.id] || 0;
-      // Un cero en gris: lo que importa en la hoja son las cifras que hay.
-      letra(peso, 9.5, valor ? color : TENUE);
+      const valor = c.id === "total" ? conteo.total || 0 : valorCasilla(fila, conteo, c.id);
+      // Un cero (o un «—») en gris: lo que importa son las cifras que hay.
+      letra(peso, 9.5, typeof valor === "number" && valor ? color : TENUE);
       doc.text(String(valor), c.x, y, { align: "right" });
     });
   };
@@ -155,12 +164,15 @@ export async function generarReportePdf(reporte, generadoEn = new Date()) {
     doc.setFillColor(...RELLENO);
     doc.roundedRect(x, 128, anchoTarjeta, 58, 8, 8, "F");
     letra("bold", 20, TINTA);
-    doc.text(String(reporte.totales.general[t.id] || 0), x + 12, 156);
-    letra("normal", 8, SUAVE);
-    doc.text(t.label, x + 12, 173);
+    doc.text(String(reporte.totales.general[t.id] || 0), x + 9, 156);
+    letra("normal", 7, SUAVE);
+    doc.text(t.label, x + 9, 173);
   });
 
-  y = 216;
+  letra("normal", 7.5, TENUE);
+  doc.text(notaVisitas(reporte), izq, 202, { maxWidth: ancho });
+
+  y = 232;
   encabezadoTabla();
 
   if (!reporte.totales.general.total) {
@@ -176,8 +188,8 @@ export async function generarReportePdf(reporte, generadoEn = new Date()) {
 
     y += 12;
     letra("bold", 10.5, TINTA);
-    doc.text(doc.splitTextToSize(fila.usuario, 220)[0], izq, y);
-    cifras(fila.totales, "bold", TINTA);
+    doc.text(doc.splitTextToSize(fila.usuario, 180)[0], izq, y);
+    cifras(fila.totales, "bold", TINTA, fila);
     y += 8;
 
     for (const mes of mesesConActividad) {
@@ -185,7 +197,7 @@ export async function generarReportePdf(reporte, generadoEn = new Date()) {
       y += 11;
       letra("normal", 9.5, SUAVE);
       doc.text(tituloMes(mes), izq + 12, y);
-      cifras(fila.porMes[mes], "normal", SUAVE);
+      cifras(fila.porMes[mes], "normal", SUAVE, fila);
       y += 5;
     }
     y += 4;

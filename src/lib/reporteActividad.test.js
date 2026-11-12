@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import {
+  SIN_DATO,
   SIN_REGISTRAR,
   armarReporteActividad,
   fechaColombia,
@@ -8,6 +9,7 @@ import {
   listaMeses,
   restarMeses,
   tituloMes,
+  valorCasilla,
 } from "./reporteActividad";
 import { hojasDelReporte, nombreArchivoReporte } from "./reporteActividadExport";
 import { construirXlsx, letraColumna } from "./xlsxSimple";
@@ -76,8 +78,8 @@ describe("conteo por usuario y mes", () => {
   const de = (nombre) => reporte.filas.find((f) => f.usuario === nombre);
 
   it("cuenta cada documento a nombre de quien lo creo", () => {
-    expect(de("Juan Pérez").totales).toEqual({ cotizaciones: 2, informes: 1, certificaciones: 0, obras: 0, total: 3 });
-    expect(de("Camila Sepúlveda").totales).toEqual({ cotizaciones: 1, informes: 0, certificaciones: 0, obras: 1, total: 2 });
+    expect(de("Juan Pérez").totales).toEqual({ cotizaciones: 2, informes: 1, certificaciones: 0, obras: 0, visitas: 0, total: 3 });
+    expect(de("Camila Sepúlveda").totales).toEqual({ cotizaciones: 1, informes: 0, certificaciones: 0, obras: 1, visitas: 0, total: 2 });
   });
 
   it("separa por mes en hora de Colombia", () => {
@@ -132,6 +134,47 @@ describe("conteo por usuario y mes", () => {
   });
 });
 
+describe("visitas de la agenda", () => {
+  const AGENDA = [
+    { id: "AG-1", tipo: "visita", titulo: "Visita técnica", cliente: "ACME", fecha: "2026-11-10" },
+    { id: "AG-2", tipo: "visita", cliente: "Beta", fecha: "2026-11-20", estado: "completado" },
+    { id: "AG-3", tipo: "visita", cliente: "Gamma", fecha: "2026-10-05" },
+    // No son visitas.
+    { id: "AG-4", tipo: "llamada", cliente: "ACME", fecha: "2026-11-11" },
+    { id: "ESP-1", tipo: "especial", fecha: "2026-11-12" },
+    // Fuera del periodo y sin fecha.
+    { id: "AG-5", tipo: "visita", fecha: "2026-02-01" },
+    { id: "AG-6", tipo: "visita", fecha: "" },
+  ];
+  // El nombre de la cuenta viene sin tilde; es la misma persona de los documentos.
+  const reporte = armarReporteActividad({ ...DATOS, agenda: AGENDA, agendaDe: "Camila Sepulveda" });
+  const de = (nombre) => reporte.filas.find((f) => f.usuario === nombre);
+
+  it("cuenta solo las visitas, en el mes para el que estan agendadas", () => {
+    expect(de("Camila Sepúlveda").porMes["2026-11"].visitas).toBe(2);
+    expect(de("Camila Sepúlveda").porMes["2026-10"].visitas).toBe(1);
+    expect(reporte.totales.general.visitas).toBe(3);
+  });
+
+  it("las visitas suman al total, como las demas tareas", () => {
+    expect(de("Camila Sepúlveda").totales.total).toBe(5);
+    expect(reporte.totales.general.total).toBe(9);
+    expect(reporte.detalle.filter((d) => d.tipo === "visitas")).toHaveLength(3);
+  });
+
+  it("quedan en la misma fila de sus documentos, no en una aparte", () => {
+    expect(reporte.filas.filter((f) => /camila/i.test(f.usuario))).toHaveLength(1);
+  });
+
+  it("en los demas va sin dato, porque su agenda es privada", () => {
+    expect(valorCasilla(de("Camila Sepúlveda"), de("Camila Sepúlveda").totales, "visitas")).toBe(3);
+    expect(valorCasilla(de("Juan Pérez"), de("Juan Pérez").totales, "visitas")).toBe(SIN_DATO);
+    expect(valorCasilla(de("Juan Pérez"), de("Juan Pérez").totales, "cotizaciones")).toBe(2);
+    // El total general no es de nadie: siempre es la cifra.
+    expect(valorCasilla(undefined, reporte.totales.general, "visitas")).toBe(3);
+  });
+});
+
 describe("archivo de Excel", () => {
   const reporte = armarReporteActividad(DATOS);
 
@@ -157,7 +200,9 @@ describe("archivo de Excel", () => {
     expect(hoja1).toContain("Juan Pérez");
     expect(hoja1).toContain("Noviembre 2026");
     // Las cifras van como numero, no como texto.
-    expect(hoja1).toMatch(/<c r="G\d+"><v>2<\/v><\/c>/);
+    expect(hoja1).toMatch(/<c r="H\d+"><v>2<\/v><\/c>/);
+    // Sin agenda de nadie, las visitas van sin dato y no en cero.
+    expect(hoja1).toMatch(/<c r="G\d+" t="inlineStr"><is><t xml:space="preserve">—<\/t>/);
 
     // Las fechas del detalle van como fecha de Excel (numero de serie con formato).
     const hoja3 = await zip.file("xl/worksheets/sheet3.xml").async("string");

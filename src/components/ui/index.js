@@ -27,4 +27,5 @@ export { default as Toolbar, BuscadorToolbar, EspacioToolbar } from "./Toolbar";
 export { default as BarraFija } from "./BarraFija";
 export { CABECERA_FIJA } from "./cabeceraFija";
 export { default as Icono } from "./Icono";
-export { ToastProvider, useToast } from "./Toast";
+export { default as ConmutadorVista } from "./ConmutadorVista";
+export { ToastProvider, useToast, aviso } from "./Toast";

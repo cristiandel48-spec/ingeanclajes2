@@ -20,7 +20,8 @@ export const EC={
   // Nace de WhatsApp y todavia no la ha visto nadie. Gris a proposito: no
   // pide accion del cliente, pide que un asesor la revise.
   "Borrador":{bg:COLOR.fill,text:COLOR.textSecondary},
-  "Finalizado":{bg:"#F4F3FF",text:"#5925DC"},
+  // Era un morado fijo que no cambiaba en modo oscuro.
+  "Finalizado":{bg:COLOR.successBg,text:COLOR.successText},
   "Vigente":{bg:COLOR.successBg,text:COLOR.successText},
   "Vencida":{bg:COLOR.dangerBg,text:COLOR.dangerText},
   "Aprobada":{bg:COLOR.successBg,text:COLOR.successText},
@@ -61,19 +62,23 @@ const esRojo = (valor) => {
 };
 export const B=(bg,c="#fff")=>{
   const luz = hexALuz(bg);
-  const principal = luz !== null && luz < 0.6;
+  // El acento por token tambien marca la accion principal: es lo que deja el
+  // barrido que retiro el naranja #f47c20 de B("#f47c20").
+  const principal = (luz !== null && luz < 0.6) || String(bg || "").includes("--accent");
   // Los tres tipos de boton del programa: principal en gris un punto mas
   // oscuro, secundario en gris claro, y borrar en gris claro con letra roja.
   return {
     background: principal ? "var(--boton-principal)" : "var(--fill)",
     color: esRojo(c) ? "var(--danger-text)" : "var(--text-primary)",
-    border:"none",borderRadius:980,padding:"8px 16px",fontSize:12.5,fontWeight:principal?600:500,
+    // Las mismas medidas que .ui-btn del kit, para que un boton viejo y uno
+    // nuevo puestos lado a lado no se distingan.
+    border:"none",borderRadius:980,padding:"0 16px",minHeight:36,fontSize:13,fontWeight:principal?600:500,
     cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontFamily:"inherit",
     whiteSpace:"nowrap",boxShadow:"none",transition:`opacity ${TRANSICION.rapida}`,
   };
 };
 // Tarjeta sin marco ni sombra: un bloque blanco sobre el gris de la pagina.
-export const CD={background:COLOR.surface,border:"none",borderRadius:22,padding:22,boxShadow:"none",boxSizing:"border-box"};
+export const CD={background:COLOR.surface,border:"none",borderRadius:RADIO.tarjeta,padding:22,boxShadow:"none",boxSizing:"border-box"};
 export const ST={fontSize:14.5,fontWeight:600,letterSpacing:"-0.01em",color:COLOR.textPrimary,marginBottom:12};
 
 export const hasBrokenEncoding = (value="") => /[ðâÃÂŸ]/.test(String(value || ""));

@@ -10,8 +10,7 @@ import { fmt } from "../../lib/format";
 import { comoFrase, comoNombre, primerNombre } from "../../lib/texto";
 import { asuntoSeguro } from "../../lib/asuntoCorreo";
 import { getQuotePrintableProposals } from "../../lib/cotizaciones";
-import LBL from "../../components/ui/LBL";
-import { B, SI } from "../../styles/tokens";
+import { Button, Callout, Input, Sheet } from "../../components/ui";
 
 // El nombre de la empresa va en el asunto: en la bandeja del cliente, un
 // "Cotización C-26115" a secas no dice de quién viene y se pierde.
@@ -190,99 +189,65 @@ export default function EnviarCotizacion({ cotizacion, firmaImg = "", onCerrar, 
     }
   };
 
+  // Mientras sale el correo no se deja cerrar: el PDF y el envio siguen en
+  // marcha y cerrar a medias dejaba la duda de si llego.
+  const cerrar = () => { if (!ocupado) onCerrar(); };
+
+  if (enviado) {
+    return (
+      <Sheet
+        onCerrar={onCerrar}
+        titulo="Cotización enviada"
+        pie={<Button variante="primary" bloque onClick={onCerrar}>Cerrar</Button>}
+      >
+        <p style={{ margin: 0, fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+          Salió a <strong style={{ color: "var(--text-primary)" }}>{para}</strong> con el PDF adjunto,
+          desde el correo de la empresa.
+        </p>
+      </Sheet>
+    );
+  }
+
   return (
-    <div
-      onMouseDown={(e) => { if (e.target === e.currentTarget && !ocupado) onCerrar(); }}
-      style={{
-        position: "fixed", inset: 0, zIndex: 200, background: "rgba(9,11,16,.45)",
-        display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
-      }}
+    <Sheet
+      onCerrar={cerrar}
+      cerrarAlPulsarFondo={!ocupado}
+      titulo="Enviar la cotización al cliente"
+      subtitulo="Revisa el mensaje. Sale desde el correo de la empresa con el PDF adjunto."
+      pie={
+        <>
+          <Button variante="secondary" onClick={cerrar} disabled={ocupado}>Cancelar</Button>
+          <Button variante="primary" onClick={enviar} cargando={ocupado}>
+            {ocupado ? "Enviando…" : "Enviar al cliente"}
+          </Button>
+        </>
+      }
     >
-      <div style={{
-        background: "var(--surface, #fff)", borderRadius: 16, padding: "24px 24px 22px",
-        width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto",
-        boxSizing: "border-box", boxShadow: "0 24px 60px -20px rgba(0,0,0,.5)",
-        border: "1px solid var(--border, #e2e8f0)",
-      }}>
-        {enviado ? (
-          <>
-            <h2 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 800, color: "var(--text-main, #101828)" }}>
-              Cotización enviada
-            </h2>
-            <p style={{ margin: "0 0 20px", fontSize: 13.5, color: "var(--text-muted, #667085)", lineHeight: 1.6 }}>
-              Salió a <strong style={{ color: "var(--text-main, #101828)" }}>{para}</strong> con el PDF adjunto,
-              desde el correo de la empresa.
-            </p>
-            <button onClick={onCerrar} style={{ ...B("#4ade80", "#0f2d1a"), width: "100%", justifyContent: "center" }}>
-              Cerrar
-            </button>
-          </>
-        ) : (
-          <>
-            <h2 style={{ margin: "0 0 4px", fontSize: 19, fontWeight: 800, color: "var(--text-main, #101828)" }}>
-              Enviar la cotización al cliente
-            </h2>
-            <p style={{ margin: "0 0 16px", fontSize: 12.5, color: "var(--text-muted, #667085)", lineHeight: 1.5 }}>
-              Revisa el mensaje. Sale desde el correo de la empresa con el PDF adjunto.
-            </p>
-
-            <div style={{ marginBottom: 12 }}>
-              <LBL>Para</LBL>
-              <input type="email" value={para} onChange={(e) => setPara(e.target.value)}
-                placeholder="isabel@empresa.com" style={SI} />
-              {!cotizacion?.contactoEmail && (
-                <div style={{ fontSize: 10.5, color: "#f59e0b", marginTop: 4 }}>
-                  Esta cotización no tiene correo guardado. Escríbelo aquí y agrégalo también
-                  en el formulario para la próxima.
-                </div>
-              )}
-            </div>
-
-            <div style={{ marginBottom: 12 }}>
-              <LBL>Asunto</LBL>
-              <input value={asunto} onChange={(e) => setAsunto(e.target.value)} style={SI} />
-            </div>
-
-            <div style={{ marginBottom: 14 }}>
-              <LBL>Mensaje</LBL>
-              <textarea value={mensaje} onChange={(e) => setMensaje(e.target.value)}
-                style={{ ...SI, minHeight: 190, resize: "vertical", lineHeight: 1.6 }} />
-            </div>
-
-            {estado && (
-              <div style={{
-                background: "rgba(30, 64, 175, 0.15)", border: "1px solid rgba(191, 216, 255, 0.3)", color: "#60a5fa",
-                borderRadius: 10, padding: "10px 12px", fontSize: 12.5, marginBottom: 12,
-              }}>
-                {estado}
-              </div>
-            )}
-
-            {error && (
-              <div style={{
-                background: "rgba(180, 35, 24, 0.15)", border: "1px solid rgba(254, 205, 202, 0.4)", color: "#f87171",
-                borderRadius: 10, padding: "10px 12px", fontSize: 12.5, marginBottom: 12, lineHeight: 1.5,
-              }}>
-                {error}
-              </div>
-            )}
-
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={enviar} disabled={ocupado}
-                style={{ ...B("#f47c20"), flex: 1, justifyContent: "center", opacity: ocupado ? .7 : 1 }}>
-                {ocupado ? "Enviando…" : "Enviar al cliente"}
-              </button>
-              <button onClick={onCerrar} disabled={ocupado} style={B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)")}>
-                Cancelar
-              </button>
-            </div>
-
-            <div style={{ fontSize: 10.5, color: "var(--text-subtle, #94a3b8)", marginTop: 10, lineHeight: 1.5 }}>
-              El PDF se arma en el momento y puede tardar unos segundos si la cotización trae fotos.
-            </div>
-          </>
-        )}
+      <div style={{ display: "grid", gap: 12 }}>
+        <Input
+          label="Para"
+          type="email"
+          value={para}
+          onChange={(e) => setPara(e.target.value)}
+          placeholder="isabel@empresa.com"
+          ayuda={!cotizacion?.contactoEmail
+            ? "Esta cotización no tiene correo guardado. Escríbelo aquí y agrégalo también en el formulario para la próxima."
+            : undefined}
+        />
+        <Input label="Asunto" value={asunto} onChange={(e) => setAsunto(e.target.value)} />
+        <Input
+          label="Mensaje"
+          como="textarea"
+          value={mensaje}
+          onChange={(e) => setMensaje(e.target.value)}
+          style={{ minHeight: 190, lineHeight: 1.6 }}
+        />
+        {estado && <Callout tono="info">{estado}</Callout>}
+        {error && <Callout tono="peligro">{error}</Callout>}
+        <div style={{ fontSize: 12, color: "var(--text-tertiary)", lineHeight: 1.5 }}>
+          El PDF se arma en el momento y puede tardar unos segundos si la cotización trae fotos.
+        </div>
       </div>
-    </div>
+    </Sheet>
   );
 }

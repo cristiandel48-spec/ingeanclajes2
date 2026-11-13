@@ -77,7 +77,7 @@ const ESTILOS_TIPO = {
   ingreso: {
     etiqueta: "Ingreso de usuario",
     bg: "rgba(16, 185, 129, 0.12)",
-    text: "#10b981",
+    text: "var(--success)",
     border: "rgba(16, 185, 129, 0.25)",
   },
   obra: {
@@ -342,12 +342,12 @@ export default function AuditoriaDocumentos({ ctx }) {
         codigo: u.estaEnLinea ? "EN LÍNEA" : "ACCESO",
         referencia: `${u.nombreLimpio} (${u.rolLabel})`,
         subreferencia: u.email
-          ? `${u.email} · ${u.estaEnLinea ? `🟢 En línea ahora desde ${u.dispositivo}` : `Último ingreso: ${u.textoUltimaConexion} (${u.dispositivo})`}`
-          : (u.estaEnLinea ? `🟢 En línea ahora desde ${u.dispositivo}` : `Último ingreso: ${u.textoUltimaConexion} (${u.dispositivo})`),
+          ? `${u.email} · ${u.estaEnLinea ? `En línea ahora desde ${u.dispositivo}` : `Último ingreso: ${u.textoUltimaConexion} (${u.dispositivo})`}`
+          : (u.estaEnLinea ? `En línea ahora desde ${u.dispositivo}` : `Último ingreso: ${u.textoUltimaConexion} (${u.dispositivo})`),
         creadoPorNombre: u.nombreLimpio,
         creadoEn: u.fechaConexionRaw,
         modificadoPorNombre: u.estaEnLinea
-          ? `🟢 En línea · ${u.dispositivo}`
+          ? `En línea · ${u.dispositivo}`
           : `Desconectado · Última vez: ${u.textoUltimaConexion} (${u.dispositivo})`,
         modificadoEn: u.fechaConexionRaw,
         usuarioData: u,
@@ -415,7 +415,7 @@ export default function AuditoriaDocumentos({ ctx }) {
   return (
     <div style={{ ...CD, marginTop: 18 }}>
       <div style={ST}>Registro de auditoría y control de cambios</div>
-      <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginBottom: 14 }}>
+      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 14 }}>
         Consulta qué persona ingresó al sistema y cuándo se conectó, además de quién creó y modificó obras, horarios, cotizaciones, informes y certificaciones.
         Módulo visible para Camila Sepúlveda y el equipo de Administración.
       </div>
@@ -450,7 +450,7 @@ export default function AuditoriaDocumentos({ ctx }) {
               <span>{t.label}</span>
               <span
                 style={{
-                  fontSize: 10.5,
+                  fontSize: 11,
                   padding: "1px 6px",
                   borderRadius: 10,
                   background: activo ? "rgba(255,255,255,0.2)" : "var(--border)",
@@ -481,8 +481,8 @@ export default function AuditoriaDocumentos({ ctx }) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#166534", display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#10b981", boxShadow: "0 0 6px #10b981", display: "inline-block" }} />
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--success-text)", display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--success)", boxShadow: "0 0 6px #10b981", display: "inline-block" }} />
             Auditoría de Conexiones del Equipo:
           </span>
           <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-main)" }}>
@@ -498,10 +498,10 @@ export default function AuditoriaDocumentos({ ctx }) {
           style={{
             background: tab === "ingresos" ? "#10b981" : "transparent",
             color: tab === "ingresos" ? "#ffffff" : "#166534",
-            border: "1px solid #10b981",
+            border: "1px solid var(--success)",
             borderRadius: 7,
             padding: "5px 12px",
-            fontSize: 11.5,
+            fontSize: 12,
             fontWeight: 700,
             cursor: "pointer",
             display: "inline-flex",
@@ -576,17 +576,17 @@ export default function AuditoriaDocumentos({ ctx }) {
                           <div>
                             <strong style={{ fontSize: 13, color: "var(--text-main)" }}>{u.nombreLimpio}</strong>
                             {u.esMiUsuario && (
-                              <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 700, color: "var(--accent, #f47c20)" }}>· tú</span>
+                              <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 700, color: "var(--accent, #f47c20)" }}>· tú</span>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td style={{ padding: "10px 10px", color: "var(--text-muted)", fontSize: 11.5 }}>
+                      <td style={{ padding: "10px 10px", color: "var(--text-muted)", fontSize: 12 }}>
                         {u.email || "—"}
                       </td>
-                      <td style={{ padding: "10px 10px", color: "var(--text-main)", fontSize: 11.5, fontWeight: 600 }}>
+                      <td style={{ padding: "10px 10px", color: "var(--text-main)", fontSize: 12, fontWeight: 600 }}>
                         {u.rolLabel}
-                        {!u.activo && <span style={{ color: "#ef4444", fontSize: 10.5, fontWeight: 400 }}> (suspendido)</span>}
+                        {!u.activo && <span style={{ color: "var(--danger)", fontSize: 11, fontWeight: 400 }}> (suspendido)</span>}
                       </td>
                       <td style={{ padding: "10px 10px", whiteSpace: "nowrap" }}>
                         {u.estaEnLinea ? (
@@ -598,13 +598,13 @@ export default function AuditoriaDocumentos({ ctx }) {
                               padding: "3px 10px",
                               borderRadius: 999,
                               background: "rgba(34, 197, 94, 0.15)",
-                              color: "#16a34a",
+                              color: "var(--success)",
                               border: "1px solid rgba(34, 197, 94, 0.3)",
                               fontSize: 11,
                               fontWeight: 700,
                             }}
                           >
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#16a34a", boxShadow: "0 0 6px #16a34a" }} />
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--success)", boxShadow: "0 0 6px #16a34a" }} />
                             En línea ahora
                           </span>
                         ) : (
@@ -622,7 +622,7 @@ export default function AuditoriaDocumentos({ ctx }) {
                               fontWeight: 500,
                             }}
                           >
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#9ca3af" }} />
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--text-quaternary)" }} />
                             Desconectado
                           </span>
                         )}
@@ -631,11 +631,11 @@ export default function AuditoriaDocumentos({ ctx }) {
                         <strong style={{ color: u.estaEnLinea ? "#16a34a" : "var(--text-main)", fontSize: 12 }}>
                           {u.estaEnLinea ? "Conectado ahora" : u.textoUltimaConexion}
                         </strong>
-                        <div style={{ fontSize: 10.5, color: "var(--text-muted)", marginTop: 2 }}>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
                           {fechaHora(u.fechaConexionRaw) || "Sin registro previo"}
                         </div>
                       </td>
-                      <td style={{ padding: "10px 10px", color: "var(--text-muted)", fontSize: 11.5 }}>
+                      <td style={{ padding: "10px 10px", color: "var(--text-muted)", fontSize: 12 }}>
                         {u.dispositivo || "Computador"}
                       </td>
                     </tr>
@@ -651,9 +651,9 @@ export default function AuditoriaDocumentos({ ctx }) {
               style={{
                 background: "none",
                 border: "none",
-                color: "#f47c20",
+                color: "var(--accent)",
                 cursor: "pointer",
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 600,
                 marginTop: 12,
                 padding: 0,
@@ -706,7 +706,7 @@ export default function AuditoriaDocumentos({ ctx }) {
                               border: `1px solid ${estiloBadge.border}`,
                               borderRadius: 6,
                               padding: "2px 7px",
-                              fontSize: 10.5,
+                              fontSize: 11,
                               fontWeight: 600,
                             }}
                           >
@@ -717,7 +717,7 @@ export default function AuditoriaDocumentos({ ctx }) {
                       <td style={{ padding: "8px 10px", color: "var(--text-main)" }}>
                         <div style={{ fontWeight: 500 }}>{doc.referencia}</div>
                         {doc.subreferencia && doc.subreferencia !== doc.referencia && (
-                          <div style={{ fontSize: 10.5, color: esIngreso && doc.usuarioData?.estaEnLinea ? "#16a34a" : "var(--text-muted)", marginTop: 1 }}>
+                          <div style={{ fontSize: 11, color: esIngreso && doc.usuarioData?.estaEnLinea ? "#16a34a" : "var(--text-muted)", marginTop: 1 }}>
                             {doc.subreferencia}
                           </div>
                         )}
@@ -747,9 +747,9 @@ export default function AuditoriaDocumentos({ ctx }) {
               style={{
                 background: "none",
                 border: "none",
-                color: "#f47c20",
+                color: "var(--accent)",
                 cursor: "pointer",
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 600,
                 marginTop: 12,
                 padding: 0,

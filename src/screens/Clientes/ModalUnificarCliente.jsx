@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
-import { B, SI } from "../../styles/tokens";
+import { Button, Callout, Input, Sheet } from "../../components/ui";
+import Icono from "../../components/ui/Icono";
 
+// Unificar dos fichas del mismo cliente. Era una ventana propia, con su fondo,
+// su sombra y colores pensados solo para el modo oscuro (rojos y verdes
+// translucidos que en claro casi no se leian). Ahora es la hoja del sistema.
 export default function ModalUnificarCliente({ clienteOrigen, clientesDisponibles = [], onCerrar, onUnificar }) {
   const [busqueda, setBusqueda] = useState("");
   const [destinoId, setDestinoId] = useState("");
@@ -24,238 +28,97 @@ export default function ModalUnificarCliente({ clienteOrigen, clientesDisponible
   }, [clientesDisponibles, destinoId]);
 
   const handleConfirmar = () => {
-    if (!destinoSeleccionado) {
-      window.alert("Por favor selecciona el cliente destino que conservará los datos.");
-      return;
-    }
+    if (!destinoSeleccionado) return;
     onUnificar(clienteOrigen, destinoSeleccionado);
   };
 
+  const dato = { display: "inline-flex", alignItems: "center", gap: 4 };
+
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(15, 23, 42, 0.65)",
-        backdropFilter: "blur(4px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 9999,
-        padding: 16,
-      }}
-      onClick={onCerrar}
-    >
-      <div
-        style={{
-          background: "var(--surface, #fff)",
-          border: "1px solid var(--border, #e2e8f0)",
-          borderRadius: 14,
-          maxWidth: 620,
-          width: "100%",
-          maxHeight: "90vh",
-          display: "flex",
-          flexDirection: "column",
-          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.2)",
-          overflow: "hidden",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Cabecera del modal */}
-        <div
-          style={{
-            padding: "18px 24px",
-            borderBottom: "1px solid var(--border, #e2e8f0)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            background: "var(--surface-subtle, #f8fafc)",
-          }}
-        >
-          <div>
-            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
-              Unificar clientes duplicados
-            </h3>
-            <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--text-muted, #64748b)" }}>
-              Transfiere obras, cotizaciones y certificados a una sola ficha oficial
-            </p>
-          </div>
-          <button
-            onClick={onCerrar}
-            style={{
-              background: "transparent",
-              border: "none",
-              fontSize: 20,
-              cursor: "pointer",
-              color: "var(--text-subtle, #94a3b8)",
-              lineHeight: 1,
-              padding: 4,
-            }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Contenido scrolleable */}
-        <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
-          {/* Tarjeta de cliente a eliminar / fusionar */}
-          <div
-            style={{
-              background: "rgba(220, 38, 38, 0.15)",
-              border: "1px solid rgba(254, 205, 211, 0.3)",
-              borderRadius: 10,
-              padding: "14px 16px",
-              marginBottom: 18,
-            }}
-          >
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#f87171", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
-              Ficha que se eliminará (Origen):
-            </div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-main, #9f1239)", marginBottom: 6 }}>
-              {clienteOrigen.nombre}
-            </div>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 12, color: "var(--text-muted, #881337)" }}>
-              <span>🏗️ <strong>{clienteOrigen.obrasTotal || 0}</strong> obra(s)</span>
-              <span>📄 <strong>{clienteOrigen.cotizacionesTotal || 0}</strong> cotización(es)</span>
-              <span>📜 <strong>{clienteOrigen.certificacionesTotal || 0}</strong> certificación(es)</span>
-            </div>
-          </div>
-
-          {/* Selector de cliente destino */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "var(--text-main, #1e293b)", marginBottom: 6 }}>
-              Selecciona el cliente oficial que se queda (Destino):
-            </label>
-
-            <input
-              type="text"
-              placeholder="Buscar cliente por nombre, NIT o ciudad..."
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              style={{
-                ...SI,
-                marginBottom: 8,
-                fontSize: 12.5,
-                borderColor: "var(--border, #cbd5e1)",
-              }}
-            />
-
-            <div
-              style={{
-                maxHeight: 180,
-                overflowY: "auto",
-                border: "1px solid var(--border, #cbd5e1)",
-                borderRadius: 8,
-                background: "var(--surface, #fff)",
-              }}
-            >
-              {listaFiltrada.length === 0 ? (
-                <div style={{ padding: "16px", textAlign: "center", fontSize: 12.5, color: "var(--text-subtle, #94a3b8)" }}>
-                  No se encontraron clientes con «{busqueda}»
-                </div>
-              ) : (
-                listaFiltrada.map((c) => {
-                  const sel = c.id === destinoId;
-                  return (
-                    <div
-                      key={c.id}
-                      onClick={() => setDestinoId(c.id)}
-                      style={{
-                        padding: "10px 14px",
-                        borderBottom: "1px solid var(--border, #f1f5f9)",
-                        cursor: "pointer",
-                        background: sel ? "rgba(30, 64, 175, 0.18)" : "transparent",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        transition: "background 0.15s ease",
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: sel ? 700 : 600, color: sel ? "#60a5fa" : "var(--text-main, #1e293b)" }}>
-                          {c.nombre}
-                        </div>
-                        <div style={{ fontSize: 11, color: "var(--text-muted, #64748b)" }}>
-                          {c.nit ? `NIT: ${c.nit}` : "Sin NIT"} {c.ciudad ? `· ${c.ciudad}` : ""} {c.telefono ? `· 📱 ${c.telefono}` : ""}
-                        </div>
-                      </div>
-                      <input
-                        type="radio"
-                        name="clienteDestino"
-                        checked={sel}
-                        onChange={() => setDestinoId(c.id)}
-                        style={{ marginLeft: 10, cursor: "pointer" }}
-                      />
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* Resumen de la unificación */}
-          {destinoSeleccionado && (
-            <div
-              style={{
-                background: "rgba(16, 185, 129, 0.15)",
-                border: "1px solid rgba(187, 247, 208, 0.3)",
-                borderRadius: 10,
-                padding: "12px 16px",
-                fontSize: 12,
-                color: "#34d399",
-                lineHeight: 1.5,
-              }}
-            >
-              <div style={{ fontWeight: 700, marginBottom: 3 }}>
-                ✓ Resultado de la unificación:
-              </div>
-              <div>
-                Todos los documentos de <strong>«{clienteOrigen.nombre}»</strong> se transferirán automáticamente a <strong>«{destinoSeleccionado.nombre}»</strong>. Si «{destinoSeleccionado.nombre}» no tenía NIT o teléfono, se autocompletará con los datos de «{clienteOrigen.nombre}».
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Pie del modal con acciones */}
-        <div
-          style={{
-            padding: "14px 24px",
-            borderTop: "1px solid var(--border, #e2e8f0)",
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: 10,
-            background: "var(--surface-subtle, #f8fafc)",
-          }}
-        >
-          <button
-            onClick={onCerrar}
-            style={{
-              ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"),
-              fontSize: 13,
-              padding: "8px 16px",
-            }}
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleConfirmar}
-            disabled={!destinoSeleccionado}
-            style={{
-              ...B("#cc0000"),
-              fontSize: 13,
-              padding: "8px 20px",
-              opacity: destinoSeleccionado ? 1 : 0.5,
-              cursor: destinoSeleccionado ? "pointer" : "not-allowed",
-              fontWeight: 700,
-            }}
-          >
+    <Sheet
+      onCerrar={onCerrar}
+      titulo="Unificar clientes duplicados"
+      subtitulo="Transfiere obras, cotizaciones y certificados a una sola ficha oficial."
+      ancha
+      pie={
+        <>
+          <Button variante="secondary" onClick={onCerrar}>Cancelar</Button>
+          <Button variante="destructive" onClick={handleConfirmar} disabled={!destinoSeleccionado}>
             Unificar y transferir
-          </button>
-        </div>
+          </Button>
+        </>
+      }
+    >
+      <Callout tono="peligro" titulo={`Se eliminará: ${clienteOrigen.nombre}`} style={{ marginBottom: 18 }}>
+        <span style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 4 }}>
+          <span style={dato}><Icono nombre="obra" size={14} /><strong>{clienteOrigen.obrasTotal || 0}</strong> obra(s)</span>
+          <span style={dato}><Icono nombre="documento" size={14} /><strong>{clienteOrigen.cotizacionesTotal || 0}</strong> cotización(es)</span>
+          <span style={dato}><Icono nombre="escudo" size={14} /><strong>{clienteOrigen.certificacionesTotal || 0}</strong> certificación(es)</span>
+        </span>
+      </Callout>
+
+      <Input
+        label="Cliente oficial que se queda"
+        type="search"
+        placeholder="Buscar por nombre, NIT o ciudad"
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+        wrapStyle={{ marginBottom: 8 }}
+      />
+
+      <div
+        role="radiogroup"
+        aria-label="Cliente destino"
+        style={{ maxHeight: 220, overflowY: "auto", background: "var(--fill)", borderRadius: 12, marginBottom: 16 }}
+      >
+        {listaFiltrada.length === 0 ? (
+          <div style={{ padding: 16, textAlign: "center", fontSize: 13, color: "var(--text-tertiary)" }}>
+            No se encontraron clientes con «{busqueda}»
+          </div>
+        ) : (
+          listaFiltrada.map((c, i) => {
+            const sel = c.id === destinoId;
+            return (
+              <label
+                key={c.id}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+                  padding: "10px 14px", cursor: "pointer",
+                  borderTop: i ? "1px solid var(--separator)" : "none",
+                  background: sel ? "var(--accent-tint)" : "transparent",
+                  transition: "background var(--transicion-rapida)",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: sel ? 600 : 500, color: "var(--text-primary)" }}>{c.nombre}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
+                    {c.nit ? `NIT: ${c.nit}` : "Sin NIT"} {c.ciudad ? `· ${c.ciudad}` : ""} {c.telefono ? `· ${c.telefono}` : ""}
+                  </div>
+                </div>
+                <input
+                  type="radio"
+                  name="clienteDestino"
+                  checked={sel}
+                  onChange={() => setDestinoId(c.id)}
+                  style={{ accentColor: "var(--accent)", cursor: "pointer", flexShrink: 0 }}
+                />
+              </label>
+            );
+          })
+        )}
       </div>
-    </div>
+
+      {destinoSeleccionado ? (
+        <Callout tono="exito" titulo="Resultado de la unificación">
+          Todos los documentos de <strong>«{clienteOrigen.nombre}»</strong> se transferirán a{" "}
+          <strong>«{destinoSeleccionado.nombre}»</strong>. Si «{destinoSeleccionado.nombre}» no tenía NIT o teléfono, se
+          completará con los datos de «{clienteOrigen.nombre}».
+        </Callout>
+      ) : (
+        <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
+          Elige el cliente que conservará los datos para poder unificar.
+        </div>
+      )}
+    </Sheet>
   );
 }

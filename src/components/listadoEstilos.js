@@ -45,7 +45,7 @@ export const boton = (fondo, color, extra = {}) => ({
   border: "1px solid var(--border)",
   borderRadius: 8,
   padding: "5px 11px",
-  fontSize: 11.5,
+  fontSize: 12,
   fontWeight: 600,
   cursor: "pointer",
   fontFamily: "inherit",

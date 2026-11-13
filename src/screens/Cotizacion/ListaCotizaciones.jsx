@@ -1,3 +1,4 @@
+import Icono from "../../components/ui/Icono";
 import { useMemo, useState, useEffect, useRef } from "react";
 import { fmt, fmtD } from "../../lib/format";
 import { normalizarMayusculas, normalizarRazonSocial } from "../../lib/normalizarEntrada";
@@ -10,7 +11,7 @@ import {
 import { getQuoteActiveProposal, getTipoCotizacionLabel, resolverTipoCotizacion } from "../../lib/cotizaciones";
 import { TEXTOS_DOCUMENTO_DEFAULT } from "../../lib/cotizacionTextos";
 import { useMediaQuery, useIsMobile } from "../../hooks/useMediaQuery";
-import { BarraFija, CABECERA_FIJA } from "../../components/ui";
+import { BarraFija, CABECERA_FIJA, ConmutadorVista, EmptyState } from "../../components/ui";
 
 const ORDENES = [
   {
@@ -229,7 +230,7 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
             borderRadius: 12,
             display: "inline-flex",
             alignItems: "center",
-            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            border: "none",
             overflowX: "auto",
             maxWidth: "100%",
           }}
@@ -289,7 +290,7 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
                 pointerEvents: "none",
               }}
             >
-              🔍
+              <Icono nombre="buscar" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />
             </span>
             <input
               ref={campoBusquedaRef}
@@ -304,7 +305,7 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
                 border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
                 background: "var(--surface, #ffffff)",
                 color: "var(--text-main, #1d1d1f)",
-                fontSize: 12.5,
+                fontSize: 13,
                 outline: "none",
                 boxSizing: "border-box",
                 transition: "all 0.15s ease",
@@ -338,11 +339,11 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
                   right: 8,
                   top: "50%",
                   transform: "translateY(-50%)",
-                  fontSize: 10,
+                  fontSize: 11,
                   fontFamily: "'Inter', system-ui, sans-serif",
                   color: "var(--text-subtle, #86868b)",
                   background: "var(--surface-subtle, #f5f5f7)",
-                  border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                  border: "none",
                   padding: "1px 4px",
                   borderRadius: 4,
                   pointerEvents: "none",
@@ -354,53 +355,7 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
           </div>
 
           {/* Conmutador Cuadrícula / Lista */}
-          <div
-            style={{
-              background: "var(--surface-subtle, #f5f5f7)",
-              padding: 2,
-              borderRadius: 8,
-              border: "1px solid var(--border, rgba(0,0,0,0.08))",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 2,
-              flexShrink: 0,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => cambiarVista("tarjetas")}
-              title="Vista de cuadrícula Apple"
-              style={{
-                border: "none",
-                borderRadius: 6,
-                padding: "5px 8px",
-                background: vista === "tarjetas" ? "var(--surface, #ffffff)" : "transparent",
-                color: vista === "tarjetas" ? "var(--text-main, #1d1d1f)" : "var(--text-muted, #86868b)",
-                boxShadow: vista === "tarjetas" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-                cursor: "pointer",
-                fontSize: 13,
-              }}
-            >
-              ⊞
-            </button>
-            <button
-              type="button"
-              onClick={() => cambiarVista("tabla")}
-              title="Vista de lista"
-              style={{
-                border: "none",
-                borderRadius: 6,
-                padding: "5px 8px",
-                background: vista === "tabla" ? "var(--surface, #ffffff)" : "transparent",
-                color: vista === "tabla" ? "var(--text-main, #1d1d1f)" : "var(--text-muted, #86868b)",
-                boxShadow: vista === "tabla" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-                cursor: "pointer",
-                fontSize: 13,
-              }}
-            >
-              ☰
-            </button>
-          </div>
+          <ConmutadorVista valor={vista} onChange={cambiarVista} />
         </div>
       </div>
 
@@ -519,23 +474,12 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
       {/* RESULTADOS / LISTA O CUADRÍCULA                               */}
       {/* ============================================================= */}
       {filtradas.length === 0 ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "48px 20px",
-            background: "var(--surface, #ffffff)",
-            borderRadius: 18,
-            border: "1px dashed var(--border, rgba(0,0,0,0.1))",
-            color: "var(--text-muted, #86868b)",
-          }}
-        >
-          <div style={{ fontSize: 32, marginBottom: 8 }}>📄</div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-main, #1d1d1f)" }}>
-            No se encontraron cotizaciones
-          </div>
-          <p style={{ fontSize: 13, margin: "6px 0 0" }}>
-            Prueba ajustando los términos de búsqueda o los filtros seleccionados.
-          </p>
+        <div style={{ background: "var(--surface)", borderRadius: 18 }}>
+          <EmptyState
+            icono="documento"
+            titulo="No se encontraron cotizaciones"
+            texto="Prueba ajustando los términos de búsqueda o los filtros seleccionados."
+          />
         </div>
       ) : vista === "tarjetas" ? (
         <div
@@ -561,10 +505,10 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
           style={{
             background: "var(--surface, #ffffff)",
             borderRadius: 16,
-            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            border: "none",
             // clip y no hidden: hidden no deja pegar los titulos al bajar.
             overflow: "clip",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+            boxShadow: "none",
           }}
         >
           <div style={{ overflowX: isMobile ? "auto" : "visible", width: "100%" }}>
@@ -618,15 +562,15 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
 // ===================================================================
 
 const ESTILOS_CHIP_TIPO = {
-  linea_vida: { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
+  linea_vida: { bg: "var(--info-bg)", color: "var(--info-text)", border: "#bfdbfe" },
   puntos_anclaje: { bg: "#eef2ff", color: "#4338ca", border: "#c7d2fe" },
-  linea_vida_camionera: { bg: "#fff7ed", color: "#c2410c", border: "#fed7aa" },
+  linea_vida_camionera: { bg: "var(--accent-tint)", color: "#c2410c", border: "#fed7aa" },
   linea_vida_vertical: { bg: "#f0fdfa", color: "#0f766e", border: "#99f6e4" },
-  escaleras: { bg: "#ecfdf5", color: "#047857", border: "#a7f3d0" },
-  estructuras_metalicas: { bg: "#f1f5f9", color: "#334155", border: "#cbd5e1" },
+  escaleras: { bg: "var(--success-bg)", color: "var(--success-text)", border: "#a7f3d0" },
+  estructuras_metalicas: { bg: "var(--fill)", color: "var(--text-secondary)", border: "#cbd5e1" },
   obra_blanca: { bg: "#faf5ff", color: "#7e22ce", border: "#e9d5ff" },
-  servicios: { bg: "#f0f9ff", color: "#0369a1", border: "#bae6fd" },
-  manual: { bg: "#f8fafc", color: "#475569", border: "#e2e8f0" },
+  servicios: { bg: "#f0f9ff", color: "var(--info)", border: "#bae6fd" },
+  manual: { bg: "var(--surface-subtle)", color: "var(--text-secondary)", border: "#e2e8f0" },
 };
 
 function tituloPersonalizadoDe(cotizacion) {
@@ -785,13 +729,13 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
             <span
               style={{
                 fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 600,
                 padding: "2px 7px",
                 borderRadius: 6,
                 background: "var(--surface-subtle, #f5f5f7)",
                 color: "var(--text-main, #101828)",
-                border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                border: "none",
                 fontVariantNumeric: "tabular-nums",
                 letterSpacing: "-0.01em",
                 flexShrink: 0,
@@ -815,7 +759,7 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
           <div style={{ marginBottom: 6 }}>
             <span
               style={{
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 700,
                 color: colorSeguimiento(diasParaVencer),
                 background: "rgba(255, 149, 0, 0.08)",
@@ -832,7 +776,7 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
         {/* Cliente y Obra */}
         <h3
           style={{
-            fontSize: 14.5,
+            fontSize: 15,
             fontWeight: 600,
             color: "var(--text-main, #101828)",
             margin: "0 0 3px",
@@ -883,7 +827,7 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
         <div style={{ minWidth: 0, flexShrink: 0 }}>
           <div
             style={{
-              fontSize: 10.5,
+              fontSize: 11,
               fontWeight: 600,
               color: "var(--text-subtle, #86868b)",
               textTransform: "uppercase",
@@ -894,7 +838,7 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
           <div
             style={{
               fontSize: 16,
-              fontWeight: 800,
+              fontWeight: 700,
               color: "var(--text-main, #1d1d1f)",
               fontVariantNumeric: "tabular-nums",
             }}
@@ -917,7 +861,7 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
               border: "none",
               borderRadius: 8,
               padding: "5px 11px",
-              fontSize: 11.5,
+              fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
@@ -936,7 +880,7 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
               border: "1px solid var(--border, rgba(0,0,0,0.12))",
               borderRadius: 8,
               padding: "5px 9px",
-              fontSize: 11.5,
+              fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
             }}
@@ -954,12 +898,12 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
               border: "1px solid var(--border, rgba(0,0,0,0.12))",
               borderRadius: 8,
               padding: "5px 7px",
-              fontSize: 11.5,
+              fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
             }}
           >
-            📋
+            <Icono nombre="documento" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />
           </button>
 
           {/* El cliente dijo que no: sale del seguimiento sin borrarla. */}
@@ -974,7 +918,7 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
                 border: "1px solid var(--border, rgba(0,0,0,0.12))",
                 borderRadius: 8,
                 padding: "5px 9px",
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
               }}
@@ -991,16 +935,16 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
               onClick={alPulsar(acciones.eliminar)}
               style={{
                 background: "rgba(239, 68, 68, 0.08)",
-                color: "#dc2626",
+                color: "var(--danger)",
                 border: "1px solid rgba(239, 68, 68, 0.2)",
                 borderRadius: 8,
                 padding: "5px 8px",
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
               }}
             >
-              🗑️
+              <Icono nombre="papelera" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />
             </button>
           )}
         </div>
@@ -1036,7 +980,7 @@ function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar })
         alignItems: "center",
         background: zebra ? "var(--surface-subtle, #fafbfd)" : "var(--surface, #ffffff)",
         borderBottom: "1px solid var(--border, rgba(0,0,0,0.06))",
-        fontSize: 12.5,
+        fontSize: 13,
         cursor: "pointer",
         transition: "background 0.12s ease",
       }}
@@ -1052,7 +996,7 @@ function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar })
       <span
         style={{
           fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-          fontSize: 12.5,
+          fontSize: 13,
           fontWeight: 600,
           color: "var(--text-main, #101828)",
           fontVariantNumeric: "tabular-nums",
@@ -1081,7 +1025,7 @@ function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar })
       <div style={{ minWidth: 0, paddingRight: 10 }}>
         <div
           style={{
-            fontSize: 12.5,
+            fontSize: 13,
             fontWeight: 400,
             color: "var(--text-muted, #475467)",
             letterSpacing: "-0.01em",
@@ -1127,7 +1071,7 @@ function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar })
           }}
           style={{
             background: "var(--surface-subtle, #f5f5f7)",
-            border: "1px solid var(--border, rgba(0,0,0,0.08))",
+            border: "none",
             borderRadius: 6,
             padding: "4px 8px",
             fontSize: 11,
@@ -1165,7 +1109,7 @@ function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar })
             cursor: "pointer",
           }}
         >
-          📋
+          <Icono nombre="documento" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />
         </button>
         {acciones.rechazar && !esAprobada(c) && !esRechazada(c) && (
           <button
@@ -1191,7 +1135,7 @@ function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar })
             title="Eliminar permanentemente"
             style={{
               background: "rgba(239, 68, 68, 0.08)",
-              color: "#dc2626",
+              color: "var(--danger)",
               border: "1px solid rgba(239, 68, 68, 0.2)",
               borderRadius: 6,
               padding: "4px 6px",
@@ -1199,7 +1143,7 @@ function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar })
               cursor: "pointer",
             }}
           >
-            🗑️
+            <Icono nombre="papelera" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />
           </button>
         )}
       </div>

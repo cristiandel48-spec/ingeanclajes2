@@ -1,3 +1,4 @@
+import Icono from "../ui/Icono";
 import { useEffect, useMemo, useState } from "react";
 import { useAppData } from "../../context/AppDataContext";
 import {
@@ -34,14 +35,14 @@ function formatFechaLarga(isoStr) {
 const TIPOS_COMPROMISO = {
   visita: {
     label: "Visita a Obra",
-    color: "#d97706",
-    bg: "#fef3c7",
+    color: "var(--warning)",
+    bg: "var(--warning-bg)",
     border: "#fde68a",
   },
   llamada: {
     label: "Llamada",
-    color: "#2563eb",
-    bg: "#eff6ff",
+    color: "var(--info)",
+    bg: "var(--info-bg)",
     border: "#dbeafe",
   },
   reunion: {
@@ -52,8 +53,8 @@ const TIPOS_COMPROMISO = {
   },
   coordinacion: {
     label: "Coordinación",
-    color: "#059669",
-    bg: "#ecfdf5",
+    color: "var(--success)",
+    bg: "var(--success-bg)",
     border: "#d1fae5",
   },
 };
@@ -173,7 +174,7 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
         // Notificación de escritorio si está en otra pestaña o minimizado
         const primerCompromiso = compromisosManana[0];
         mostrarNotificacionEscritorio({
-          titulo: "📅 Agenda de mañana · Ingeanclajes",
+          titulo: "Agenda de mañana · Ingeanclajes",
           cuerpo: `Recuerda: Mañana tienes ${compromisosManana.length} compromiso(s). El primero a las ${primerCompromiso.hora || "primera hora"} en ${primerCompromiso.obra || primerCompromiso.titulo}.`,
           alHacerClic: () => {
             onIrAAgenda?.();
@@ -237,9 +238,10 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 99999,
-        background: "rgba(15, 23, 42, 0.55)",
-        backdropFilter: "blur(6px)",
+        zIndex: "var(--capa-hoja)",
+        // El mismo fondo que las hojas del sistema (.ui-overlay).
+        background: "rgba(16, 24, 40, .45)",
+        backdropFilter: "blur(4px)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -253,8 +255,8 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
           maxWidth: 540,
           background: "var(--surface, #ffffff)",
           borderRadius: 20,
-          border: "1px solid var(--border, #e2e8f0)",
-          boxShadow: "0 25px 50px -12px rgba(15, 23, 42, 0.25)",
+          border: "1px solid var(--separator)",
+          boxShadow: "var(--sombra-lg)",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
@@ -279,8 +281,8 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
                 width: 44,
                 height: 44,
                 borderRadius: 12,
-                background: modoCierre ? "#ffedd5" : "#eff6ff",
-                color: modoCierre ? "#ea580c" : "#2563eb",
+                background: modoCierre ? "var(--accent-tint)" : "var(--info-bg)",
+                color: modoCierre ? "var(--accent)" : "var(--info)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -311,7 +313,7 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
               <h2
                 style={{
                   fontSize: 18,
-                  fontWeight: 800,
+                  fontWeight: 700,
                   margin: "2px 0 0",
                   color: "var(--text-main, #0f172a)",
                 }}
@@ -320,16 +322,16 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
                   ? "Tienes 1 compromiso para mañana"
                   : `Tienes ${compromisosManana.length} compromisos para mañana`}
               </h2>
-              <div style={{ fontSize: 12.5, color: "var(--text-muted, #64748b)", marginTop: 2, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <div style={{ fontSize: 13, color: "var(--text-muted, #64748b)", marginTop: 2, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 <span>{formatFechaLarga(mananaIso)}</span>
                 {getFestivoColombia(mananaIso) && (
                   <span
                     style={{
                       fontSize: 11,
                       fontWeight: 700,
-                      color: "#b91c1c",
-                      background: "#fee2e2",
-                      border: "1px solid #fecaca",
+                      color: "var(--danger-text)",
+                      background: "var(--danger-bg)",
+                      border: "1px solid var(--danger-bg)",
                       padding: "1px 7px",
                       borderRadius: 12,
                     }}
@@ -426,7 +428,7 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
                   <span
                     style={{
                       fontSize: 13,
-                      fontWeight: 800,
+                      fontWeight: 700,
                       color: "var(--text-main, #0f172a)",
                       background: "var(--surface-subtle, #f1f5f9)",
                       padding: "2px 8px",
@@ -438,7 +440,7 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
                 </div>
 
                 {/* Título de la obra / cliente */}
-                <div style={{ fontSize: 14.5, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
                   {item.obra || item.titulo}
                 </div>
                 {item.cliente && (
@@ -451,7 +453,7 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
                 {(item.contacto || item.telefono) && (
                   <div
                     style={{
-                      fontSize: 11.5,
+                      fontSize: 12,
                       marginTop: 8,
                       padding: "5px 8px",
                       background: "var(--surface-subtle, #f8fafc)",
@@ -463,14 +465,14 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
                       {item.contacto || "Contacto"}:
                     </span>{" "}
                     {item.telefono && (
-                      <span style={{ color: "#2563eb", fontWeight: 600 }}>{item.telefono}</span>
+                      <span style={{ color: "var(--info)", fontWeight: 600 }}>{item.telefono}</span>
                     )}
                   </div>
                 )}
 
                 {/* Requerimiento SST */}
                 {item.requerimientoSst && (
-                  <div style={{ fontSize: 11, color: "#059669", fontWeight: 600, marginTop: 4 }}>
+                  <div style={{ fontSize: 11, color: "var(--success)", fontWeight: 600, marginTop: 4 }}>
                     SST: {item.requerimientoSst}
                   </div>
                 )}
@@ -536,18 +538,18 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
           <div
             style={{
               padding: "8px 24px",
-              background: "#fef3c7",
-              borderTop: "1px solid #fde68a",
-              borderBottom: "1px solid #fde68a",
-              fontSize: 11.5,
-              color: "#92400e",
+              background: "var(--warning-bg)",
+              borderTop: "1px solid var(--warning-bg)",
+              borderBottom: "1px solid var(--warning-bg)",
+              fontSize: 12,
+              color: "var(--warning-text)",
               fontWeight: 600,
               display: "flex",
               alignItems: "center",
               gap: 6,
             }}
           >
-            <span>⚠️</span>
+            <Icono nombre="alerta" size={14} />
             <span>
               Nota: Aún tienes {compromisosHoyPendientes.length} compromiso(s) pendiente(s) de hoy por marcar como realizados.
             </span>
@@ -572,7 +574,7 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
             style={{
               ...B("var(--surface, #ffffff)", "var(--text-main, #0f172a)"),
               border: "1px solid var(--border, #cbd5e1)",
-              fontSize: 12.5,
+              fontSize: 13,
               padding: "7px 14px",
             }}
           >
@@ -588,7 +590,7 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
                   style={{
                     ...B("var(--surface, #ffffff)", "var(--text-muted, #475569)"),
                     border: "1px solid var(--border, #cbd5e1)",
-                    fontSize: 12.5,
+                    fontSize: 13,
                     padding: "7px 14px",
                   }}
                 >
@@ -599,7 +601,7 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
                   onClick={confirmarSalida}
                   style={{
                     ...B("#ea580c"),
-                    fontSize: 12.5,
+                    fontSize: 13,
                     padding: "7px 14px",
                   }}
                 >
@@ -612,7 +614,7 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
                 onClick={cerrarModal}
                 style={{
                   ...B("#0f172a"),
-                  fontSize: 12.5,
+                  fontSize: 13,
                   padding: "7px 16px",
                 }}
               >

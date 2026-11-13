@@ -1,8 +1,9 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { fmtD } from "../../lib/format";
 import { useIsMobile } from "../../hooks/useMediaQuery";
-import { BarraFija, CABECERA_FIJA, StatusPill } from "../../components/ui";
+import { BarraFija, CABECERA_FIJA, ConmutadorVista, EmptyState, StatusPill } from "../../components/ui";
 import { ESTADO_FIRMA } from "../../lib/firmaRecibido";
+import Icono from "../../components/ui/Icono";
 
 const ORDENES = [
   { key: "recientes", label: "Más recientes", comparar: (a, b) => enMilis(b.fechaInforme) - enMilis(a.fechaInforme) || String(b.id).localeCompare(String(a.id)) },
@@ -151,7 +152,7 @@ export default function ListaInformes({ informes = [], acciones = {}, estadosFir
             borderRadius: 12,
             display: "inline-flex",
             alignItems: "center",
-            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            border: "none",
             overflowX: "auto",
             maxWidth: "100%",
           }}
@@ -201,7 +202,7 @@ export default function ListaInformes({ informes = [], acciones = {}, estadosFir
                 pointerEvents: "none",
               }}
             >
-              🔍
+              <Icono nombre="buscar" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />
             </span>
             <input
               ref={inputBusquedaRef}
@@ -212,7 +213,7 @@ export default function ListaInformes({ informes = [], acciones = {}, estadosFir
               style={{
                 width: "100%",
                 padding: "8px 28px 8px 32px",
-                fontSize: 12.5,
+                fontSize: 13,
                 borderRadius: 10,
                 border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
                 background: "var(--surface, #ffffff)",
@@ -250,11 +251,11 @@ export default function ListaInformes({ informes = [], acciones = {}, estadosFir
                   right: 8,
                   top: "50%",
                   transform: "translateY(-50%)",
-                  fontSize: 10,
+                  fontSize: 11,
                   fontFamily: "'Inter', system-ui, sans-serif",
                   color: "var(--text-subtle, #86868b)",
                   background: "var(--surface-subtle, #f5f5f7)",
-                  border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                  border: "none",
                   padding: "1px 4px",
                   borderRadius: 4,
                   pointerEvents: "none",
@@ -266,68 +267,7 @@ export default function ListaInformes({ informes = [], acciones = {}, estadosFir
           </div>
 
           {/* Conmutador Cuadrícula / Lista */}
-          <div
-            style={{
-              background: "var(--surface-subtle, #f5f5f7)",
-              padding: 2,
-              borderRadius: 8,
-              border: "1px solid var(--border, rgba(0,0,0,0.08))",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 2,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => cambiarModoVista("tabla")}
-              title="Vista en tabla"
-              style={{
-                background: modoVista === "tabla" ? "#ffffff" : "transparent",
-                color: modoVista === "tabla" ? "#1d1d1f" : "#86868b",
-                border: "none",
-                borderRadius: 6,
-                padding: "5px 8px",
-                cursor: "pointer",
-                boxShadow: modoVista === "tabla" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="8" y1="6" x2="21" y2="6" />
-                <line x1="8" y1="12" x2="21" y2="12" />
-                <line x1="8" y1="18" x2="21" y2="18" />
-                <line x1="3" y1="6" x2="3.01" y2="6" />
-                <line x1="3" y1="12" x2="3.01" y2="12" />
-                <line x1="3" y1="18" x2="3.01" y2="18" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              onClick={() => cambiarModoVista("cuadricula")}
-              title="Vista en tarjetas"
-              style={{
-                background: modoVista === "cuadricula" ? "#ffffff" : "transparent",
-                color: modoVista === "cuadricula" ? "#1d1d1f" : "#86868b",
-                border: "none",
-                borderRadius: 6,
-                padding: "5px 8px",
-                cursor: "pointer",
-                boxShadow: modoVista === "cuadricula" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="7" height="7" rx="1.5" />
-                <rect x="14" y="3" width="7" height="7" rx="1.5" />
-                <rect x="14" y="14" width="7" height="7" rx="1.5" />
-                <rect x="3" y="14" width="7" height="7" rx="1.5" />
-              </svg>
-            </button>
-          </div>
+          <ConmutadorVista valor={modoVista} onChange={cambiarModoVista} opciones={[{ id: "cuadricula", icono: "cuadricula", titulo: "Ver como tarjetas" }, { id: "tabla", icono: "lista", titulo: "Ver como lista" }]} />
 
           {/* Selector de Orden */}
           <select
@@ -356,25 +296,12 @@ export default function ListaInformes({ informes = [], acciones = {}, estadosFir
 
       {/* Listado de Informes */}
       {informesFiltrados.length === 0 ? (
-        <div
-          style={{
-            background: "var(--surface, #ffffff)",
-            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-            borderRadius: 16,
-            padding: "48px 24px",
-            textAlign: "center",
-            boxShadow: "0 2px 8px -2px rgba(0, 0, 0, 0.02)",
-          }}
-        >
-          <div style={{ fontSize: 32, marginBottom: 10 }}>📄</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-main, #1d1d1f)", marginBottom: 4 }}>
-            No se encontraron informes
-          </div>
-          <p style={{ fontSize: 13, color: "var(--text-muted, #6e6e73)", maxWidth: 420, margin: "0 auto" }}>
-            {busqueda
-              ? `No hay ningún informe que coincida con "${busqueda}". Prueba con otro término.`
-              : "Los informes de actividades se generan a partir de los avances de cada obra."}
-          </p>
+        <div style={{ background: "var(--surface)", borderRadius: 18 }}>
+          <EmptyState
+            icono="documento"
+            titulo="No se encontraron informes"
+            texto={busqueda ? `No hay ningún informe que coincida con «${busqueda}». Prueba con otro término.` : "Los informes de actividades se generan a partir de los avances de cada obra."}
+          />
         </div>
       ) : modoVista === "cuadricula" ? (
         <div
@@ -397,11 +324,11 @@ export default function ListaInformes({ informes = [], acciones = {}, estadosFir
         <div
           style={{
             background: "var(--surface, #ffffff)",
-            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            border: "none",
             borderRadius: 16,
             // clip y no hidden: hidden no deja pegar los titulos al bajar.
             overflow: "clip",
-            boxShadow: "0 2px 8px -2px rgba(0, 0, 0, 0.02)",
+            boxShadow: "none",
           }}
         >
           {/* Cabecera de la tabla */}
@@ -453,7 +380,7 @@ function BotonSegmentado({ activo, onClick, label }) {
       onClick={onClick}
       style={{
         background: activo ? "#ffffff" : "transparent",
-        color: activo ? "#1d1d1f" : "#6e6e73",
+        color: activo ? "var(--text-primary)" : "var(--text-secondary)",
         border: "none",
         borderRadius: 8,
         fontSize: 12,
@@ -533,7 +460,7 @@ function TarjetaInformeApple({ informe: inf, acciones, estadoFirma }) {
                 borderRadius: 6,
                 background: "var(--surface-subtle, #f5f5f7)",
                 color: "var(--text-main, #101828)",
-                border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                border: "none",
                 flexShrink: 0,
               }}
             >
@@ -549,37 +476,37 @@ function TarjetaInformeApple({ informe: inf, acciones, estadoFirma }) {
             {fotos > 0 ? (
               <span
                 style={{
-                  fontSize: 10.5,
+                  fontSize: 11,
                   fontWeight: 600,
                   borderRadius: 999,
                   padding: "2px 8px",
-                  background: "#ecfdf5",
-                  color: "#047857",
+                  background: "var(--success-bg)",
+                  color: "var(--success-text)",
                   border: "1px solid #a7f3d0",
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 4,
                 }}
               >
-                <span>📸</span>
+                <Icono nombre="camara" size={14} />
                 <span>{fotos} fotos</span>
               </span>
             ) : (
               <span
                 style={{
-                  fontSize: 10.5,
+                  fontSize: 11,
                   fontWeight: 600,
                   borderRadius: 999,
                   padding: "2px 8px",
-                  background: "#fffbeb",
-                  color: "#b45309",
-                  border: "1px solid #fde68a",
+                  background: "var(--warning-bg)",
+                  color: "var(--warning-text)",
+                  border: "1px solid var(--warning-bg)",
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 4,
                 }}
               >
-                <span>⚠️</span>
+                <Icono nombre="alerta" size={14} />
                 <span>Sin fotos</span>
               </span>
             )}
@@ -589,7 +516,7 @@ function TarjetaInformeApple({ informe: inf, acciones, estadoFirma }) {
         {/* Título: Proyecto / Cliente */}
         <h3
           style={{
-            fontSize: 14.5,
+            fontSize: 15,
             fontWeight: 600,
             color: "var(--text-main, #101828)",
             margin: "0 0 3px",
@@ -606,7 +533,7 @@ function TarjetaInformeApple({ informe: inf, acciones, estadoFirma }) {
         {/* Subtítulo: Obra y periodo */}
         <div
           style={{
-            fontSize: 11.5,
+            fontSize: 12,
             color: "var(--text-muted, #667085)",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -615,7 +542,7 @@ function TarjetaInformeApple({ informe: inf, acciones, estadoFirma }) {
             marginBottom: 8,
           }}
         >
-          📍 {localizacion || "Obra"} · <strong style={{ fontVariantNumeric: "tabular-nums", color: "var(--text-main, #101828)" }}>{inf.obraId || "—"}</strong>
+          <Icono nombre="ubicacion" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />{localizacion || "Obra"} · <strong style={{ fontVariantNumeric: "tabular-nums", color: "var(--text-main, #101828)" }}>{inf.obraId || "—"}</strong>
           {periodo ? ` · ${periodo}` : ""}
         </div>
 
@@ -629,7 +556,7 @@ function TarjetaInformeApple({ informe: inf, acciones, estadoFirma }) {
               borderRadius: 6,
               background: "var(--surface-subtle, #f5f5f7)",
               color: "var(--text-muted, #475467)",
-              border: "1px solid var(--border, rgba(0,0,0,0.06))",
+              border: "none",
             }}
           >
             {actividades} act.
@@ -642,7 +569,7 @@ function TarjetaInformeApple({ informe: inf, acciones, estadoFirma }) {
               borderRadius: 6,
               background: "var(--surface-subtle, #f5f5f7)",
               color: "var(--text-muted, #475467)",
-              border: "1px solid var(--border, rgba(0,0,0,0.06))",
+              border: "none",
             }}
           >
             {operarios} operarios
@@ -655,8 +582,8 @@ function TarjetaInformeApple({ informe: inf, acciones, estadoFirma }) {
                 padding: "2px 7px",
                 borderRadius: 6,
                 background: "var(--surface-subtle, #f5f5f7)",
-                color: "#0071e3",
-                border: "1px solid var(--border, rgba(0,0,0,0.06))",
+                color: "var(--info)",
+                border: "none",
               }}
             >
               {inf.cotizacionNumero}
@@ -733,11 +660,11 @@ function TarjetaInformeApple({ informe: inf, acciones, estadoFirma }) {
               onClick={() => (acciones.descargarPdf || acciones.imprimir)?.(inf)}
               style={{
                 background: "transparent",
-                color: "#b91c1c",
+                color: "var(--danger-text)",
                 border: "1px solid rgba(185, 28, 28, 0.25)",
                 borderRadius: 8,
                 padding: "6px 9px",
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
               }}
@@ -753,16 +680,16 @@ function TarjetaInformeApple({ informe: inf, acciones, estadoFirma }) {
               onClick={() => acciones.certificar?.(inf)}
               style={{
                 background: "transparent",
-                color: "#047857",
+                color: "var(--success-text)",
                 border: "1px solid #a7f3d0",
                 borderRadius: 8,
                 padding: "6px 9px",
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
               }}
             >
-              📜 Certificar
+              <Icono nombre="documento" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />Certificar
             </button>
           )}
         </div>
@@ -812,7 +739,7 @@ function FilaTablaInforme({ informe: inf, acciones, estadoFirma, zebra }) {
             padding: "2px 7px",
             background: "var(--surface-subtle, #f1f5f9)",
             borderRadius: 6,
-            border: "1px solid var(--border, rgba(0,0,0,0.08))",
+            border: "none",
           }}
         >
           {inf.id}
@@ -827,23 +754,23 @@ function FilaTablaInforme({ informe: inf, acciones, estadoFirma, zebra }) {
           {proyecto}
         </div>
         <div style={{ fontSize: 11, color: "var(--text-muted, #667085)", marginTop: 1 }}>
-          📅 {fmtD(inf.fechaInforme)}
+          <Icono nombre="calendario" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />{fmtD(inf.fechaInforme)}
         </div>
       </div>
 
-      <div style={{ minWidth: 0, color: "var(--text-muted, #475467)", fontSize: 11.5 }}>
-        <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {localizacion || "—"}</div>
+      <div style={{ minWidth: 0, color: "var(--text-muted, #475467)", fontSize: 12 }}>
+        <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><Icono nombre="ubicacion" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />{localizacion || "—"}</div>
         <div style={{ fontVariantNumeric: "tabular-nums", fontSize: 11, color: "var(--text-subtle, #86868b)" }}>{inf.obraId || "—"}</div>
       </div>
 
       <div>
-        <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-main, #1d1d1f)" }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-main, #1d1d1f)" }}>
           {actividades} act.
         </span>
       </div>
 
       <div>
-        <span style={{ fontSize: 11.5, color: "var(--text-muted, #475467)" }}>
+        <span style={{ fontSize: 12, color: "var(--text-muted, #475467)" }}>
           {operarios}
         </span>
       </div>
@@ -853,14 +780,14 @@ function FilaTablaInforme({ informe: inf, acciones, estadoFirma, zebra }) {
           style={{
             fontSize: 11,
             fontWeight: 600,
-            color: fotos > 0 ? "#047857" : "#b45309",
-            background: fotos > 0 ? "#ecfdf5" : "#fffbeb",
+            color: fotos > 0 ? "var(--success-text)" : "var(--warning-text)",
+            background: fotos > 0 ? "var(--success-bg)" : "var(--warning-bg)",
             border: `1px solid ${fotos > 0 ? "#a7f3d0" : "#fde68a"}`,
             borderRadius: 6,
             padding: "1px 6px",
           }}
         >
-          {fotos > 0 ? `📸 ${fotos}` : "0"}
+          {fotos > 0 ? `${fotos}` : "0"}
         </span>
       </div>
 
@@ -888,7 +815,7 @@ function FilaTablaInforme({ informe: inf, acciones, estadoFirma, zebra }) {
             onClick={() => (acciones.descargarPdf || acciones.imprimir)?.(inf)}
             style={{
               background: "transparent",
-              color: "#b91c1c",
+              color: "var(--danger-text)",
               border: "1px solid rgba(185, 28, 28, 0.25)",
               borderRadius: 6,
               padding: "4px 8px",

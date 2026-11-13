@@ -124,7 +124,7 @@ export default function CertificacionDetalle({
         }}
       >
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-          <h1 style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.015em", margin: 0, color: "var(--text-primary)", lineHeight: 1.2 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.015em", margin: 0, color: "var(--text-primary)", lineHeight: 1.2 }}>
             {cert.tipo || "Certificación"} {cert.numero || cert.id}
           </h1>
           <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
@@ -211,7 +211,7 @@ export default function CertificacionDetalle({
           <div style={{ fontSize: 16.5, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--text-primary)", lineHeight: 1.3 }}>
             {cert.cliente || "Certificación Técnica"}
           </div>
-          <div style={{ fontSize: 12.5, color: "var(--text-tertiary)", marginTop: 3 }}>
+          <div style={{ fontSize: 13, color: "var(--text-tertiary)", marginTop: 3 }}>
             {cert.lugar ? `${cert.lugar} · ` : ""}
             {cert.tipo || "Certificación"} emitida el {fmtD(cert.fecha)}
           </div>
@@ -226,7 +226,7 @@ export default function CertificacionDetalle({
               textAlign: "right",
             }}
           >
-            <div style={{ fontSize: 10.5, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
               Normativa
             </div>
             <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", marginTop: 2 }}>
@@ -242,12 +242,12 @@ export default function CertificacionDetalle({
               textAlign: "right",
             }}
           >
-            <div style={{ fontSize: 10.5, fontWeight: 600, color: estadoVigencia.color, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: estadoVigencia.color, textTransform: "uppercase", letterSpacing: "0.03em" }}>
               Próximo mantenimiento
             </div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: estadoVigencia.color, marginTop: 2, fontVariantNumeric: "tabular-nums" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: estadoVigencia.color, marginTop: 2, fontVariantNumeric: "tabular-nums" }}>
               {cert.proxMant ? fmtD(cert.proxMant) : "No asignado"}
-              <span style={{ display: "block", fontSize: 10.5, fontWeight: 500, opacity: 0.85 }}>
+              <span style={{ display: "block", fontSize: 11, fontWeight: 500, opacity: 0.85 }}>
                 {estadoVigencia.label}
               </span>
             </div>

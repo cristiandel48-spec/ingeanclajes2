@@ -60,19 +60,19 @@ export const componentesCss = `
       border-radius: 980px; padding: 0 18px; font-weight: 600; }
     .ui-btn--oscuro:hover:not(:disabled) { background: var(--boton-principal-hover); }
 
-    /* Entrada de cada modulo, como una ventana que vuelve del Dock en el Mac:
-       crece desde abajo, se enfoca y aparece, despacio y sin rebote.
+    /* Entrada de cada modulo. Antes duraba 0,9 s, subia 60px y desenfocaba:
+       se repite en cada cambio de pantalla y hacia sentir lenta toda la app.
+       Ahora es la de macOS/iOS: corta, un desplazamiento minimo y un fundido.
        Va con «backwards» y no «both» a proposito: al terminar no deja ningun
-       transform ni filter puesto, que convertirian al envoltorio en el
-       contenedor de los position:fixed y descolocarian modales y avisos. */
+       transform puesto, que convertiria al envoltorio en el contenedor de los
+       position:fixed y descolocaria modales y avisos. */
     @keyframes entrar-modulo {
-      0%   { opacity: 0; transform: translateY(60px) scale(.88); filter: blur(10px); }
-      70%  { opacity: 1; filter: blur(0); }
-      100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+      from { opacity: 0; transform: translateY(8px) scale(.995); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
     }
     .transicion-modulo {
-      animation: entrar-modulo .9s cubic-bezier(.22, .61, .36, 1) backwards;
-      transform-origin: 50% 100%;
+      animation: entrar-modulo .32s cubic-bezier(.2, .8, .2, 1) backwards;
+      transform-origin: 50% 0;
     }
     @media (prefers-reduced-motion: reduce) {
       .transicion-modulo { animation: none; }
@@ -178,7 +178,7 @@ export const componentesCss = `
     /* Sin marco ni sombra, como los bloques de apple.com: el blanco sobre el
        gris de la pagina ya separa. */
     .ui-card { background: var(--surface); border: 1px solid transparent;
-      border-radius: 22px; padding: 22px; box-shadow: none; box-sizing: border-box; }
+      border-radius: 18px; padding: 22px; box-shadow: none; box-sizing: border-box; }
     .ui-card--plano { box-shadow: none; }
     .ui-card--ajustado { padding: 14px 16px; }
     .ui-card--interactivo { cursor: pointer;
@@ -261,12 +261,12 @@ export const componentesCss = `
       font-size: 14px; line-height: 20px; align-items: flex-start; }
     .ui-toaster--centro .ui-toast__dot { margin-top: 6px; }
     .ui-toaster--centro .ui-toast--error { border-color: var(--danger); }
-    .ui-toaster--centro .ui-toast--warning { border-color: #f59e0b; }
+    .ui-toaster--centro .ui-toast--warning { border-color: var(--warning); }
     .ui-toast__dot { width: 8px; height: 8px; border-radius: 50%; flex: none;
       background: var(--text-quaternary); }
     .ui-toast--exito .ui-toast__dot { background: var(--success); }
     .ui-toast--error .ui-toast__dot { background: var(--danger); }
-    .ui-toast--warning .ui-toast__dot { background: #f59e0b; }
+    .ui-toast--warning .ui-toast__dot { background: var(--warning); }
     .ui-toast__accion { border: none; background: var(--fill); color: var(--accent);
       font-family: inherit; font-size: 12.5px; font-weight: 600;
       border-radius: 999px; padding: 6px 12px; cursor: pointer; flex: none;
@@ -303,9 +303,11 @@ export const componentesCss = `
     @keyframes uiSheetSube { from { transform: translateY(100%); } to { transform: none; } }
 
     /* ── Cabecera de pantalla ────────────────────────────────────────── */
+    /* Sin linea debajo: en Apple el titulo grande se separa con aire, no con
+       una raya. La variante con linea sigue existiendo para quien la pida. */
     .ui-page-header { display: flex; align-items: flex-start; justify-content: space-between;
-      gap: 16px; flex-wrap: wrap; padding: 24px 0 14px; margin-bottom: 20px;
-      border-bottom: 1px solid var(--separator); }
+      gap: 16px; flex-wrap: wrap; padding: 24px 0 8px; margin-bottom: 20px; }
+    .ui-page-header--con-linea { padding-bottom: 14px; border-bottom: 1px solid var(--separator); }
     .ui-page-header--sin-linea { border-bottom: none; margin-bottom: 12px; }
     .ui-page-header__eyebrow { font-size: 11px; line-height: 14px; font-weight: 600;
       letter-spacing: .04em; text-transform: uppercase; color: var(--text-tertiary); }

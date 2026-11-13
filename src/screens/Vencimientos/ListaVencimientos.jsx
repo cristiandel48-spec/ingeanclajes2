@@ -99,10 +99,10 @@ function Fila({ c, compacta, acciones, obra }) {
   const datos = (
     <>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 13.5, fontWeight: 700, color: C.tinta }}>{cliente}</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: C.tinta }}>{cliente}</span>
         <span style={{ fontSize: 11, color: C.tenue }}>{c.numero || c.id}</span>
       </div>
-      <div style={{ fontSize: 11.5, color: C.apagado, marginTop: 1,
+      <div style={{ fontSize: 12, color: C.apagado, marginTop: 1,
         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{debajo}</div>
     </>
   );
@@ -138,7 +138,7 @@ function Fila({ c, compacta, acciones, obra }) {
         {aviso}
       </div>
       {c.sistema && (
-        <div style={{ fontSize: 11.5, color: C.suave, lineHeight: 1.45,
+        <div style={{ fontSize: 12, color: C.suave, lineHeight: 1.45,
           display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
           {c.sistema}
         </div>

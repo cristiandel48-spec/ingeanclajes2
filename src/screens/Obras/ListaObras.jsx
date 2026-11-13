@@ -5,7 +5,7 @@ import { ESTADOS_OBRA, estadoObraDe, obraEstaCerrada } from "../../lib/flujoObra
 import { resumenBitacora } from "../../lib/bitacoraObra";
 import IconoPalomita from "../../components/ui/IconoPalomita";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { BarraFija, CABECERA_FIJA } from "../../components/ui";
+import { BarraFija, CABECERA_FIJA, ConmutadorVista, EmptyState } from "../../components/ui";
 
 const ORDENES = [
   {
@@ -220,7 +220,7 @@ export default function ListaObras({
             borderRadius: 12,
             display: "inline-flex",
             alignItems: "center",
-            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            border: "none",
             overflowX: "auto",
             maxWidth: "100%",
           }}
@@ -282,14 +282,14 @@ export default function ListaObras({
               transition: "all 0.15s ease",
             }}
           >
-            <span>⚡ Filtros</span>
+            <span>Filtros</span>
             {hayFiltrosAvanzadosActivos && (
               <span
                 style={{
                   width: 6,
                   height: 6,
                   borderRadius: "50%",
-                  background: "#f47c20",
+                  background: "var(--accent)",
                 }}
               />
             )}
@@ -313,7 +313,7 @@ export default function ListaObras({
                 pointerEvents: "none",
               }}
             >
-              🔍
+              <Icono nombre="buscar" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />
             </span>
             <input
               ref={campoBusquedaRef}
@@ -362,11 +362,11 @@ export default function ListaObras({
                   right: 8,
                   top: "50%",
                   transform: "translateY(-50%)",
-                  fontSize: 10,
+                  fontSize: 11,
                   fontFamily: "'Inter', system-ui, sans-serif",
                   color: "var(--text-subtle, #86868b)",
                   background: "var(--surface-subtle, #f5f5f7)",
-                  border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                  border: "none",
                   padding: "1px 4px",
                   borderRadius: 4,
                   pointerEvents: "none",
@@ -378,65 +378,7 @@ export default function ListaObras({
           </div>
 
           {/* Conmutador Cuadrícula / Lista */}
-          <div
-            style={{
-              background: "var(--surface-subtle, #f5f5f7)",
-              padding: 2,
-              borderRadius: 8,
-              border: "1px solid var(--border, rgba(0,0,0,0.08))",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 2,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => cambiarVista("tabla")}
-              title="Vista en Lista / Tabla (Predeterminada)"
-              style={{
-                background: vista === "tabla" ? "var(--surface, #ffffff)" : "transparent",
-                color: vista === "tabla" ? "var(--text-main, #101828)" : "var(--text-muted, #6e6e73)",
-                border: "none",
-                borderRadius: 6,
-                padding: "5px 8px",
-                cursor: "pointer",
-                boxShadow: vista === "tabla" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-                display: "flex",
-                alignItems: "center",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="4" y1="6" x2="20" y2="6"/>
-                <line x1="4" y1="12" x2="20" y2="12"/>
-                <line x1="4" y1="18" x2="20" y2="18"/>
-              </svg>
-            </button>
-            <button
-              type="button"
-              onClick={() => cambiarVista("tarjetas")}
-              title="Vista en Cuadrícula / Tarjetas"
-              style={{
-                background: vista === "tarjetas" ? "var(--surface, #ffffff)" : "transparent",
-                color: vista === "tarjetas" ? "var(--text-main, #101828)" : "var(--text-muted, #6e6e73)",
-                border: "none",
-                borderRadius: 6,
-                padding: "5px 8px",
-                cursor: "pointer",
-                boxShadow: vista === "tarjetas" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-                display: "flex",
-                alignItems: "center",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="7" height="7" rx="1.5"/>
-                <rect x="14" y="3" width="7" height="7" rx="1.5"/>
-                <rect x="14" y="14" width="7" height="7" rx="1.5"/>
-                <rect x="3" y="14" width="7" height="7" rx="1.5"/>
-              </svg>
-            </button>
-          </div>
+          <ConmutadorVista valor={vista} onChange={cambiarVista} />
         </div>
       </div>
 
@@ -447,7 +389,7 @@ export default function ListaObras({
         <div
           style={{
             background: "var(--surface, #ffffff)",
-            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            border: "none",
             borderRadius: 14,
             padding: "12px 16px",
             marginBottom: 10,
@@ -456,7 +398,7 @@ export default function ListaObras({
             justifyContent: "space-between",
             flexWrap: "wrap",
             gap: 12,
-            boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+            boxShadow: "none",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
@@ -489,7 +431,7 @@ export default function ListaObras({
                 style={estiloSelect}
               >
                 <option value="todos">Todas</option>
-                <option value="si">Documentación Enviada 🕊️</option>
+                <option value="si">Documentación Enviada </option>
                 <option value="no">Sin enviar</option>
               </select>
             </div>
@@ -505,7 +447,7 @@ export default function ListaObras({
                 style={estiloSelect}
               >
                 <option value="todos">Todas</option>
-                <option value="con">Con fotos de avance 📸</option>
+                <option value="con">Con fotos de avance <Icono nombre="camara" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} /></option>
                 <option value="sin">Sin fotos</option>
               </select>
             </div>
@@ -536,23 +478,12 @@ export default function ListaObras({
       {/* RESULTADOS: LISTA / TABLA PREDETERMINADA O CUADRÍCULA         */}
       {/* ============================================================= */}
       {filtradas.length === 0 ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "48px 20px",
-            background: "var(--surface, #ffffff)",
-            borderRadius: 16,
-            border: "1px dashed var(--border, rgba(0,0,0,0.12))",
-            color: "var(--text-muted, #667085)",
-          }}
-        >
-          <div style={{ fontSize: 32, marginBottom: 8 }}>🏗️</div>
-          <div style={{ fontSize: 14.5, fontWeight: 600, color: "var(--text-main, #101828)" }}>
-            No se encontraron obras
-          </div>
-          <p style={{ fontSize: 12.5, margin: "6px 0 0" }}>
-            Prueba ajustando los términos de búsqueda o los filtros seleccionados.
-          </p>
+        <div style={{ background: "var(--surface)", borderRadius: 18 }}>
+          <EmptyState
+            icono="obra"
+            titulo="No se encontraron obras"
+            texto="Prueba ajustando los términos de búsqueda o los filtros seleccionados."
+          />
         </div>
       ) : vista === "tarjetas" ? (
         <div
@@ -583,10 +514,10 @@ export default function ListaObras({
           style={{
             background: "var(--surface, #ffffff)",
             borderRadius: 14,
-            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            border: "none",
             // clip y no hidden: hidden no deja pegar los titulos al bajar.
             overflow: "clip",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+            boxShadow: "none",
           }}
         >
           <div style={{ overflowX: isMobile ? "auto" : "visible", width: "100%" }}>
@@ -600,7 +531,7 @@ export default function ListaObras({
                   padding: "10px 16px",
                   background: "var(--surface-subtle, #f8fafc)",
                   borderBottom: "1px solid var(--border, rgba(0,0,0,0.08))",
-                  fontSize: 10.5,
+                  fontSize: 11,
                   fontWeight: 600,
                   textTransform: "uppercase",
                   letterSpacing: "0.04em",
@@ -724,13 +655,13 @@ function FilaTablaObraApple({
         <span
           style={{
             fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-            fontSize: 11.5,
+            fontSize: 12,
             fontWeight: 600,
             color: "var(--text-main, #101828)",
             padding: "2px 7px",
             background: "var(--surface-subtle, #f1f5f9)",
             borderRadius: 6,
-            border: "1px solid var(--border, rgba(0,0,0,0.08))",
+            border: "none",
             fontVariantNumeric: "tabular-nums",
           }}
         >
@@ -744,7 +675,7 @@ function FilaTablaObraApple({
           style={{
             fontWeight: 600,
             color: "var(--text-main, #101828)",
-            fontSize: 12.5,
+            fontSize: 13,
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -772,7 +703,7 @@ function FilaTablaObraApple({
       <div
         style={{
           color: "var(--text-muted, #475467)",
-          fontSize: 11.5,
+          fontSize: 12,
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
@@ -783,7 +714,7 @@ function FilaTablaObraApple({
       </div>
 
       {/* Fecha Inicio */}
-      <div style={{ color: "var(--text-muted, #667085)", fontSize: 11.5 }}>
+      <div style={{ color: "var(--text-muted, #667085)", fontSize: 12 }}>
         {fmtD(o.fechaInicio) || "—"}
       </div>
 
@@ -800,30 +731,30 @@ function FilaTablaObraApple({
             fontWeight: 500,
           }}
         >
-          {totalEmpleados} 👷
+          {totalEmpleados} 
         </span>
         <span
           title={fotosCount > 0 ? "Fotos cargadas en bitácora" : "Sin fotos de avance"}
           style={{
             fontSize: 11,
-            color: fotosCount > 0 ? "#0071e3" : "#98a2b3",
+            color: fotosCount > 0 ? "var(--info)" : "var(--text-quaternary)",
             background: fotosCount > 0 ? "rgba(0, 113, 227, 0.08)" : "var(--surface-subtle, #f1f5f9)",
             padding: "1px 6px",
             borderRadius: 999,
             fontWeight: 500,
           }}
         >
-          {fotosCount} 📸
+          {fotosCount} <Icono nombre="camara" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />
         </span>
       </div>
 
       {/* Avance: solo se muestra; se cambia en las jornadas de la obra */}
       <div style={{ paddingRight: 10 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 2 }}>
-          <span style={{ fontSize: 10.5, color: "var(--text-muted, #667085)" }}>Avance</span>
+          <span style={{ fontSize: 11, color: "var(--text-muted, #667085)" }}>Avance</span>
           <span
             style={{
-              fontSize: 11.5,
+              fontSize: 12,
               fontWeight: 600,
               color: colorBarra,
               fontVariantNumeric: "tabular-nums",
@@ -861,15 +792,15 @@ function FilaTablaObraApple({
             style={{
               fontSize: 11,
               fontWeight: 600,
-              color: "#15803d",
-              background: "#ecfdf5",
+              color: "var(--success-text)",
+              background: "var(--success-bg)",
               border: "1px solid #a7f3d0",
               borderRadius: 999,
               padding: "2px 8px",
               display: "inline-block",
             }}
           >
-            🔒 Finalizado
+            <Icono nombre="candado" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />Finalizado
           </span>
         ) : (
           <select
@@ -923,7 +854,7 @@ function FilaTablaObraApple({
           }}
         >
           <span>{enviado ? "Enviada" : "Sin enviar"}</span>
-          {enviado ? <IconoPalomita size={14} color="#15803d" /> : <span style={{ fontSize: 9 }}>○</span>}
+          {enviado ? <IconoPalomita size={14} color="#15803d" /> : <span style={{ fontSize: 11 }}>○</span>}
         </button>
       </div>
 
@@ -933,7 +864,7 @@ function FilaTablaObraApple({
           style={{
             fontSize: 12,
             fontWeight: 600,
-            color: "#0071e3",
+            color: "var(--info)",
             display: "inline-flex",
             alignItems: "center",
             gap: 3,
@@ -1028,7 +959,7 @@ function TarjetaObraApple({
               borderRadius: 6,
               background: "var(--surface-subtle, #f1f5f9)",
               color: "var(--text-main, #101828)",
-              border: "1px solid var(--border, rgba(0,0,0,0.08))",
+              border: "none",
               flexShrink: 0,
             }}
           >
@@ -1040,7 +971,7 @@ function TarjetaObraApple({
               type="button"
               onClick={() => onToggleEnviado?.(o.id, !enviado)}
               style={{
-                fontSize: 10.5,
+                fontSize: 11,
                 fontWeight: 600,
                 color: enviado ? "#15803d" : "var(--text-muted, #64748b)",
                 background: enviado ? "#ecfdf5" : "transparent",
@@ -1050,12 +981,12 @@ function TarjetaObraApple({
                 cursor: "pointer",
               }}
             >
-              {enviado ? "🕊️ Enviada" : "Sin enviar"}
+              {enviado ? "Enviada" : "Sin enviar"}
             </button>
 
             <span
               style={{
-                fontSize: 10.5,
+                fontSize: 11,
                 fontWeight: 600,
                 borderRadius: 999,
                 padding: "2px 8px",
@@ -1097,7 +1028,7 @@ function TarjetaObraApple({
         {subtitulo && (
           <div
             style={{
-              fontSize: 11.5,
+              fontSize: 12,
               color: "var(--text-muted, #667085)",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -1110,8 +1041,8 @@ function TarjetaObraApple({
         )}
 
         <div style={{ display: "flex", gap: 10, fontSize: 11, color: "var(--text-muted, #475467)", marginTop: 6, minWidth: 0, maxWidth: "100%" }}>
-          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {o.ciudad || "—"}</span>
-          <span style={{ flexShrink: 0 }}>📅 {fmtD(o.fechaInicio) || "—"}</span>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><Icono nombre="ubicacion" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />{o.ciudad || "—"}</span>
+          <span style={{ flexShrink: 0 }}><Icono nombre="calendario" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />{fmtD(o.fechaInicio) || "—"}</span>
         </div>
       </div>
 
@@ -1147,9 +1078,9 @@ function TarjetaObraApple({
         <div className="no-wrap" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, width: "100%", minWidth: 0 }}>
           <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
             <span style={{ color: "var(--text-muted, #475467)" }}>{totalEmpleados}</span>
-            <span style={{ color: fotosCount > 0 ? "#0071e3" : "#98a2b3" }}>{fotosCount}</span>
+            <span style={{ color: fotosCount > 0 ? "var(--info)" : "var(--text-quaternary)" }}>{fotosCount}</span>
           </div>
-          <span style={{ fontWeight: 600, color: "#0071e3", flexShrink: 0 }}>Ver Obra &rarr;</span>
+          <span style={{ fontWeight: 600, color: "var(--info)", flexShrink: 0 }}>Ver Obra &rarr;</span>
         </div>
       </div>
     </article>
@@ -1161,7 +1092,7 @@ const estiloSelect = {
   border: "1px solid var(--border, rgba(0, 0, 0, 0.1))",
   borderRadius: 8,
   padding: "4px 8px",
-  fontSize: 11.5,
+  fontSize: 12,
   color: "var(--text-main, #101828)",
   outline: "none",
   cursor: "pointer",

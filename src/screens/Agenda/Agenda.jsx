@@ -1,3 +1,4 @@
+import Icono from "../../components/ui/Icono";
 import { useState, useMemo, useRef } from "react";
 import { B, CD, SI } from "../../styles/tokens";
 import { EJEMPLOS } from "../../data/ejemplos";
@@ -60,17 +61,17 @@ function formatFechaLarga(isoStr) {
 const TIPOS_COMPROMISO = {
   visita: {
     label: "Visita a Obra",
-    color: "#d97706",
-    bg: "#fef3c7",
+    color: "var(--warning)",
+    bg: "var(--warning-bg)",
     border: "#fde68a",
-    dot: "#f59e0b",
+    dot: "var(--warning)",
   },
   llamada: {
     label: "Llamada",
-    color: "#2563eb",
-    bg: "#eff6ff",
+    color: "var(--info)",
+    bg: "var(--info-bg)",
     border: "#dbeafe",
-    dot: "#3b82f6",
+    dot: "var(--info)",
   },
   reunion: {
     label: "Reunión",
@@ -81,17 +82,17 @@ const TIPOS_COMPROMISO = {
   },
   coordinacion: {
     label: "Coordinación",
-    color: "#059669",
-    bg: "#ecfdf5",
+    color: "var(--success)",
+    bg: "var(--success-bg)",
     border: "#d1fae5",
-    dot: "#10b981",
+    dot: "var(--success)",
   },
   especial: {
     label: "Fecha Especial",
-    color: "#b45309",
-    bg: "#fef3c7",
+    color: "var(--warning-text)",
+    bg: "var(--warning-bg)",
     border: "#fde68a",
-    dot: "#f59e0b",
+    dot: "var(--warning)",
   },
 };
 
@@ -181,7 +182,7 @@ function CompromisosDelDiaSection({
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted, #94a3b8)" }}>
             Compromisos del día
           </div>
-          <h3 style={{ fontSize: 18, fontWeight: 800, margin: "2px 0 0", color: "var(--text-main, #0f172a)" }}>
+          <h3 style={{ fontSize: 18, fontWeight: 700, margin: "2px 0 0", color: "var(--text-main, #0f172a)" }}>
             {formatFechaLarga(fechaSeleccionada)}
           </h3>
         </div>
@@ -192,8 +193,8 @@ function CompromisosDelDiaSection({
               type="button"
               style={{
                 background: fechaEspecialDelDia ? "#fef3c7" : "linear-gradient(135deg, #fef3c7, #fef9c3)",
-                color: "#92400e",
-                border: "1px solid #fde68a",
+                color: "var(--warning-text)",
+                border: "1px solid var(--warning-bg)",
                 fontSize: 12,
                 fontWeight: 700,
                 padding: "6px 12px",
@@ -262,11 +263,11 @@ function CompromisosDelDiaSection({
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <span
                   style={{
-                    fontSize: 10.5,
-                    fontWeight: 800,
-                    color: "#b45309",
-                    background: "#fef3c7",
-                    border: "1px solid #fde68a",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--warning-text)",
+                    background: "var(--warning-bg)",
+                    border: "1px solid var(--warning-bg)",
                     padding: "2px 9px",
                     borderRadius: 20,
                     textTransform: "uppercase",
@@ -276,20 +277,20 @@ function CompromisosDelDiaSection({
                   Fecha Especial
                 </span>
                 {fechaEspecialDelDia.hora && (
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#92400e" }}>
-                    🕒 {fechaEspecialDelDia.hora}
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--warning-text)" }}>
+                    <Icono nombre="reloj" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />{fechaEspecialDelDia.hora}
                   </span>
                 )}
               </div>
-              <h4 style={{ fontSize: 18, fontWeight: 800, color: "#78350f", margin: "4px 0 2px" }}>
+              <h4 style={{ fontSize: 18, fontWeight: 700, color: "var(--warning-text)", margin: "4px 0 2px" }}>
                 {fechaEspecialDelDia.titulo}
               </h4>
               {fechaEspecialDelDia.notas && (
-                <p style={{ fontSize: 13, color: "#92400e", margin: "4px 0 0", lineHeight: 1.45, fontStyle: "italic" }}>
+                <p style={{ fontSize: 13, color: "var(--warning-text)", margin: "4px 0 0", lineHeight: 1.45, fontStyle: "italic" }}>
                   "{fechaEspecialDelDia.notas}"
                 </p>
               )}
-              <div style={{ marginTop: 8, fontSize: 11.5, fontWeight: 700, color: "#d97706", display: "flex", alignItems: "center", gap: 5 }}>
+              <div style={{ marginTop: 8, fontSize: 12, fontWeight: 700, color: "var(--warning)", display: "flex", alignItems: "center", gap: 5 }}>
                 <span>💖</span>
                 <span>Con mucho cariño, Cristian Flores</span>
               </div>
@@ -300,12 +301,12 @@ function CompromisosDelDiaSection({
                 onClick={() => eliminarFechaEspecial(fechaEspecialDelDia.id)}
                 style={{
                   padding: "6px 12px",
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: 600,
                   borderRadius: 8,
-                  border: "1px solid #fecaca",
+                  border: "1px solid var(--danger-bg)",
                   background: "#ffffff",
-                  color: "#dc2626",
+                  color: "var(--danger)",
                   cursor: "pointer",
                   flexShrink: 0,
                 }}
@@ -352,11 +353,11 @@ function CompromisosDelDiaSection({
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <span
                     style={{
-                      fontSize: 10.5,
-                      fontWeight: 800,
-                      color: "#b45309",
-                      background: "#fef3c7",
-                      border: "1px solid #fde68a",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: "var(--warning-text)",
+                      background: "var(--warning-bg)",
+                      border: "1px solid var(--warning-bg)",
                       padding: "2px 9px",
                       borderRadius: 20,
                       textTransform: "uppercase",
@@ -366,28 +367,28 @@ function CompromisosDelDiaSection({
                   </span>
                   <span
                     style={{
-                      fontSize: 10.5,
+                      fontSize: 11,
                       fontWeight: 700,
-                      color: "#059669",
-                      background: "#ecfdf5",
+                      color: "var(--success)",
+                      background: "var(--success-bg)",
                       border: "1px solid #a7f3d0",
                       padding: "2px 8px",
                       borderRadius: 20,
                     }}
                   >
-                    🔒 Visible solo para Camila y tú
+                    <Icono nombre="candado" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />Visible solo para Camila y tú
                   </span>
                   {fechaEspecialDelDia.hora && (
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "#92400e" }}>
-                      🕒 {fechaEspecialDelDia.hora}
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--warning-text)" }}>
+                      <Icono nombre="reloj" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />{fechaEspecialDelDia.hora}
                     </span>
                   )}
                 </div>
-                <h4 style={{ fontSize: 18, fontWeight: 800, color: "#78350f", margin: "4px 0 2px" }}>
+                <h4 style={{ fontSize: 18, fontWeight: 700, color: "var(--warning-text)", margin: "4px 0 2px" }}>
                   {fechaEspecialDelDia.titulo}
                 </h4>
                 {fechaEspecialDelDia.notas && (
-                  <p style={{ fontSize: 13, color: "#92400e", margin: "4px 0 0", fontStyle: "italic" }}>
+                  <p style={{ fontSize: 13, color: "var(--warning-text)", margin: "4px 0 0", fontStyle: "italic" }}>
                     "{fechaEspecialDelDia.notas}"
                   </p>
                 )}
@@ -400,12 +401,12 @@ function CompromisosDelDiaSection({
                 onClick={() => abrirModalEstrellita(fechaSeleccionada, fechaEspecialDelDia)}
                 style={{
                   padding: "6px 12px",
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: 600,
                   borderRadius: 8,
-                  border: "1px solid #fde68a",
+                  border: "1px solid var(--warning-bg)",
                   background: "#ffffff",
-                  color: "#92400e",
+                  color: "var(--warning-text)",
                   cursor: "pointer",
                 }}
               >
@@ -416,12 +417,12 @@ function CompromisosDelDiaSection({
                 onClick={() => eliminarFechaEspecial(fechaEspecialDelDia.id)}
                 style={{
                   padding: "6px 12px",
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: 600,
                   borderRadius: 8,
-                  border: "1px solid #fecaca",
+                  border: "1px solid var(--danger-bg)",
                   background: "#ffffff",
-                  color: "#dc2626",
+                  color: "var(--danger)",
                   cursor: "pointer",
                 }}
               >
@@ -451,7 +452,7 @@ function CompromisosDelDiaSection({
               width: 38,
               height: 38,
               borderRadius: 10,
-              background: "#fee2e2",
+              background: "var(--danger-bg)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -463,15 +464,15 @@ function CompromisosDelDiaSection({
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13.5, fontWeight: 800, color: "#991b1b" }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--danger-text)" }}>
                 {festivoDelDia.nombre}
               </span>
               <span
                 style={{
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: 700,
-                  color: "#b91c1c",
-                  background: "#fecaca",
+                  color: "var(--danger-text)",
+                  background: "var(--danger-bg)",
                   padding: "2px 8px",
                   borderRadius: 20,
                   textTransform: "uppercase",
@@ -481,7 +482,7 @@ function CompromisosDelDiaSection({
                 Festivo Nacional (Colombia)
               </span>
             </div>
-            <p style={{ fontSize: 11.5, color: "#7f1d1d", margin: "3px 0 0" }}>
+            <p style={{ fontSize: 12, color: "var(--danger-text)", margin: "3px 0 0" }}>
               Día oficial no laboral en Colombia {festivoDelDia.leyEmiliani ? "(Ley Emiliani)" : ""}. Tenlo presente para coordinación de obra y visitas técnicas.
             </p>
           </div>
@@ -601,7 +602,7 @@ function CompromisosDelDiaSection({
                         border: "1px solid var(--border, #e2e8f0)",
                         background: "var(--surface, #ffffff)",
                         cursor: "pointer",
-                        color: "#ef4444",
+                        color: "var(--danger)",
                       }}
                       title="Eliminar"
                     >
@@ -622,7 +623,7 @@ function CompromisosDelDiaSection({
                 {(item.contacto || item.telefono) && (
                   <div
                     style={{
-                      fontSize: 11.5,
+                      fontSize: 12,
                       marginTop: 8,
                       padding: "6px 10px",
                       background: "var(--surface-subtle, #f8fafc)",
@@ -636,20 +637,20 @@ function CompromisosDelDiaSection({
                       <span style={{ color: "var(--text-muted, #64748b)" }}>Contacto: </span>
                       <span style={{ fontWeight: 600, color: "var(--text-main, #0f172a)" }}>{item.contacto || "N/A"}</span>
                       {item.telefono && (
-                        <span style={{ marginLeft: 8, color: "#2563eb", fontWeight: 600 }}>{item.telefono}</span>
+                        <span style={{ marginLeft: 8, color: "var(--info)", fontWeight: 600 }}>{item.telefono}</span>
                       )}
                     </div>
                   </div>
                 )}
 
                 {item.notas && (
-                  <div style={{ fontSize: 11.5, color: "var(--text-muted, #475569)", marginTop: 6, lineHeight: 1.4 }}>
+                  <div style={{ fontSize: 12, color: "var(--text-muted, #475569)", marginTop: 6, lineHeight: 1.4 }}>
                     {item.notas}
                   </div>
                 )}
 
                 {item.requerimientoSst && (
-                  <div style={{ fontSize: 11, color: "#059669", fontWeight: 600, marginTop: 4 }}>
+                  <div style={{ fontSize: 11, color: "var(--success)", fontWeight: 600, marginTop: 4 }}>
                     SST: {item.requerimientoSst}
                   </div>
                 )}
@@ -661,7 +662,7 @@ function CompromisosDelDiaSection({
                       onClick={() => enviarWhatsApp(item)}
                       style={{
                         ...B("#25D366"),
-                        fontSize: 11.5,
+                        fontSize: 12,
                         padding: "5px 10px",
                         borderRadius: 6,
                       }}
@@ -676,7 +677,7 @@ function CompromisosDelDiaSection({
                       style={{
                         ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
                         border: "1px solid var(--border, #e2e8f0)",
-                        fontSize: 11.5,
+                        fontSize: 12,
                         padding: "5px 10px",
                         borderRadius: 6,
                       }}
@@ -692,7 +693,7 @@ function CompromisosDelDiaSection({
                       rel="noopener noreferrer"
                       style={{
                         ...B("#7c3aed"),
-                        fontSize: 11.5,
+                        fontSize: 12,
                         padding: "5px 10px",
                         borderRadius: 6,
                         textDecoration: "none",
@@ -709,7 +710,7 @@ function CompromisosDelDiaSection({
                     style={{
                       ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
                       border: "1px solid var(--border, #e2e8f0)",
-                      fontSize: 11.5,
+                      fontSize: 12,
                       padding: "5px 10px",
                       borderRadius: 6,
                       textDecoration: "none",
@@ -719,7 +720,7 @@ function CompromisosDelDiaSection({
                     }}
                     title="Añadir a Google Calendar con recordatorio para Camila"
                   >
-                    📅 Google Calendar
+                    <Icono nombre="calendario" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />Google Calendar
                   </a>
 
                   {/* Sin target: en el iPhone el archivo abre «Agregar al
@@ -729,7 +730,7 @@ function CompromisosDelDiaSection({
                     style={{
                       ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
                       border: "1px solid var(--border, #e2e8f0)",
-                      fontSize: 11.5,
+                      fontSize: 12,
                       padding: "5px 10px",
                       borderRadius: 6,
                       textDecoration: "none",
@@ -739,7 +740,7 @@ function CompromisosDelDiaSection({
                     }}
                     title="Añadir a Apple Calendar (iPhone o Mac) con recordatorio"
                   >
-                    📅 Apple Calendar
+                    <Icono nombre="calendario" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />Apple Calendar
                   </a>
                 </div>
               </div>
@@ -806,7 +807,7 @@ function CalendarioMensualSection({
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <h2 style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, margin: 0, color: "var(--text-main, #0f172a)" }}>
+            <h2 style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, margin: 0, color: "var(--text-main, #0f172a)" }}>
               {MESES[calMes.mes]}
             </h2>
             <span style={{ fontSize: isMobile ? 14 : 16, fontWeight: 500, color: "var(--text-muted, #94a3b8)" }}>
@@ -819,7 +820,7 @@ function CalendarioMensualSection({
               style={{
                 fontSize: isMobile ? 10 : 11.5,
                 fontWeight: 700,
-                color: "#b91c1c",
+                color: "var(--danger-text)",
                 background: "rgba(254, 226, 226, 0.75)",
                 border: "1px solid rgba(252, 165, 165, 0.55)",
                 padding: isMobile ? "2px 7px" : "3px 10px",
@@ -1073,9 +1074,9 @@ function CalendarioMensualSection({
                     {esFestivo && (
                       <span
                         style={{
-                          fontSize: 9,
+                          fontSize: 11,
                           fontWeight: 700,
-                          color: "#dc2626",
+                          color: "var(--danger)",
                           background: "rgba(239, 68, 68, 0.08)",
                           padding: "1px 5px",
                           borderRadius: 4,
@@ -1113,10 +1114,10 @@ function CalendarioMensualSection({
                   {esFestivo && (
                     <span
                       style={{
-                        fontSize: 8.5,
+                        fontSize: 11,
                         lineHeight: 1,
-                        color: "#b91c1c",
-                        background: "#fee2e2",
+                        color: "var(--danger-text)",
+                        background: "var(--danger-bg)",
                         padding: "1px 3px",
                         borderRadius: 3,
                         fontWeight: 700,
@@ -1147,9 +1148,9 @@ function CalendarioMensualSection({
                   {esFestivo && (
                     <div
                       style={{
-                        fontSize: 9.5,
+                        fontSize: 11,
                         fontWeight: 700,
-                        color: "#991b1b",
+                        color: "var(--danger-text)",
                         background: "rgba(254, 226, 226, 0.82)",
                         border: "1px solid rgba(252, 165, 165, 0.65)",
                         borderRadius: 4,
@@ -1163,7 +1164,7 @@ function CalendarioMensualSection({
                       }}
                       title={`Festivo Nacional: ${festivo?.nombre}`}
                     >
-                      <span style={{ fontSize: 10 }}>🇨🇴</span>
+                      <span style={{ fontSize: 11 }}>🇨🇴</span>
                       <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
                         {festivo?.nombreCorto || festivo?.nombre}
                       </span>
@@ -1175,7 +1176,7 @@ function CalendarioMensualSection({
                       <div
                         key={e.id}
                         style={{
-                          fontSize: 10,
+                          fontSize: 11,
                           fontWeight: 600,
                           padding: "2px 5px",
                           borderRadius: 4,
@@ -1192,7 +1193,7 @@ function CalendarioMensualSection({
                     );
                   })}
                   {evtsTrabajo.length > (esFestivo ? 1 : 2) && (
-                    <span style={{ fontSize: 9.5, color: "var(--text-muted, #94a3b8)", fontWeight: 700 }}>
+                    <span style={{ fontSize: 11, color: "var(--text-muted, #94a3b8)", fontWeight: 700 }}>
                       +{evtsTrabajo.length - (esFestivo ? 1 : 2)} más
                     </span>
                   )}
@@ -1728,104 +1729,53 @@ export default function Agenda({ ctx }) {
 
   return (
     <div style={{ padding: "0 0 24px 0", maxWidth: 1400, margin: "0 auto", position: "relative" }}>
-      {/* Toast Notificación de Envío por Correo estilo Apple */}
+      {/* Aviso del envio por correo: el aviso flotante del sistema. */}
       {notificacionEnvio && (
-        <div
-          role="status"
-          style={{
-            position: "fixed",
-            top: 24,
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 99999,
-            maxWidth: "92vw",
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "10px 20px",
-            borderRadius: 999,
-            fontSize: 13,
-            fontWeight: 600,
-            boxShadow: "0 10px 25px -5px rgba(0,0,0,0.18), 0 8px 10px -6px rgba(0,0,0,0.1)",
-            background:
-              notificacionEnvio.tipo === "success"
-                ? "#ecfdf5"
-                : notificacionEnvio.tipo === "error"
-                ? "#fef2f2"
-                : "#ffffff",
-            color:
-              notificacionEnvio.tipo === "success"
-                ? "#065f46"
-                : notificacionEnvio.tipo === "error"
-                ? "#991b1b"
-                : "#1e293b",
-            border:
-              notificacionEnvio.tipo === "success"
-                ? "1px solid #a7f3d0"
-                : notificacionEnvio.tipo === "error"
-                ? "1px solid #fecaca"
-                : "1px solid #e2e8f0",
-          }}
-        >
-          {notificacionEnvio.tipo === "loading" && (
-            <span
-              style={{
-                display: "inline-block",
-                width: 14,
-                height: 14,
-                border: "2px solid #cbd5e1",
-                borderTopColor: "#f47c20",
-                borderRadius: "50%",
-                animation: "spin 0.8s linear infinite",
-              }}
-            />
-          )}
-          {notificacionEnvio.tipo === "success" && <span style={{ fontSize: 15 }}>✓</span>}
-          {notificacionEnvio.tipo === "error" && <span style={{ fontSize: 15 }}>⚠</span>}
-          <span>{notificacionEnvio.mensaje}</span>
-          {notificacionEnvio.accion && (
-            <button
-              type="button"
-              onClick={() => {
-                const act = notificacionEnvio.accion.onClick;
-                setNotificacionEnvio(null);
-                act?.();
-              }}
-              style={{
-                background: "#fef3c7",
-                color: "#92400e",
-                border: "1px solid #fde68a",
-                borderRadius: 999,
-                padding: "3px 10px",
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                marginLeft: 4,
-              }}
-            >
-              {notificacionEnvio.accion.label}
-            </button>
-          )}
-          {notificacionEnvio.tipo !== "loading" && (
-            <button
-              type="button"
-              onClick={() => setNotificacionEnvio(null)}
-              style={{
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                fontSize: 16,
-                lineHeight: 1,
-                fontWeight: 700,
-                color: "inherit",
-                marginLeft: 8,
-                padding: "2px 4px",
-              }}
-            >
-              ×
-            </button>
-          )}
+        <div className="ui-toaster" aria-live="polite">
+          <div
+            className={`ui-toast ui-toast--${notificacionEnvio.tipo === "success" ? "exito" : notificacionEnvio.tipo === "error" ? "error" : "neutro"}`}
+            role={notificacionEnvio.tipo === "error" ? "alert" : "status"}
+          >
+            {notificacionEnvio.tipo === "loading" ? (
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 12, height: 12, flex: "none", borderRadius: "50%",
+                  border: "2px solid var(--border-strong)", borderTopColor: "var(--text-secondary)",
+                  animation: "spin 0.8s linear infinite",
+                }}
+              />
+            ) : (
+              <span className="ui-toast__dot" aria-hidden="true" />
+            )}
+            <span className="ui-toast__texto">{notificacionEnvio.mensaje}</span>
+            {notificacionEnvio.accion && (
+              <button
+                type="button"
+                className="ui-toast__accion"
+                onClick={() => {
+                  const act = notificacionEnvio.accion.onClick;
+                  setNotificacionEnvio(null);
+                  act?.();
+                }}
+              >
+                {notificacionEnvio.accion.label}
+              </button>
+            )}
+            {notificacionEnvio.tipo !== "loading" && (
+              <button
+                type="button"
+                aria-label="Cerrar aviso"
+                onClick={() => setNotificacionEnvio(null)}
+                style={{
+                  background: "transparent", border: "none", cursor: "pointer", padding: 4,
+                  color: "var(--text-tertiary)", display: "flex", flex: "none",
+                }}
+              >
+                <Icono nombre="cerrar" size={14} />
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -1852,7 +1802,7 @@ export default function Agenda({ ctx }) {
         >
           {/* Estadísticas rápidas de hoy */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-main, #101828)" }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-main, #101828)" }}>
               Hoy para atender:
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -1863,7 +1813,7 @@ export default function Agenda({ ctx }) {
                   gap: 5,
                   padding: "3px 9px",
                   borderRadius: 999,
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: 600,
                   background: TIPOS_COMPROMISO.visita.bg,
                   color: TIPOS_COMPROMISO.visita.color,
@@ -1880,7 +1830,7 @@ export default function Agenda({ ctx }) {
                   gap: 5,
                   padding: "3px 9px",
                   borderRadius: 999,
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: 600,
                   background: TIPOS_COMPROMISO.llamada.bg,
                   color: TIPOS_COMPROMISO.llamada.color,
@@ -1897,7 +1847,7 @@ export default function Agenda({ ctx }) {
                   gap: 5,
                   padding: "3px 9px",
                   borderRadius: 999,
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: 600,
                   background: TIPOS_COMPROMISO.reunion.bg,
                   color: TIPOS_COMPROMISO.reunion.color,
@@ -1914,7 +1864,7 @@ export default function Agenda({ ctx }) {
                   gap: 5,
                   padding: "3px 9px",
                   borderRadius: 999,
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: 600,
                   background: TIPOS_COMPROMISO.coordinacion.bg,
                   color: TIPOS_COMPROMISO.coordinacion.color,
@@ -1984,13 +1934,13 @@ export default function Agenda({ ctx }) {
                   alignItems: "center",
                   gap: 3,
                   background: "linear-gradient(135deg, rgba(254, 243, 199, 0.5), rgba(255, 251, 235, 0.8))",
-                  border: "1px solid #fde68a",
+                  border: "1px solid var(--warning-bg)",
                   padding: "2px 6px",
                   borderRadius: 8,
                 }}
                 title="Herramienta de Cristian Flores: cambia la vista para comprobar cómo se ve el calendario para Camila y para otros usuarios"
               >
-                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#92400e", padding: "0 3px" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--warning-text)", padding: "0 3px" }}>
                   Ver como:
                 </span>
                 {[
@@ -2004,13 +1954,13 @@ export default function Agenda({ ctx }) {
                     onClick={() => setVistaRolSimulada(rol.id)}
                     style={{
                       padding: "3px 7px",
-                      fontSize: 10.5,
+                      fontSize: 11,
                       fontWeight: 700,
                       borderRadius: 6,
                       border: "none",
                       cursor: "pointer",
                       background: vistaRolSimulada === rol.id ? "#f59e0b" : "transparent",
-                      color: vistaRolSimulada === rol.id ? "#ffffff" : "#92400e",
+                      color: vistaRolSimulada === rol.id ? "#ffffff" : "var(--warning-text)",
                     }}
                   >
                     {rol.label}
@@ -2024,8 +1974,8 @@ export default function Agenda({ ctx }) {
                 type="button"
                 style={{
                   background: "linear-gradient(135deg, #fef3c7, #fef9c3)",
-                  color: "#92400e",
-                  border: "1px solid #fde68a",
+                  color: "var(--warning-text)",
+                  border: "1px solid var(--warning-bg)",
                   borderRadius: 8,
                   padding: "6px 14px",
                   fontSize: 12,
@@ -2053,8 +2003,8 @@ export default function Agenda({ ctx }) {
                 type="button"
                 style={{
                   background: "var(--surface, #ffffff)",
-                  color: "#dc2626",
-                  border: "1px solid #fecaca",
+                  color: "var(--danger)",
+                  border: "1px solid var(--danger-bg)",
                   borderRadius: 8,
                   padding: "6px 14px",
                   fontSize: 12,
@@ -2080,7 +2030,7 @@ export default function Agenda({ ctx }) {
             <button
               type="button"
               style={{
-                background: "#f47c20",
+                background: "var(--accent)",
                 color: "#ffffff",
                 border: "none",
                 borderRadius: 8,
@@ -2162,7 +2112,7 @@ export default function Agenda({ ctx }) {
                 onClick={() => setFiltroTipo(f.id)}
                 style={{
                   padding: "5px 10px",
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: 600,
                   borderRadius: 6,
                   border: "1px solid var(--border, #e2e8f0)",
@@ -2226,7 +2176,7 @@ export default function Agenda({ ctx }) {
       {vista === "agenda" && (
         <div style={{ ...CD, padding: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: "var(--text-main, #0f172a)" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--text-main, #0f172a)" }}>
               Cronograma de Compromisos ({compromisosFiltrados.length})
             </h3>
             <button
@@ -2273,10 +2223,10 @@ export default function Agenda({ ctx }) {
                         border: esDiaFestivoColombia(item.fecha) ? "1px solid rgba(252, 165, 165, 0.65)" : "1px solid var(--border, #e2e8f0)",
                       }}
                     >
-                      <span style={{ fontSize: 10, fontWeight: 700, color: esDiaFestivoColombia(item.fecha) ? "#dc2626" : "var(--text-muted, #64748b)", textTransform: "uppercase" }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: esDiaFestivoColombia(item.fecha) ? "#dc2626" : "var(--text-muted, #64748b)", textTransform: "uppercase" }}>
                         {item.fecha ? MESES[parseIso(item.fecha).getMonth()].slice(0, 3) : "N/A"}
                       </span>
-                      <span style={{ fontSize: 16, fontWeight: 800, color: esDiaFestivoColombia(item.fecha) ? "#b91c1c" : "var(--text-main, #0f172a)" }}>
+                      <span style={{ fontSize: 16, fontWeight: 700, color: esDiaFestivoColombia(item.fecha) ? "#b91c1c" : "var(--text-main, #0f172a)" }}>
                         {item.fecha ? parseIso(item.fecha).getDate() : "-"}
                       </span>
                     </div>
@@ -2306,11 +2256,11 @@ export default function Agenda({ ctx }) {
                         {getFestivoColombia(item.fecha) && (
                           <span
                             style={{
-                              fontSize: 10.5,
+                              fontSize: 11,
                               fontWeight: 700,
-                              color: "#b91c1c",
-                              background: "#fee2e2",
-                              border: "1px solid #fecaca",
+                              color: "var(--danger-text)",
+                              background: "var(--danger-bg)",
+                              border: "1px solid var(--danger-bg)",
                               padding: "1px 7px",
                               borderRadius: 4,
                               display: "inline-flex",
@@ -2341,7 +2291,7 @@ export default function Agenda({ ctx }) {
                       rel="noopener noreferrer"
                       style={{
                         ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
-                        fontSize: 11.5,
+                        fontSize: 12,
                         padding: "6px 10px",
                         borderRadius: 6,
                         textDecoration: "none",
@@ -2352,14 +2302,14 @@ export default function Agenda({ ctx }) {
                       }}
                       title="Añadir a Google Calendar con recordatorio para Camila"
                     >
-                      📅 Google Calendar
+                      <Icono nombre="calendario" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />Google Calendar
                     </a>
 
                     <a
                       href={generarUrlAppleCalendar(item)}
                       style={{
                         ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
-                        fontSize: 11.5,
+                        fontSize: 12,
                         padding: "6px 10px",
                         borderRadius: 6,
                         textDecoration: "none",
@@ -2370,7 +2320,7 @@ export default function Agenda({ ctx }) {
                       }}
                       title="Añadir a Apple Calendar (iPhone o Mac) con recordatorio"
                     >
-                      📅 Apple Calendar
+                      <Icono nombre="calendario" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />Apple Calendar
                     </a>
 
                     {item.telefono && (
@@ -2379,7 +2329,7 @@ export default function Agenda({ ctx }) {
                         onClick={() => enviarWhatsApp(item)}
                         style={{
                           ...B("#25D366"),
-                          fontSize: 11.5,
+                          fontSize: 12,
                           padding: "6px 10px",
                           borderRadius: 6,
                         }}
@@ -2432,7 +2382,7 @@ export default function Agenda({ ctx }) {
                           border: "1px solid var(--border, #e2e8f0)",
                           background: "var(--surface, #ffffff)",
                           cursor: "pointer",
-                          color: "#ef4444",
+                          color: "var(--danger)",
                         }}
                         title="Eliminar"
                       >
@@ -2465,13 +2415,14 @@ export default function Agenda({ ctx }) {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0, 0, 0, 0.32)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
+            // El mismo fondo que las hojas del sistema (.ui-overlay).
+            background: "rgba(16, 24, 40, .45)",
+            backdropFilter: "blur(4px)",
+            WebkitBackdropFilter: "blur(4px)",
             display: "flex",
             alignItems: isMobile ? "flex-end" : "center",
             justifyContent: "center",
-            zIndex: 9999,
+            zIndex: "var(--capa-hoja)",
             padding: isMobile ? 0 : 20,
           }}
           onClick={() => setModalAbierto(false)}
@@ -2483,7 +2434,7 @@ export default function Agenda({ ctx }) {
             aria-label={itemEdicion ? "Editar compromiso" : "Nuevo compromiso"}
             style={{
               background: "var(--surface, #ffffff)",
-              borderRadius: isMobile ? "22px 22px 0 0" : 22,
+              borderRadius: isMobile ? "20px 20px 0 0" : 20,
               width: "100%",
               maxWidth: 580,
               maxHeight: isMobile ? "92dvh" : "min(88dvh, 860px)",
@@ -2496,7 +2447,7 @@ export default function Agenda({ ctx }) {
           >
             {/* Cabecera fija */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: isMobile ? "16px 18px 12px" : "20px 24px 14px", flexShrink: 0 }}>
-              <h3 style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", margin: 0, color: "var(--text-primary)" }}>
+              <h3 style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.01em", margin: 0, color: "var(--text-primary)" }}>
                 {itemEdicion ? "Editar compromiso" : "Nuevo compromiso"}
               </h3>
               <button
@@ -2509,7 +2460,7 @@ export default function Agenda({ ctx }) {
                   display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                 }}
               >
-                ✕
+                <Icono nombre="cerrar" size={14} />
               </button>
             </div>
 
@@ -2542,7 +2493,7 @@ export default function Agenda({ ctx }) {
                           onClick={() => setFormTipo(tipoKey)}
                           style={{
                             padding: isMobile ? "8px 2px" : "8px 4px",
-                            fontSize: 11.5,
+                            fontSize: 12,
                             fontWeight: activo ? 600 : 500,
                             borderRadius: 9,
                             border: "none",
@@ -2590,7 +2541,7 @@ export default function Agenda({ ctx }) {
                     <label style={etiqueta}>Fecha</label>
                     <input type="date" value={formFecha} onChange={(e) => setFormFecha(e.target.value)} style={campo} required />
                     {getFestivoColombia(formFecha) && (
-                      <div style={{ marginTop: 6, fontSize: 11.5, color: "var(--danger-text)" }}>
+                      <div style={{ marginTop: 6, fontSize: 12, color: "var(--danger-text)" }}>
                         Festivo: {getFestivoColombia(formFecha).nombre}
                       </div>
                     )}
@@ -2623,7 +2574,7 @@ export default function Agenda({ ctx }) {
                             onClick={() => setFormHora(h.v)}
                             aria-pressed={sel}
                             style={{
-                              fontSize: 11.5,
+                              fontSize: 12,
                               fontWeight: sel ? 600 : 400,
                               padding: "4px 9px",
                               borderRadius: 980,
@@ -2703,7 +2654,7 @@ export default function Agenda({ ctx }) {
                       <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
                         Fecha especial
                       </span>
-                      <span style={{ display: "block", fontSize: 11.5, color: "var(--text-tertiary)", marginTop: 1 }}>
+                      <span style={{ display: "block", fontSize: 12, color: "var(--text-tertiary)", marginTop: 1 }}>
                         Se marca con estrellita. Solo la ven Camila y tú.
                       </span>
                     </span>

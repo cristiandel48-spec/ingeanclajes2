@@ -575,7 +575,9 @@ export default function Informes({ctx}){
 
     fotoRefs.current={};
     setForm(p=>({...p,actividades:[...propias,...nuevos]}));
-    window.alert(
+    // Confirmacion de algo que salio bien: aviso flotante, no una hoja que
+    // obliga a pulsar «Entendido».
+    toast.exito(
       nuevos.length===avancesDisponibles.length
         ? `Se agregaron ${nuevos.length} avance(s) de la obra.`
         : `Se agregaron ${nuevos.length} avance(s) nuevo(s). Los otros ${avancesDisponibles.length-nuevos.length} ya estaban.`
@@ -979,7 +981,7 @@ export default function Informes({ctx}){
       };
     });
 
-    window.alert(`Se agregaron ${itemsCot.length} actividades al informe basadas en la cotización ${cot?.numero || ""}.`);
+    toast.exito(`Se agregaron ${itemsCot.length} actividades al informe basadas en la cotización ${cot?.numero || ""}.`);
   };
 
   return(
@@ -1222,7 +1224,7 @@ export default function Informes({ctx}){
                     type="button"
                     title="Quitar técnico"
                     onClick={() => setForm(pf => ({ ...pf, personal: pf.personal.filter((_, j) => j !== i) }))}
-                    style={{ background: "transparent", border: "none", color: "#98a2b3", borderRadius: 6, cursor: "pointer", fontSize: 16, padding: 2, lineHeight: 1 }}
+                    style={{ background: "transparent", border: "none", color: "var(--text-quaternary)", borderRadius: 6, cursor: "pointer", fontSize: 16, padding: 2, lineHeight: 1 }}
                     onMouseEnter={e => { e.currentTarget.style.color = "#d92d20"; }}
                     onMouseLeave={e => { e.currentTarget.style.color = "#98a2b3"; }}
                   >×</button>
@@ -1368,7 +1370,7 @@ export default function Informes({ctx}){
                           type="button"
                           onClick={() => quitarFotoAct(ai, fi)}
                           title="Eliminar foto"
-                          style={{ background: "transparent", border: "none", color: "#98a2b3", borderRadius: 6, width: 22, height: 22, cursor: "pointer", fontSize: 16, flexShrink: 0, lineHeight: 1 }}
+                          style={{ background: "transparent", border: "none", color: "var(--text-quaternary)", borderRadius: 6, width: 22, height: 22, cursor: "pointer", fontSize: 16, flexShrink: 0, lineHeight: 1 }}
                           onMouseEnter={e => { e.currentTarget.style.color = "#d92d20"; }}
                           onMouseLeave={e => { e.currentTarget.style.color = "#98a2b3"; }}
                         >
@@ -1417,8 +1419,8 @@ export default function Informes({ctx}){
                 />
 
                 {subiendoFotos?.actividad===ai && (
-                  <div style={{fontSize:11.5,color:"#d97706",marginTop:8,fontWeight:600}}>
-                    ⏳ Cargando fotos… {subiendoFotos.hechas} de {subiendoFotos.total}
+                  <div style={{fontSize:11.5,color:"var(--warning)",marginTop:8,fontWeight:600}}>
+                    Cargando fotos… {subiendoFotos.hechas} de {subiendoFotos.total}
                   </div>
                 )}
               </div>
@@ -1537,7 +1539,7 @@ export default function Informes({ctx}){
                 className="doc-shell"
                 style={{
                   background: "#ffffff",
-                  color: "#18181b",
+                  color: "var(--text-primary)",
                   fontFamily: FUENTE,
                   fontSize: 12,
                   lineHeight: 1.5,
@@ -1555,15 +1557,15 @@ export default function Informes({ctx}){
                     de igual alto -logo, titulo y datos de control-. El de antes
                     repetia el nombre de la empresa junto al logo y partia el
                     titulo en dos lineas, y los dos lados no cuadraban. */}
-                <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, border: "1px solid #d2d2d7", borderRadius: 8, marginBottom: 14, tableLayout: isMobile ? "auto" : "fixed" }}>
+                <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, border: "1px solid var(--separator)", borderRadius: 8, marginBottom: 14, tableLayout: isMobile ? "auto" : "fixed" }}>
                   <tbody>
                     <tr>
                       {!isMobile && (
-                        <td style={{ width: "27%", padding: "10px 14px", borderRight: "1px solid #d2d2d7", verticalAlign: "middle", textAlign: "center" }}>
+                        <td style={{ width: "27%", padding: "10px 14px", borderRight: "1px solid var(--separator)", verticalAlign: "middle", textAlign: "center" }}>
                           {LOGO_INGEANCLAJES ? (
                             <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{ height: 48, maxWidth: "100%", objectFit: "contain", display: "inline-block" }} />
                           ) : (
-                            <div style={{ fontSize: 18, fontWeight: 800, color: "#1d1d1f" }}>INGEANCLAJES</div>
+                            <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>INGEANCLAJES</div>
                           )}
                         </td>
                       )}
@@ -1571,23 +1573,23 @@ export default function Informes({ctx}){
                         {isMobile && LOGO_INGEANCLAJES && (
                           <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{ height: 36, objectFit: "contain", display: "block", margin: "0 auto 6px" }} />
                         )}
-                        <div style={{ fontSize: 9.5, fontWeight: 600, color: "#6e6e73", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                        <div style={{ fontSize: 9.5, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                           Sistema de gestión de calidad
                         </div>
-                        <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 800, color: "#1d1d1f", letterSpacing: "0.01em", textTransform: "uppercase", marginTop: 3, lineHeight: 1.25 }}>
+                        <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "0.01em", textTransform: "uppercase", marginTop: 3, lineHeight: 1.25 }}>
                           Informe técnico de actividades en obra
                         </div>
-                        <div style={{ fontSize: 9.5, color: "#6e6e73", marginTop: 4 }}>
+                        <div style={{ fontSize: 9.5, color: "var(--text-secondary)", marginTop: 4 }}>
                           Ingeanclajes S.A.S. · NIT 900.193.965-4 · PBX (604) 448 26 86
                         </div>
                       </td>
-                      <td style={{ width: isMobile ? "38%" : "24%", padding: 0, borderLeft: "1px solid #d2d2d7", verticalAlign: "middle" }}>
+                      <td style={{ width: isMobile ? "38%" : "24%", padding: 0, borderLeft: "1px solid var(--separator)", verticalAlign: "middle" }}>
                         <table style={{ width: "100%", borderCollapse: "collapse" }}>
                           <tbody>
                             {[["Código", docCodigo], ["Versión", docVersion], ["Consecutivo", numDoc || "INF-OFICIAL"]].map(([rotulo, valor], i) => (
                               <tr key={rotulo}>
-                                <td style={{ padding: "5px 10px", fontSize: 9.5, fontWeight: 600, color: "#6e6e73", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: i < 2 ? "1px solid #e8e8ed" : "none" }}>{rotulo}</td>
-                                <td style={{ padding: "5px 10px", fontSize: 10.5, fontWeight: 700, color: "#1d1d1f", textAlign: "right", whiteSpace: "nowrap", borderBottom: i < 2 ? "1px solid #e8e8ed" : "none" }}>{valor}</td>
+                                <td style={{ padding: "5px 10px", fontSize: 9.5, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: i < 2 ? "1px solid #e8e8ed" : "none" }}>{rotulo}</td>
+                                <td style={{ padding: "5px 10px", fontSize: 10.5, fontWeight: 700, color: "var(--text-primary)", textAlign: "right", whiteSpace: "nowrap", borderBottom: i < 2 ? "1px solid #e8e8ed" : "none" }}>{valor}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -1598,36 +1600,36 @@ export default function Informes({ctx}){
                 </table>
 
                 {/* Ficha de Datos del Proyecto */}
-                <div style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, padding: "10px 14px", marginBottom: 14, background: "#fafafa" }}>
+                <div style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, padding: "10px 14px", marginBottom: 14, background: "var(--surface-subtle)" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10 }}>
                     <tbody>
                       <tr>
-                        <td style={{ width: "16%", fontWeight: 700, color: "#52525b", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px" }}>PROYECTO:</td>
-                        <td style={{ width: "40%", fontWeight: 700, color: "#18181b", fontSize: 11, padding: "4px 6px" }}>{proyecto || "OBRA GENERAL"}</td>
-                        <td style={{ width: "16%", fontWeight: 700, color: "#52525b", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderLeft: "1px solid rgba(0,0,0,0.06)" }}>PERÍODO:</td>
-                        <td style={{ width: "28%", color: "#18181b", fontWeight: 600, fontSize: 10.5, padding: "4px 6px" }}>{periodo}</td>
+                        <td style={{ width: "16%", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px" }}>PROYECTO:</td>
+                        <td style={{ width: "40%", fontWeight: 700, color: "var(--text-primary)", fontSize: 11, padding: "4px 6px" }}>{proyecto || "OBRA GENERAL"}</td>
+                        <td style={{ width: "16%", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderLeft: "1px solid rgba(0,0,0,0.06)" }}>PERÍODO:</td>
+                        <td style={{ width: "28%", color: "var(--text-primary)", fontWeight: 600, fontSize: 10.5, padding: "4px 6px" }}>{periodo}</td>
                       </tr>
                       <tr>
-                        <td style={{ fontWeight: 700, color: "#52525b", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>CONTRATANTE:</td>
-                        <td style={{ color: "#18181b", fontWeight: 600, fontSize: 10.5, padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>{cliente || "A QUIEN INTERESE"}</td>
-                        <td style={{ fontWeight: 700, color: "#52525b", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderLeft: "1px solid rgba(0,0,0,0.06)", borderTop: "1px solid rgba(0,0,0,0.04)" }}>FECHA EMISIÓN:</td>
-                        <td style={{ color: "#18181b", fontWeight: 600, fontSize: 10.5, padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>{fechaInforme}</td>
+                        <td style={{ fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>CONTRATANTE:</td>
+                        <td style={{ color: "var(--text-primary)", fontWeight: 600, fontSize: 10.5, padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>{cliente || "A QUIEN INTERESE"}</td>
+                        <td style={{ fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderLeft: "1px solid rgba(0,0,0,0.06)", borderTop: "1px solid rgba(0,0,0,0.04)" }}>FECHA EMISIÓN:</td>
+                        <td style={{ color: "var(--text-primary)", fontWeight: 600, fontSize: 10.5, padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>{fechaInforme}</td>
                       </tr>
                       <tr>
-                        <td style={{ fontWeight: 700, color: "#52525b", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>LOCALIZACIÓN:</td>
-                        <td style={{ color: "#18181b", fontWeight: 600, fontSize: 10.5, padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>{localizacion || "MEDELLÍN"}</td>
-                        <td style={{ fontWeight: 700, color: "#52525b", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderLeft: "1px solid rgba(0,0,0,0.06)", borderTop: "1px solid rgba(0,0,0,0.04)" }}>NORMATIVA:</td>
+                        <td style={{ fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>LOCALIZACIÓN:</td>
+                        <td style={{ color: "var(--text-primary)", fontWeight: 600, fontSize: 10.5, padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>{localizacion || "MEDELLÍN"}</td>
+                        <td style={{ fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderLeft: "1px solid rgba(0,0,0,0.06)", borderTop: "1px solid rgba(0,0,0,0.04)" }}>NORMATIVA:</td>
                         <td style={{ padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>
-                          <span style={{ background: "#ffffff", color: "#18181b", border: "1px solid #d4d4d8", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 4, display: "inline-block" }}>
+                          <span style={{ background: "#ffffff", color: "var(--text-primary)", border: "1px solid #d4d4d8", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 4, display: "inline-block" }}>
                             Res. 4272/2021 · OSHA 1926.502
                           </span>
                         </td>
                       </tr>
                       {(sel.cotizacionNumero || cotVincSel?.numero) && (
                         <tr>
-                          <td style={{ fontWeight: 700, color: "#52525b", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>REF. COTIZACIÓN:</td>
-                          <td colSpan={3} style={{ color: "#18181b", fontWeight: 700, padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)", fontVariantNumeric: "tabular-nums" }}>
-                            <span style={{ background: "#ffffff", color: "#18181b", padding: "2px 7px", borderRadius: 4, border: "1px solid #d4d4d8", fontSize: 9.5 }}>
+                          <td style={{ fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>REF. COTIZACIÓN:</td>
+                          <td colSpan={3} style={{ color: "var(--text-primary)", fontWeight: 700, padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)", fontVariantNumeric: "tabular-nums" }}>
+                            <span style={{ background: "#ffffff", color: "var(--text-primary)", padding: "2px 7px", borderRadius: 4, border: "1px solid #d4d4d8", fontSize: 9.5 }}>
                               {sel.cotizacionNumero || cotVincSel?.numero}
                             </span>
                             {cotVincSel && (
@@ -1640,7 +1642,7 @@ export default function Informes({ctx}){
                                 style={{
                                   marginLeft: 12,
                                   background: "#ffffff",
-                                  color: "#18181b",
+                                  color: "var(--text-primary)",
                                   border: "1px solid #d4d4d8",
                                   borderRadius: 6,
                                   padding: "3px 10px",
@@ -1662,24 +1664,24 @@ export default function Informes({ctx}){
 
                 {/* Sección 1: Personal Técnico Asignado en Sitio */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: "#18181b" }}>1. Personal Técnico Asignado en Sitio</span>
-                  <span style={{ fontSize: 9, fontWeight: 500, color: "#71717a" }}>Personal certificado con trabajo seguro en alturas</span>
+                  <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--text-primary)" }}>1. Personal Técnico Asignado en Sitio</span>
+                  <span style={{ fontSize: 9, fontWeight: 500, color: "var(--text-tertiary)" }}>Personal certificado con trabajo seguro en alturas</span>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : `repeat(${Math.min(3, Math.max(1, personal.length))}, 1fr)`, gap: 8, marginBottom: 14 }}>
                   {personal.length > 0 ? (
                     personal.map((p, idx) => (
                       <div key={idx} style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 6, padding: "6px 9px", background: "#ffffff", display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 22, height: 22, background: "#f4f4f5", borderRadius: 4, color: "#18181b", fontVariantNumeric: "tabular-nums", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <div style={{ width: 22, height: 22, background: "#f4f4f5", borderRadius: 4, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           {String(idx + 1).padStart(2, "0")}
                         </div>
                         <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ fontSize: 8, fontWeight: 700, color: "#71717a", textTransform: "uppercase", letterSpacing: "0.04em" }}>{String(p.cargo || "TÉCNICO ESPECIALISTA").toUpperCase()}</div>
-                          <div style={{ fontSize: 10.5, fontWeight: 600, color: "#18181b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nombre || "Sin nombre registrado"}</div>
+                          <div style={{ fontSize: 8, fontWeight: 700, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>{String(p.cargo || "TÉCNICO ESPECIALISTA").toUpperCase()}</div>
+                          <div style={{ fontSize: 10.5, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nombre || "Sin nombre registrado"}</div>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div style={{ border: "1px dashed #d4d4d8", borderRadius: 6, padding: "8px 12px", color: "#71717a", fontSize: 9, fontStyle: "italic" }}>
+                    <div style={{ border: "1px dashed #d4d4d8", borderRadius: 6, padding: "8px 12px", color: "var(--text-tertiary)", fontSize: 9, fontStyle: "italic" }}>
                       Personal asignado conforme a programación de cuadrilla en obra.
                     </div>
                   )}
@@ -1687,8 +1689,8 @@ export default function Informes({ctx}){
 
                 {/* Sección 2: Metodología y Registro de Actividades Ejecutadas */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, paddingTop: 2 }}>
-                  <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: "#18181b" }}>2. Metodología y Registro de Actividades Ejecutadas</span>
-                  <span style={{ fontSize: 9, fontWeight: 500, color: "#71717a" }}>Control y Trazabilidad Operativa</span>
+                  <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--text-primary)" }}>2. Metodología y Registro de Actividades Ejecutadas</span>
+                  <span style={{ fontSize: 9, fontWeight: 500, color: "var(--text-tertiary)" }}>Control y Trazabilidad Operativa</span>
                 </div>
 
                 {rawActividades.map((act, ai) => (
@@ -1699,7 +1701,7 @@ export default function Informes({ctx}){
                           <span style={{ background: "#18181b", color: "#ffffff", fontVariantNumeric: "tabular-nums", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 4 }}>
                             ACT-{String(ai + 1).padStart(2, "0")}
                           </span>
-                          <span style={{ fontSize: 11.5, fontWeight: 700, color: "#18181b" }}>
+                          <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-primary)" }}>
                             {act.titulo || "Actividad Ejecutada"}
                           </span>
                           <button
@@ -1727,32 +1729,32 @@ export default function Informes({ctx}){
                           </button>
                         </div>
                         {act.fecha && (
-                          <span style={{ fontSize: 9, color: "#71717a", fontVariantNumeric: "tabular-nums" }}>
+                          <span style={{ fontSize: 9, color: "var(--text-tertiary)", fontVariantNumeric: "tabular-nums" }}>
                             Fecha: {fmtL(act.fecha)}
                           </span>
                         )}
                       </div>
 
-                      <div style={{ fontSize: 10, color: "#27272a", lineHeight: 1.5, textAlign: "justify" }}>
+                      <div style={{ fontSize: 10, color: "var(--text-primary)", lineHeight: 1.5, textAlign: "justify" }}>
                         {(act.actividadesRealizadas || "").trim() && (
                           <div style={{ marginBottom: 6 }}>
-                            <strong style={{ color: "#52525b", textTransform: "uppercase", fontSize: 8.5, letterSpacing: "0.05em", display: "block", marginBottom: 2 }}>Actividades Realizadas:</strong>
+                            <strong style={{ color: "var(--text-secondary)", textTransform: "uppercase", fontSize: 8.5, letterSpacing: "0.05em", display: "block", marginBottom: 2 }}>Actividades Realizadas:</strong>
                             <span style={{ whiteSpace: "pre-line" }}>{act.actividadesRealizadas}</span>
                           </div>
                         )}
                         {(act.descripcion || "").trim() && (
                           <div style={{ marginBottom: 4 }}>
-                            <strong style={{ color: "#52525b", textTransform: "uppercase", fontSize: 8.5, letterSpacing: "0.05em", display: "block", marginBottom: 2 }}>Descripción Técnica:</strong>
+                            <strong style={{ color: "var(--text-secondary)", textTransform: "uppercase", fontSize: 8.5, letterSpacing: "0.05em", display: "block", marginBottom: 2 }}>Descripción Técnica:</strong>
                             <span style={{ whiteSpace: "pre-line" }}>{act.descripcion}</span>
                           </div>
                         )}
                       </div>
 
                       <div style={{ marginTop: 7, paddingTop: 5, borderTop: "1px solid #f4f4f5", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 9.5 }}>
-                        <span style={{ color: "#18181b" }}>
-                          <strong style={{ color: "#059669" }}>✓ Conforme:</strong> {(act.observaciones || "").trim() ? act.observaciones : "Ejecutado a conformidad sin novedades reportadas."}
+                        <span style={{ color: "var(--text-primary)" }}>
+                          <strong style={{ color: "var(--success)" }}>✓ Conforme:</strong> {(act.observaciones || "").trim() ? act.observaciones : "Ejecutado a conformidad sin novedades reportadas."}
                         </span>
-                        <span style={{ color: "#52525b", fontWeight: 600 }}>Estado: Concluido 100%</span>
+                        <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>Estado: Concluido 100%</span>
                       </div>
                     </div>
 
@@ -1760,15 +1762,15 @@ export default function Informes({ctx}){
                     {(act.fotos || []).some(ft => ft.img || ft.url) && (
                       <div style={{ marginBottom: 16 }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                          <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: "#18181b" }}>
+                          <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--text-primary)" }}>
                             3. Panel Técnico de Evidencias Fotográficas · {act.titulo || "Actividad"}
                           </span>
-                          <span style={{ fontSize: 9, fontWeight: 500, color: "#71717a" }}>Registro Fotográfico en Sitio</span>
+                          <span style={{ fontSize: 9, fontWeight: 500, color: "var(--text-tertiary)" }}>Registro Fotográfico en Sitio</span>
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
                           {(act.fotos || []).filter(ft => ft.img || ft.url).map((ft, fi) => (
                             <div key={fi} style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, overflow: "hidden", background: "#ffffff", boxShadow: "0 1px 2px rgba(0,0,0,0.02)", display: "flex", flexDirection: "column" }}>
-                              <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "#fafafa", borderBottom: "1px solid #f4f4f5", overflow: "hidden", position: "relative" }}>
+                              <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface-subtle)", borderBottom: "1px solid #f4f4f5", overflow: "hidden", position: "relative" }}>
                                 <img src={ft.img || ft.url} alt={`Evidencia ${fi + 1}`} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#ffffff" }} onError={e => { e.target.style.display = "none"; }} />
                                 <span style={{ position: "absolute", top: 6, left: 6, background: "rgba(0,0,0,0.68)", color: "#ffffff", fontSize: 8.5, fontVariantNumeric: "tabular-nums", fontWeight: 700, padding: "2.5px 7px", borderRadius: 4 }}>
                                   EVIDENCIA {ai + 1}.{fi + 1}
@@ -1776,7 +1778,7 @@ export default function Informes({ctx}){
                               </div>
                               {/* Sin comentario, la foto sale sola (igual que en el impreso). */}
                               {String(ft.comentario || "").trim() && (
-                                <div style={{ padding: "7px 10px", fontSize: 9.5, color: "#27272a", lineHeight: 1.4, background: "#ffffff" }}>
+                                <div style={{ padding: "7px 10px", fontSize: 9.5, color: "var(--text-primary)", lineHeight: 1.4, background: "#ffffff" }}>
                                   {ft.comentario}
                                 </div>
                               )}
@@ -1790,11 +1792,11 @@ export default function Informes({ctx}){
 
                 {/* Dictamen Técnico y Recomendaciones */}
                 {sel.recomendaciones && (
-                  <div style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, overflow: "hidden", marginBottom: 14, background: "#fafafa", padding: "10px 14px" }}>
-                    <div style={{ fontSize: 9.5, fontWeight: 800, color: "#52525b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
+                  <div style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, overflow: "hidden", marginBottom: 14, background: "var(--surface-subtle)", padding: "10px 14px" }}>
+                    <div style={{ fontSize: 9.5, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
                       DICTAMEN TÉCNICO Y RECOMENDACIONES
                     </div>
-                    <div style={{ fontSize: 10, color: "#27272a", lineHeight: 1.5, textAlign: "justify", whiteSpace: "pre-line" }}>
+                    <div style={{ fontSize: 10, color: "var(--text-primary)", lineHeight: 1.5, textAlign: "justify", whiteSpace: "pre-line" }}>
                       {sel.recomendaciones}
                     </div>
                   </div>
@@ -1805,26 +1807,26 @@ export default function Informes({ctx}){
                   <tbody>
                     <tr>
                       <td style={{ width: "50%", padding: "10px 14px 0 0", verticalAlign: "top", borderRight: "1px solid rgba(0,0,0,0.08)" }}>
-                        <div style={{ fontSize: 8.5, fontWeight: 700, color: "#71717a", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4 }}>
+                        <div style={{ fontSize: 8.5, fontWeight: 700, color: "var(--text-tertiary)", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4 }}>
                           Por el Contratista Especialista:
                         </div>
                         <div style={{ height: 48, display: "flex", alignItems: "flex-end", marginBottom: 4 }}>
                           {firmaImg ? (
                             <img src={firmaImg} alt="Firma" style={{ maxHeight: 44, maxWidth: 190, objectFit: "contain" }} />
                           ) : (
-                            <div style={{ fontFamily: "'Segoe Script', cursive, sans-serif", fontSize: 15, fontWeight: 700, color: "#18181b" }}>
+                            <div style={{ fontFamily: "'Segoe Script', cursive, sans-serif", fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
                               Jhon Jaime Sepúlveda L.
                             </div>
                           )}
                         </div>
-                        <div style={{ fontWeight: 800, fontSize: 11, color: "#18181b", letterSpacing: "0.01em" }}>
+                        <div style={{ fontWeight: 700, fontSize: 11, color: "var(--text-primary)", letterSpacing: "0.01em" }}>
                           ING. JHON JAIME SEPÚLVEDA LONDOÑO
                         </div>
-                        <div style={{ fontSize: 9, color: "#52525b", marginTop: 1 }}>Gerente General · MP. 05256-409949</div>
-                        <div style={{ fontSize: 8.5, color: "#71717a", marginTop: 1 }}>Ingeanclajes S.A.S · NIT. 900.193.965-4</div>
+                        <div style={{ fontSize: 9, color: "var(--text-secondary)", marginTop: 1 }}>Gerente General · MP. 05256-409949</div>
+                        <div style={{ fontSize: 8.5, color: "var(--text-tertiary)", marginTop: 1 }}>Ingeanclajes S.A.S · NIT. 900.193.965-4</div>
                       </td>
                       <td style={{ width: "50%", padding: "10px 0 0 14px", verticalAlign: "top" }}>
-                        <div style={{ fontSize: 8.5, fontWeight: 700, color: "#71717a", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4 }}>
+                        <div style={{ fontSize: 8.5, fontWeight: 700, color: "var(--text-tertiary)", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4 }}>
                           Recibido por la Interventoría / Constructora:
                         </div>
                         {/* Lo mismo que sale impreso (lib/informePrint.js):
@@ -1835,18 +1837,18 @@ export default function Informes({ctx}){
                             ? <img src={firmaActa.firmaImagen} alt="Firma del cliente" style={{ maxHeight: 46, maxWidth: 190, objectFit: "contain" }} />
                             : "(Firma y sello de recepción a satisfacción)"}
                         </div>
-                        <div style={{ fontWeight: 700, fontSize: 10, color: "#18181b" }}>
+                        <div style={{ fontWeight: 700, fontSize: 10, color: "var(--text-primary)" }}>
                           NOMBRE: {firmaActa?.firmanteNombre || "____________________________________"}
                         </div>
-                        <div style={{ fontSize: 9, color: "#52525b", marginTop: 3 }}>
+                        <div style={{ fontSize: 9, color: "var(--text-secondary)", marginTop: 3 }}>
                           C.C.: {firmaActa?.firmanteDocumento || "______________________________"}
                         </div>
-                        <div style={{ fontSize: 9, color: "#52525b", marginTop: 3 }}>
+                        <div style={{ fontSize: 9, color: "var(--text-secondary)", marginTop: 3 }}>
                           CARGO: {firmaActa?.firmanteCargo || "____________________________"}
                         </div>
-                        <div style={{ fontSize: 9, color: "#52525b", marginTop: 2 }}>EMPRESA: {cliente || "Constructora / Contratante"}</div>
+                        <div style={{ fontSize: 9, color: "var(--text-secondary)", marginTop: 2 }}>EMPRESA: {cliente || "Constructora / Contratante"}</div>
                         {firmaActa?.firmadoEn && (
-                          <div style={{ fontSize: 8, color: "#71717a", marginTop: 3 }}>
+                          <div style={{ fontSize: 8, color: "var(--text-tertiary)", marginTop: 3 }}>
                             Firmado electrónicamente · {fmtL(firmaActa.firmadoEn)}
                           </div>
                         )}
@@ -1856,7 +1858,7 @@ export default function Informes({ctx}){
                 </table>
 
                 {/* Footer Oficial */}
-                <div style={{ borderTop: "1px solid #e4e4e7", paddingTop: 8, marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 8.5, color: "#71717a" }}>
+                <div style={{ borderTop: "1px solid #e4e4e7", paddingTop: 8, marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 8.5, color: "var(--text-tertiary)" }}>
                   <span>Ingeanclajes S.A.S · Documento Técnico Oficial SGC · {docCodigo} (V-{docVersion})</span>
                   <span>Informe Técnico de Actividades</span>
                 </div>

@@ -126,7 +126,7 @@ export default function ListaClientes({ clientes = [], acciones = {} }) {
                   border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
                   background: "var(--surface, #ffffff)",
                   color: "var(--text-primary)",
-                  fontSize: 12.5,
+                  fontSize: 13,
                   outline: "none",
                   boxSizing: "border-box",
                 }}
@@ -280,14 +280,14 @@ function FilaCliente({ c, acciones, compacta }) {
         borderBottom: "1px solid var(--border, rgba(0,0,0,0.06))",
         background: encima ? "var(--surface-subtle, #f5f5f7)" : "transparent",
         cursor: "pointer",
-        fontSize: 12.5,
+        fontSize: 13,
       }}
     >
       <div style={{ minWidth: 0, paddingRight: 10 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {nombre}
         </div>
-        {donde && <div style={{ ...texto2, fontSize: 11.5, marginTop: 1 }}>{donde}</div>}
+        {donde && <div style={{ ...texto2, fontSize: 12, marginTop: 1 }}>{donde}</div>}
       </div>
       {compacta ? (
         <>
@@ -375,7 +375,7 @@ function MenuMas({ opciones }) {
                 borderRadius: 7,
                 background: "transparent",
                 color: o.peligro ? "var(--danger-text, #b91c1c)" : "var(--text-primary)",
-                fontSize: 12.5,
+                fontSize: 13,
                 fontWeight: 500,
                 cursor: "pointer",
                 fontFamily: "inherit",

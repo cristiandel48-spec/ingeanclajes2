@@ -3,6 +3,7 @@ import FototecaObra from "../Obras/FototecaObra";
 import Badge from "../../components/ui/Badge";
 import { CD, SI, B } from "../../styles/tokens";
 import { useIsMobile } from "../../hooks/useMediaQuery";
+import Icono from "../../components/ui/Icono";
 
 export default function FototecaScreen({ ctx }) {
   const { obras = [], informes = [], intencion, limpiarIntencion, asegurarDetalle } = ctx;
@@ -113,17 +114,17 @@ export default function FototecaScreen({ ctx }) {
               height: 48,
               borderRadius: 14,
               background: "rgba(244, 124, 32, 0.1)",
-              color: "#ea580c",
+              color: "var(--accent)",
               fontSize: 24,
               marginBottom: 12,
             }}
           >
-            📸
+            <Icono nombre="camara" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />
           </div>
 
           <div
             style={{
-              fontSize: 10.5,
+              fontSize: 11,
               fontWeight: 600,
               textTransform: "uppercase",
               letterSpacing: "0.06em",
@@ -201,7 +202,7 @@ export default function FototecaScreen({ ctx }) {
                   background: "transparent",
                   border: "none",
                   fontSize: 16,
-                  color: "#94a3b8",
+                  color: "var(--text-quaternary)",
                   cursor: "pointer",
                   padding: "6px 8px",
                   borderRadius: 6,
@@ -237,7 +238,7 @@ export default function FototecaScreen({ ctx }) {
                 ...SI,
                 width: "auto",
                 maxWidth: 280,
-                fontSize: 12.5,
+                fontSize: 13,
                 padding: "6px 12px",
                 cursor: "pointer",
                 borderRadius: 8,
@@ -283,7 +284,7 @@ export default function FototecaScreen({ ctx }) {
                   style={{
                     background: "transparent",
                     border: "none",
-                    color: "#ea580c",
+                    color: "var(--accent)",
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: "pointer",
@@ -330,7 +331,7 @@ export default function FototecaScreen({ ctx }) {
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                           <div>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: "#ea580c" }}>{o.id}</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)" }}>{o.id}</span>
                             <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main, #101828)" }}>
                               {o.cliente}
                             </div>
@@ -354,17 +355,17 @@ export default function FototecaScreen({ ctx }) {
                             borderTop: "1px solid var(--border, #f1f5f9)",
                           }}
                         >
-                          <span style={{ fontSize: 11.5, color: "var(--text-muted, #667085)" }}>
-                            📍 {o.ciudad || "Colombia"}
+                          <span style={{ fontSize: 12, color: "var(--text-muted, #667085)" }}>
+                            <Icono nombre="ubicacion" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />{o.ciudad || "Colombia"}
                           </span>
                           <span
                             style={{
-                              fontSize: 11.5,
+                              fontSize: 12,
                               fontWeight: 700,
                               padding: "3px 8px",
                               borderRadius: 999,
-                              background: count > 0 ? "#ecfdf5" : "#f1f5f9",
-                              color: count > 0 ? "#047857" : "#64748b",
+                              background: count > 0 ? "var(--success-bg)" : "var(--fill)",
+                              color: count > 0 ? "var(--success-text)" : "var(--text-tertiary)",
                             }}
                           >
                             {count} {count === 1 ? "foto" : "fotos"}
@@ -425,7 +426,7 @@ export default function FototecaScreen({ ctx }) {
                   >
                     Obras recientes con fotografías registradas:
                   </span>
-                  <span style={{ fontSize: 11.5, color: "#ea580c", fontWeight: 600 }}>
+                  <span style={{ fontSize: 12, color: "var(--accent)", fontWeight: 600 }}>
                     Toca para abrir galería
                   </span>
                 </div>
@@ -477,7 +478,7 @@ export default function FototecaScreen({ ctx }) {
                         </div>
                         <div
                           style={{
-                            fontSize: 11.5,
+                            fontSize: 12,
                             color: "var(--text-muted, #64748b)",
                             whiteSpace: "nowrap",
                             overflow: "hidden",
@@ -494,8 +495,8 @@ export default function FototecaScreen({ ctx }) {
                           fontWeight: 700,
                           padding: "3px 8px",
                           borderRadius: 999,
-                          background: "#ecfdf5",
-                          color: "#047857",
+                          background: "var(--success-bg)",
+                          color: "var(--success-text)",
                           whiteSpace: "nowrap",
                           flexShrink: 0,
                         }}
@@ -534,12 +535,12 @@ export default function FototecaScreen({ ctx }) {
                 type="button"
                 onClick={() => setObraIdSeleccionada(null)}
                 style={{
-                  background: "#f1f5f9",
-                  color: "#334155",
-                  border: "1px solid #cbd5e1",
+                  background: "var(--fill)",
+                  color: "var(--text-secondary)",
+                  border: "1px solid var(--border-strong)",
                   borderRadius: 8,
                   padding: "6px 12px",
-                  fontSize: 12.5,
+                  fontSize: 13,
                   fontWeight: 700,
                   cursor: "pointer",
                   display: "inline-flex",
@@ -551,13 +552,13 @@ export default function FototecaScreen({ ctx }) {
               </button>
 
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 15, fontWeight: 800, color: "var(--text-main, #101828)" }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-main, #101828)" }}>
                   {obraActual.id} · {obraActual.cliente}
                 </span>
                 <Badge estado={obraActual.estado} />
                 {obraActual.ciudad && (
                   <span style={{ fontSize: 12, color: "var(--text-muted, #667085)" }}>
-                    📍 {obraActual.ciudad}
+                    <Icono nombre="ubicacion" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />{obraActual.ciudad}
                   </span>
                 )}
               </div>

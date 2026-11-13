@@ -1,5 +1,9 @@
-import { EC } from "../../styles/tokens";
-export default function Badge({estado}){
-  const c=EC[estado]||{bg:"#F2F4F7",text:"#344054"};
-  return <span className="ui-badge" data-estado={estado} style={{background:c.bg,color:c.text,borderRadius:999,padding:"4px 12px",fontSize:11.5,fontWeight:600,whiteSpace:"nowrap"}}>{estado}</span>;
+import StatusPill from "./StatusPill";
+
+// Insignia de estado de las pantallas antiguas. Pintaba texto de color sobre
+// un tinte del mismo color, leyendo de EC, y el mismo estado salia distinto
+// aqui y en las pantallas que ya usan StatusPill. Ahora es esa misma
+// pastilla: fondo neutro y un punto de color.
+export default function Badge({ estado }) {
+  return <StatusPill estado={estado} className="ui-badge" data-estado={estado} />;
 }

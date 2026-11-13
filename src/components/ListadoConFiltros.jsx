@@ -200,7 +200,7 @@ export default function ListadoConFiltros({
                   boxSizing: "border-box",
                 }}
               >
-                <span style={{ fontSize: 11.5, fontWeight: 600, color: C.tenue, whiteSpace: "nowrap", flexShrink: 0 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: C.tenue, whiteSpace: "nowrap", flexShrink: 0 }}>
                   Ordenar
                 </span>
                 <select
@@ -211,7 +211,7 @@ export default function ListadoConFiltros({
                     height: 28,
                     border: "none",
                     background: "transparent",
-                    fontSize: 12.5,
+                    fontSize: 13,
                     fontWeight: 600,
                     color: C.tinta,
                     outline: "none",
@@ -257,7 +257,7 @@ export default function ListadoConFiltros({
                     border: `1.5px solid ${activa ? C.tinta : C.bordeFuerte}`,
                     background: activa ? C.tinta : "var(--surface, #fff)",
                     color: activa ? "var(--bg-app, #fff)" : C.suave,
-                    fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+                    fontSize: 13, fontWeight: 600, cursor: "pointer",
                     display: "flex", alignItems: "center", gap: 7, fontFamily: "inherit", flexShrink: 0 }}>
                   {e}
                   <span style={{ fontSize: 11, fontWeight: 700, color: activa ? "var(--bg-app, #fff)" : C.apagado,
@@ -312,7 +312,7 @@ export default function ListadoConFiltros({
 
         {puestos > 0 && (
           <div style={{ display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: C.tenue }}>Filtrando</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: C.tenue }}>Filtrando</span>
             <button onClick={limpiarTodo} style={{ border: "none", background: "transparent", color: C.apagado,
               fontSize: 12, fontWeight: 600, cursor: "pointer", textDecoration: "underline",
               textUnderlineOffset: 3, fontFamily: "inherit" }}>Limpiar todo</button>
@@ -370,7 +370,7 @@ function Buscador({ valor, alCambiar, refCampo, marcador }) {
             color: C.suave, width: 22, height: 22, borderRadius: "50%", fontSize: 12, cursor: "pointer",
             lineHeight: 1 }}>✕</button>
         )}
-        <kbd className="kbd-ctrl-k" style={{ fontSize: 10.5, color: C.tenue, background: C.rellenoFuerte,
+        <kbd className="kbd-ctrl-k" style={{ fontSize: 11, color: C.tenue, background: C.rellenoFuerte,
           border: `1px solid ${C.bordeFuerte}`, borderRadius: 5, padding: "2px 6px" }}>Ctrl K</kbd>
       </div>
     </div>

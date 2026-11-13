@@ -4,6 +4,7 @@ import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { ESTADOS_OBRA, estadoObraDe, obraEstaCerrada } from "../../lib/flujoObra";
 import { resumenBitacora } from "../../lib/bitacoraObra";
 import IconoPalomita from "../../components/ui/IconoPalomita";
+import Icono from "../../components/ui/Icono";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { BarraFija, CABECERA_FIJA, ConmutadorVista, EmptyState } from "../../components/ui";
 

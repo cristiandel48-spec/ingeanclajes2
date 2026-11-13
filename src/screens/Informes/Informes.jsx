@@ -1772,9 +1772,12 @@ export default function Informes({ctx}){
                             <div key={fi} style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, overflow: "hidden", background: "#ffffff", boxShadow: "0 1px 2px rgba(0,0,0,0.02)", display: "flex", flexDirection: "column" }}>
                               <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface-subtle)", borderBottom: "1px solid #f4f4f5", overflow: "hidden", position: "relative" }}>
                                 <img src={ft.img || ft.url} alt={`Evidencia ${fi + 1}`} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#ffffff" }} onError={e => { e.target.style.display = "none"; }} />
-                                <span style={{ position: "absolute", top: 6, left: 6, background: "rgba(0,0,0,0.68)", color: "#ffffff", fontSize: 8.5, fontVariantNumeric: "tabular-nums", fontWeight: 700, padding: "2.5px 7px", borderRadius: 4 }}>
-                                  EVIDENCIA {ai + 1}.{fi + 1}
-                                </span>
+                                {/* El rotulo solo sale si la foto tiene descripcion (igual que en el impreso). */}
+                                {String(ft.comentario || "").trim() && (
+                                  <span style={{ position: "absolute", top: 6, left: 6, background: "rgba(0,0,0,0.68)", color: "#ffffff", fontSize: 8.5, fontVariantNumeric: "tabular-nums", fontWeight: 700, padding: "2.5px 7px", borderRadius: 4 }}>
+                                    EVIDENCIA {ai + 1}.{fi + 1}
+                                  </span>
+                                )}
                               </div>
                               {/* Sin comentario, la foto sale sola (igual que en el impreso). */}
                               {String(ft.comentario || "").trim() && (

@@ -319,22 +319,27 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
   // veia la evidencia completa. El PDF no lo mostraba porque html2canvas
   // ignoraba object-fit y estiraba la foto; desde que pdfHojas.js lo respeta
   // salia igual que en la impresion. Lo que sobra a los lados queda en gris.
-  const renderFotoCard = (ft, actIdx, fotoIdx) => `
+  const renderFotoCard = (ft, actIdx, fotoIdx) => {
+    const comentario = String(ft.comentario || "").trim();
+    return `
     <div class="foto-card" style="border:1px solid ${LINEA_SUAVE};border-radius:8px;overflow:hidden;background:#ffffff;display:flex;flex-direction:column;">
       <div style="height:155px;display:flex;align-items:center;justify-content:center;background:${FONDO};border-bottom:1px solid ${LINEA_SUAVE};overflow:hidden;position:relative;">
         <img src="${ft.img || ft.url}" alt="Evidencia ${fotoIdx + 1}" style="width:100%;height:100%;object-fit:contain;object-position:center;display:block;background:${FONDO};"/>
-        <span style="position:absolute;top:5px;left:5px;background:rgba(255,255,255,0.92);color:${TINTA};font-size:9px;font-variant-numeric:tabular-nums;font-weight:700;padding:2px 6px;border-radius:4px;">
+        ${comentario ? `<span style="position:absolute;top:5px;left:5px;background:rgba(255,255,255,0.92);color:${TINTA};font-size:9px;font-variant-numeric:tabular-nums;font-weight:700;padding:2px 6px;border-radius:4px;">
           EVIDENCIA ${actIdx + 1}.${fotoIdx + 1}
-        </span>
+        </span>` : ""}
       </div>
-      ${String(ft.comentario || "").trim() ? `<div style="padding:5px 8px;font-size:9px;color:${TINTA};line-height:1.35;background:#ffffff;">
+      ${comentario ? `<div style="padding:5px 8px;font-size:9px;color:${TINTA};line-height:1.35;background:#ffffff;">
         ${escapeHtml(ft.comentario)}
       </div>` : ""}
     </div>
   `;
-  // Sin comentario la foto sale sola: antes se ponia siempre «Registro
-  // fotografico y trazabilidad de actividades ejecutadas en sitio», que
-  // repetido debajo de cada foto no decia nada.
+  };
+  // Sin comentario la foto sale sola, sin pie y sin el rotulo «EVIDENCIA
+  // x.y»: la foto nombrada y vacia por debajo se leia como un campo que
+  // quedo sin llenar. Antes se ponia siempre «Registro fotografico y
+  // trazabilidad de actividades ejecutadas en sitio», que repetido debajo
+  // de cada foto no decia nada.
 
   // Una foto sola va centrada, del mismo tamaño que las demas. Antes iba a
   // la izquierda con un recuadro punteado «(Espacio reservado)» al lado,

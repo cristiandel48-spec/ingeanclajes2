@@ -4,11 +4,12 @@ import { getFestivoColombia } from "../../lib/festivosColombia";
 import { SUGERENCIAS_FECHAS_ESPECIALES } from "../../lib/agendaEspecial";
 import { confirmar } from "../../lib/dialogos";
 import { today } from "../../lib/format";
+import Icono from "../ui/Icono";
 
 const ICONOS_DISPONIBLES = [
   { id: "⭐", label: "Estrellita" },
   { id: "💖", label: "Corazón" },
-  { id: "✨", label: "Destello" },
+  { id: "", label: "Destello" },
   { id: "🌹", label: "Rosa" },
   { id: "🥂", label: "Brindis" },
   { id: "🎂", label: "Pastel" },
@@ -79,12 +80,13 @@ export default function ModalEstrellitaEspecial({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(15, 23, 42, 0.55)",
-        backdropFilter: "blur(6px)",
+        // El mismo fondo que las hojas del sistema (.ui-overlay).
+        background: "rgba(16, 24, 40, .45)",
+        backdropFilter: "blur(4px)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 10000,
+        zIndex: "var(--capa-hoja)",
         padding: 16,
       }}
       onClick={onCerrar}
@@ -98,7 +100,7 @@ export default function ModalEstrellitaEspecial({
           padding: "26px 28px",
           boxShadow:
             "0 25px 50px -12px rgba(245, 158, 11, 0.25), 0 20px 25px -5px rgba(0, 0, 0, 0.15)",
-          border: "1.5px solid #fde68a",
+          border: "1.5px solid var(--warning-bg)",
           position: "relative",
           overflow: "hidden",
         }}
@@ -137,10 +139,10 @@ export default function ModalEstrellitaEspecial({
                   alignItems: "center",
                   gap: 5,
                   fontSize: 11,
-                  fontWeight: 800,
-                  color: "#b45309",
-                  background: "#fef3c7",
-                  border: "1px solid #fde68a",
+                  fontWeight: 700,
+                  color: "var(--warning-text)",
+                  background: "var(--warning-bg)",
+                  border: "1px solid var(--warning-bg)",
                   padding: "2px 8px",
                   borderRadius: 20,
                   textTransform: "uppercase",
@@ -154,8 +156,8 @@ export default function ModalEstrellitaEspecial({
               <h3
                 style={{
                   fontSize: 18,
-                  fontWeight: 800,
-                  color: "#0f172a",
+                  fontWeight: 700,
+                  color: "var(--text-primary)",
                   margin: 0,
                 }}
               >
@@ -194,8 +196,8 @@ export default function ModalEstrellitaEspecial({
             gap: 10,
           }}
         >
-          <span style={{ fontSize: 18 }}>🔒</span>
-          <div style={{ fontSize: 11.5, color: "#92400e", lineHeight: 1.4 }}>
+          <Icono nombre="candado" size={14} />
+          <div style={{ fontSize: 12, color: "var(--warning-text)", lineHeight: 1.4 }}>
             <strong>Privacidad garantizada:</strong> Esta fecha con estrellita{" "}
             <strong>solo le saldrá a Camila Sepúlveda</strong> y a ti (Cristian Flores). Ningún otro
             usuario o empleado de la empresa podrá verla.
@@ -208,7 +210,7 @@ export default function ModalEstrellitaEspecial({
             <div>
               <label
                 style={{
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: 700,
                   color: "var(--text-muted, #64748b)",
                   display: "block",
@@ -228,9 +230,9 @@ export default function ModalEstrellitaEspecial({
                 <div
                   style={{
                     marginTop: 4,
-                    fontSize: 10.5,
+                    fontSize: 11,
                     fontWeight: 700,
-                    color: "#b91c1c",
+                    color: "var(--danger-text)",
                     display: "flex",
                     alignItems: "center",
                     gap: 4,
@@ -245,7 +247,7 @@ export default function ModalEstrellitaEspecial({
             <div>
               <label
                 style={{
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: 700,
                   color: "var(--text-muted, #64748b)",
                   display: "block",
@@ -268,7 +270,7 @@ export default function ModalEstrellitaEspecial({
           <div>
             <label
               style={{
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 700,
                 color: "var(--text-muted, #64748b)",
                 display: "block",
@@ -299,7 +301,7 @@ export default function ModalEstrellitaEspecial({
                   }}
                 >
                   <span>{ic.id}</span>
-                  <span style={{ fontSize: 11.5 }}>{ic.label}</span>
+                  <span style={{ fontSize: 12 }}>{ic.label}</span>
                 </button>
               ))}
             </div>
@@ -309,7 +311,7 @@ export default function ModalEstrellitaEspecial({
           <div>
             <label
               style={{
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 700,
                 color: "var(--text-muted, #64748b)",
                 display: "block",
@@ -355,7 +357,7 @@ export default function ModalEstrellitaEspecial({
           <div>
             <label
               style={{
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 700,
                 color: "var(--text-muted, #64748b)",
                 display: "block",
@@ -390,8 +392,8 @@ export default function ModalEstrellitaEspecial({
                 onClick={handleEliminar}
                 style={{
                   background: "transparent",
-                  color: "#dc2626",
-                  border: "1px solid #fecaca",
+                  color: "var(--danger)",
+                  border: "1px solid var(--danger-bg)",
                   borderRadius: 10,
                   padding: "8px 14px",
                   fontSize: 12,
@@ -429,7 +431,7 @@ export default function ModalEstrellitaEspecial({
                   border: "none",
                   borderRadius: 10,
                   padding: "8px 18px",
-                  fontSize: 12.5,
+                  fontSize: 13,
                   fontWeight: 700,
                   cursor: "pointer",
                   display: "inline-flex",

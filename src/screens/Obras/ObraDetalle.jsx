@@ -335,7 +335,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   {oAct.enviadoAlCliente ? "Documentación enviada" : "Sin enviar"}
                 </StatusPill>
               </button>
-              <span style={{ fontSize: 11.5, color: "var(--text-tertiary)", fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ fontSize: 12, color: "var(--text-tertiary)", fontVariantNumeric: "tabular-nums" }}>
                 {oAct.id} · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin) || "En curso"}
               </span>
             </div>
@@ -364,7 +364,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   {cotVinc.numero}
                 </span>
                 {cotVinc.fecha && (
-                  <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>
+                  <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
                     Aprobada el {fmtD(cotVinc.fecha)}
                   </span>
                 )}
@@ -395,10 +395,10 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             >
               {objetoLimpio && (
                 <div>
-                  <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-tertiary)", marginBottom: 4 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", marginBottom: 4 }}>
                     Objeto del contrato
                   </div>
-                  <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.55, color: "var(--text-primary)" }}>
+                  <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: "var(--text-primary)" }}>
                     {objetoLimpio}
                   </p>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginTop: 10, fontSize: 11, color: "var(--text-tertiary)" }}>
@@ -413,7 +413,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               {itemsCot.length > 0 && (
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-                    <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-tertiary)" }}>Ítems contratados</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)" }}>Ítems contratados</span>
                     <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
                       {itemsCot.length} {itemsCot.length === 1 ? "actividad" : "actividades"}
                     </span>
@@ -435,11 +435,11 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                             alignItems: "center",
                           }}
                         >
-                          <span style={{ fontSize: 12.5, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
+                          <span style={{ fontSize: 13, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
                             <strong style={{ fontWeight: 600 }}>{cant}</strong>{" "}
                             <span style={{ color: "var(--text-tertiary)", fontSize: 11 }}>{unidad}</span>
                           </span>
-                          <span style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--text-primary)", flex: 1 }}>{desc}</span>
+                          <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--text-primary)", flex: 1 }}>{desc}</span>
                           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                             <button
                               type="button"
@@ -499,10 +499,10 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           <div style={{ minWidth: 0 }}>
             <div style={{ ...TIPO.eyebrow, color: "var(--text-tertiary)" }}>Quién recibe los informes</div>
             {obraTieneQuienRecibe(oAct) ? (
-              <div style={{ marginTop: 4, fontSize: 13.5, color: "var(--text-primary)" }}>
+              <div style={{ marginTop: 4, fontSize: 14, color: "var(--text-primary)" }}>
                 <strong style={{ fontWeight: 600 }}>{oAct.recibeNombre || "Sin nombre"}</strong>
                 <span style={{ color: "var(--text-secondary)" }}> · {oAct.recibeEmail}{oAct.tel ? ` · ${oAct.tel}` : ""}</span>
-                <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: 2 }}>
+                <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 2 }}>
                   Igual que en el directorio de clientes: si lo cambias aquí, se actualiza allá.
                 </div>
               </div>
@@ -540,7 +540,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>Avance de la obra</span>
-            <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--text-primary)", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
+            <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--text-primary)", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
               {oAct.avance}%
             </span>
           </div>
@@ -631,7 +631,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
             <div>
               <h2 style={{ ...TIPO.headline, margin: 0, color: "var(--text-primary)" }}>Personal en obra</h2>
-              <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 2 }}>
                 {empObra.length === 0 ? "Nadie asignado todavía" : `${empObra.length} ${empObra.length === 1 ? "persona" : "personas"}`}
               </div>
             </div>
@@ -702,8 +702,8 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                     <div style={{display:"grid",gridTemplateColumns:verDinero?"1fr 1fr 1fr":"1fr",gap:8,marginTop:12}}>
                       {[["Días en obra",diasEmp+" d"],...(verDinero?[["Jornal/día",fmt(jornal)],["Costo obra",fmt(jornal*diasEmp)]]:[])].map(([k,v])=>(
                         <div key={k}>
-                          <div style={{fontSize:10.5,color:"var(--text-tertiary)"}}>{k}</div>
-                          <div style={{fontSize:12.5,fontWeight:600,color:"var(--text-primary)",fontVariantNumeric:"tabular-nums",marginTop:2}}>{v}</div>
+                          <div style={{fontSize:11,color:"var(--text-tertiary)"}}>{k}</div>
+                          <div style={{fontSize:13,fontWeight:600,color:"var(--text-primary)",fontVariantNumeric:"tabular-nums",marginTop:2}}>{v}</div>
                         </div>
                       ))}
                     </div>
@@ -752,8 +752,8 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             <div style={ST}>Gastos y cuentas por pagar</div>
             <button
               style={{
-                background: "#FFFAEB",
-                color: "#B54708",
+                background: "var(--warning-bg)",
+                color: "var(--warning-text)",
                 border: "1px solid rgba(181, 71, 8, 0.35)",
                 borderRadius: 8,
                 fontSize: 12,
@@ -786,8 +786,8 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               <div style={{display:"flex",gap:8}}>
                 <button
                   style={{
-                    background: "#ecfdf5",
-                    color: "#047857",
+                    background: "var(--success-bg)",
+                    color: "var(--success-text)",
                     border: "1px solid #a7f3d0",
                     borderRadius: 8,
                     fontSize: 12,
@@ -845,10 +845,10 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                 onClick={() => irAPantalla("proveedores")}
                 style={{
                   background: "rgba(2, 132, 199, 0.08)",
-                  color: "#0284c7",
+                  color: "var(--info)",
                   border: "1px solid rgba(186, 230, 253, 0.7)",
                   borderRadius: 8,
-                  fontSize: 11.5,
+                  fontSize: 12,
                   padding: "6px 12px",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -868,19 +868,19 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   <div key={oc.id} style={{ background: "var(--surface-subtle, #f8fafc)", borderRadius: 8, padding: "10px 14px", border: "1px solid var(--border, #e2e8f0)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <strong style={{ color: "#38bdf8", fontSize: 12.5 }}>{oc.id}</strong>
+                        <strong style={{ color: "#38bdf8", fontSize: 13 }}>{oc.id}</strong>
                         <span style={{ fontSize: 11, color: "var(--text-muted, #64748b)" }}>Doc: {oc.documentoOrigen}</span>
                         {oc.estadoAprobacion === "Aprobada" ? (
-                          <span style={{ fontSize: 10, fontWeight: 700, color: "#34d399", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(134, 239, 172, 0.4)", padding: "1px 6px", borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "#34d399", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(134, 239, 172, 0.4)", padding: "1px 6px", borderRadius: 4 }}>
                             ✓ Aprobada (Camila Sepúlveda)
                           </span>
                         ) : oc.estadoAprobacion === "Rechazada" ? (
-                          <span style={{ fontSize: 10, fontWeight: 700, color: "#f87171", background: "rgba(220, 38, 38, 0.15)", border: "1px solid rgba(252, 165, 165, 0.4)", padding: "1px 6px", borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "#f87171", background: "rgba(220, 38, 38, 0.15)", border: "1px solid rgba(252, 165, 165, 0.4)", padding: "1px 6px", borderRadius: 4 }}>
                             ✕ Rechazada
                           </span>
                         ) : (
-                          <span style={{ fontSize: 10, fontWeight: 700, color: "#fb923c", background: "rgba(234, 88, 12, 0.15)", border: "1px solid rgba(254, 215, 170, 0.4)", padding: "1px 6px", borderRadius: 4 }}>
-                            ⏳ Pendiente Aprobación
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "#fb923c", background: "rgba(234, 88, 12, 0.15)", border: "1px solid rgba(254, 215, 170, 0.4)", padding: "1px 6px", borderRadius: 4 }}>
+                            Pendiente Aprobación
                           </span>
                         )}
                       </div>
@@ -890,7 +890,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>{fmt(oc.total)}</div>
-                      <div style={{ fontSize: 10, color: "var(--text-muted, #64748b)" }}>Estado: {oc.estadoFacturacion}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted, #64748b)" }}>Estado: {oc.estadoFacturacion}</div>
                     </div>
                   </div>
                 ))}
@@ -909,10 +909,10 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             </div>
             <div>
               <div style={{ color: "var(--text-muted, #64748b)", marginBottom: 3 }}>Costo comprometido</div>
-              <div style={{ fontWeight: 800, color: "var(--text-main, #0f172a)", fontSize: 15 }}>{fmt(totalGastos + totalOrdenesAprobadas)}</div>
+              <div style={{ fontWeight: 700, color: "var(--text-main, #0f172a)", fontSize: 15 }}>{fmt(totalGastos + totalOrdenesAprobadas)}</div>
             </div>
           </div>
-          {oAct.total>0&&<div style={{background:(totalGastos+totalOrdenesAprobadas)/oAct.total<0.4?"#dcfce7":"#fff7ed",borderRadius:8,padding:"10px 14px",marginTop:8,fontSize:11,color:"#475569"}}>Compromiso total = <strong style={{color:(totalGastos+totalOrdenesAprobadas)/oAct.total<0.4?"#166534":"#c2410c"}}>{Math.round(((totalGastos+totalOrdenesAprobadas)/oAct.total)*100)}%</strong> del ingreso de la obra</div>}
+          {oAct.total>0&&<div style={{background:(totalGastos+totalOrdenesAprobadas)/oAct.total<0.4 ? "var(--success-bg)" : "var(--accent-tint)",borderRadius:8,padding:"10px 14px",marginTop:8,fontSize:11,color:"var(--text-secondary)"}}>Compromiso total = <strong style={{color:(totalGastos+totalOrdenesAprobadas)/oAct.total<0.4 ? "var(--success-text)" : "#c2410c"}}>{Math.round(((totalGastos+totalOrdenesAprobadas)/oAct.total)*100)}%</strong> del ingreso de la obra</div>}
         </div>
       )}
 
@@ -938,12 +938,12 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
                     {[["Días",diasEmp+"d","#60a5fa"],["Jornal",fmt(jornal),"#34d399"],["Bruto",fmt(subtotal),"#f59e0b"],["Neto",fmt(subtotal-ded),"var(--text-main, #101828)"]].map(([k,v,c])=>(
                       <div key={k} style={{background:"var(--surface, #fff)",borderRadius:6,padding:"8px",textAlign:"center",border:"1px solid var(--border, #f1f5f9)"}}>
-                        <div style={{color:"var(--text-subtle, #94a3b8)",fontSize:9,marginBottom:3}}>{k}</div>
+                        <div style={{color:"var(--text-subtle, #94a3b8)",fontSize:11,marginBottom:3}}>{k}</div>
                         <div style={{fontWeight:700,color:c,fontSize:11}}>{v}</div>
                       </div>
                     ))}
                   </div>
-                  <div style={{marginTop:8,fontSize:10,color:"var(--text-subtle, #94a3b8)"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontVariantNumeric: "tabular-nums"}}>{emp.numeroCuenta||"—"}</span></div>
+                  <div style={{marginTop:8,fontSize:11,color:"var(--text-subtle, #94a3b8)"}}>{emp.banco} · {emp.tipoCuenta} · <span style={{fontVariantNumeric: "tabular-nums"}}>{emp.numeroCuenta||"—"}</span></div>
                 </div>
               );
             })}
@@ -964,7 +964,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {detTab==="horario"&&(
         <div style={CD}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
-            <div style={ST}>📅 Horario y turnos en esta obra</div>
+            <div style={ST}><Icono nombre="calendario" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />Horario y turnos en esta obra</div>
             <button
               onClick={()=>irAPantalla("horarios")}
               style={{

@@ -14,14 +14,21 @@ import { TIPO } from "../../styles/designTokens";
 // 1.6 y no 2: las filas van cada 47px y el cuadro mide 28; al doble se
 // enciman con el de arriba y el de abajo aunque el riel sea mas ancho.
 const DOCK_ESCALA_MAX = 1.6;   // cuanto crece el icono que esta justo debajo
-const DOCK_ALCANCE = 120;      // hasta que distancia (px) se nota el efecto
+// Con el menu fijado crece el renglon entero -icono y nombre juntos-, y un
+// nombre al 1,6 no cabe en el riel: se queda en un aumento corto.
+const DOCK_ESCALA_FIJADO = 1.2;
+const DOCK_ALCANCE = 96;       // hasta que distancia (px) se nota el efecto
 const DOCK_ETIQUETA = 26;      // a menos de esto del centro se muestra el nombre
+// Rapido y con un rebote minimo al llegar, como el Dock. Estaba en 120 ms
+// con una curva plana y se sentia que el icono iba detras del mouse.
+const DOCK_TRANSICION = "transform 70ms cubic-bezier(.2, .9, .3, 1.25)";
+const DOCK_REGRESO = "transform 200ms cubic-bezier(.2, .8, .2, 1)";
 
-function escalaDock(distancia) {
+function escalaDock(distancia, maxima = DOCK_ESCALA_MAX) {
   if (distancia >= DOCK_ALCANCE) return 1;
   // Curva coseno: suave en el borde del alcance y plana en el centro.
   const t = Math.cos((distancia / DOCK_ALCANCE) * (Math.PI / 2));
-  return 1 + (DOCK_ESCALA_MAX - 1) * t;
+  return 1 + (maxima - 1) * t;
 }
 
 // Navegacion lateral.
@@ -95,6 +102,7 @@ export default function Sidebar({
     if (!dockActivo || !listaRef.current) return;
     const y = e.clientY;
     cancelAnimationFrame(marcoRef.current);
+    const maxima = pinned ? DOCK_ESCALA_FIJADO : DOCK_ESCALA_MAX;
     marcoRef.current = requestAnimationFrame(() => {
       let cercano = null;
       listaRef.current?.querySelectorAll("[data-dock]").forEach((icono) => {
@@ -103,7 +111,8 @@ export default function Sidebar({
         const r = icono.closest("button").getBoundingClientRect();
         const centro = r.top + r.height / 2;
         const distancia = Math.abs(y - centro);
-        icono.style.transform = `scale(${escalaDock(distancia).toFixed(3)})`;
+        icono.style.transition = DOCK_TRANSICION;
+        icono.style.transform = `scale(${escalaDock(distancia, maxima).toFixed(3)})`;
         if (distancia < DOCK_ETIQUETA && (!cercano || distancia < cercano.distancia)) {
           cercano = {
             distancia, centro,
@@ -121,6 +130,9 @@ export default function Sidebar({
   const soltarDock = () => {
     cancelAnimationFrame(marcoRef.current);
     listaRef.current?.querySelectorAll("[data-dock]").forEach((icono) => {
+      // Al salir vuelven todos a la vez, un poco mas despacio: se lee como
+      // que el menu «se asienta» y no como un corte.
+      icono.style.transition = DOCK_REGRESO;
       icono.style.transform = "scale(1)";
     });
     setEtiqueta(null);
@@ -239,33 +251,42 @@ export default function Sidebar({
                     onFocus={(e) => { if (!active) e.currentTarget.style.background = theme.railHoverBg; }}
                     onBlur={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
                   >
-                    {/* El icono en blanco sobre un cuadro de color, como en
-                        Ajustes del Sistema del Mac. El degradado leve de arriba
-                        hacia abajo le da el relieve de los iconos del Mac. */}
+                    {/* Lo que crece con el efecto Dock es este conjunto: el icono
+                        Y el nombre. Antes crecia solo el icono, y con el menu
+                        fijado se montaba encima de su propio nombre. */}
                     <span
                       data-dock
                       data-color={ICON_COLORS[item.id] || "#8E8E93"}
-                      className="rail-icono"
                       style={{
-                        flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                        width: 28, height: 28, borderRadius: 8, color: "#ffffff",
-                        background: `linear-gradient(180deg, color-mix(in srgb, ${ICON_COLORS[item.id] || "#8E8E93"} 80%, #ffffff), ${ICON_COLORS[item.id] || "#8E8E93"})`,
-                        boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,.10), 0 1px 1.5px rgba(0,0,0,.14)",
+                        display: "flex", alignItems: "center", gap: 12, minWidth: 0,
                         // Crece hacia la derecha, como los iconos del Dock salen
                         // del borde de la pantalla.
                         transformOrigin: "left center",
-                        transition: "transform .12s ease-out",
+                        transition: DOCK_TRANSICION,
                         willChange: dockActivo ? "transform" : undefined,
                       }}
                     >
-                      {ICONS[item.id]}
-                    </span>
-                    <span style={{
-                      opacity: showLabels ? 1 : 0,
-                      transition: "opacity .15s ease",
-                      overflow: "hidden",
-                    }}>
-                      {item.label}
+                      {/* El icono en blanco sobre un cuadro de color, como en
+                          Ajustes del Sistema del Mac. El degradado leve de arriba
+                          hacia abajo le da el relieve de los iconos del Mac. */}
+                      <span
+                        className="rail-icono"
+                        style={{
+                          flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                          width: 28, height: 28, borderRadius: 8, color: "#ffffff",
+                          background: `linear-gradient(180deg, color-mix(in srgb, ${ICON_COLORS[item.id] || "#8E8E93"} 80%, #ffffff), ${ICON_COLORS[item.id] || "#8E8E93"})`,
+                          boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,.10), 0 1px 1.5px rgba(0,0,0,.14)",
+                        }}
+                      >
+                        {ICONS[item.id]}
+                      </span>
+                      <span style={{
+                        opacity: showLabels ? 1 : 0,
+                        transition: "opacity .15s ease",
+                        overflow: "hidden",
+                      }}>
+                        {item.label}
+                      </span>
                     </span>
                   </button>
                 );

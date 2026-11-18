@@ -9,7 +9,7 @@ import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 // grande, acciones como texto y el alcance en filas limpias.
 
 const BLOQUE = { background: "var(--surface)", borderRadius: 22, padding: "20px 22px", marginBottom: 14 };
-const TITULO = { fontSize: 14.5, fontWeight: 600, letterSpacing: "-0.01em", lineHeight: 1.3, color: "var(--text-primary)", margin: 0 };
+const TITULO = { fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em", lineHeight: 1.3, color: "var(--text-primary)", margin: 0 };
 const SELECTOR = {
   background: "var(--fill)", border: "1px solid transparent", borderRadius: 12,
   padding: "9px 12px", fontSize: 13, color: "var(--text-primary)", fontFamily: "inherit",
@@ -39,7 +39,7 @@ export default function TarjetaCotizacionRef({
     return (
       <section style={BLOQUE}>
         <h2 style={TITULO}>Cotización de referencia</h2>
-        <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: 3, marginBottom: 12 }}>
+        <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 3, marginBottom: 12 }}>
           Sirve para cotejar el alcance presupuestado e importar sus ítems como actividades.
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -71,7 +71,7 @@ export default function TarjetaCotizacionRef({
             </optgroup>
           </select>
           {todasCotizaciones.length === 0 && (
-            <span style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>
+            <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
               No hay cotizaciones registradas aún en el sistema.
             </span>
           )}
@@ -96,7 +96,7 @@ export default function TarjetaCotizacionRef({
             </span>
             <StatusPill estado={cotizacion.estado || "Aprobada"} />
             {total > 0 && (
-              <span style={{ fontSize: 12.5, color: "var(--text-secondary)", fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ fontSize: 13, color: "var(--text-secondary)", fontVariantNumeric: "tabular-nums" }}>
                 {fmt(total)}
               </span>
             )}
@@ -167,7 +167,7 @@ export default function TarjetaCotizacionRef({
 
       {/* Alcance contratado: una fila por item, como una ficha tecnica. */}
       <div style={{ marginTop: 16 }}>
-        <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-tertiary)", marginBottom: 2 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", marginBottom: 2 }}>
           Alcance contratado
         </div>
         {items.length === 0 ? (

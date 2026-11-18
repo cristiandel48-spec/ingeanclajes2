@@ -11,6 +11,7 @@ import { normalizarFrase } from "../../lib/normalizarEntrada";
 import { normalizarBitacora, registroVacio, resumenBitacora, calcularAvanceObra, maximoParaJornada, limpiarAvance, faltaAvance } from "../../lib/bitacoraObra";
 import { estadoSegunAvance } from "../../lib/flujoObra";
 import { confirmar } from "../../lib/dialogos";
+import Icono from "../../components/ui/Icono";
 
 // Pestana «Avance y fotos» del detalle de obra.
 //
@@ -232,7 +233,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
           actividades. Cambiarlas despues de entregarlo dejaria el documento
           diciendo una cosa y la obra otra. */}
       {cargandoFotos && (
-        <div style={{ fontSize: 11.5, color: "#1d4ed8", background: "#eff6ff",
+        <div style={{ fontSize: 12, color: "var(--info-text)", background: "var(--info-bg)",
           border: "1px solid #bfdbfe", borderRadius: 9, padding: "9px 12px",
           marginBottom: 14, lineHeight: 1.5, pointerEvents: "auto" }}>
           Cargando las fotos de esta obra… Un momento, para no perder ningún cambio.
@@ -241,7 +242,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
 
       {sinPersonal && !bloqueada && (
         <div role="alert" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap",
-          fontSize: 12.5, color: "var(--danger-text)", background: "var(--danger-bg, #fef2f2)",
+          fontSize: 13, color: "var(--danger-text)", background: "var(--danger-bg, #fef2f2)",
           border: "1px solid var(--danger-border, #fecaca)", borderRadius: 9, padding: "10px 12px",
           marginBottom: 14, lineHeight: 1.45 }}>
           <span>
@@ -259,16 +260,16 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
           (components/agenda/AvisoInteligenteAgenda.jsx). */}
 
       {bloqueada && !cargandoFotos && (
-        <div style={{ fontSize: 11.5, color: "#047857", background: "#ecfdf5",
+        <div style={{ fontSize: 12, color: "var(--success-text)", background: "var(--success-bg)",
           border: "1px solid #a7f3d0", borderRadius: 9, padding: "9px 12px",
           marginBottom: 14, lineHeight: 1.5, pointerEvents: "auto" }}>
-          🔒 <strong>Obra finalizada.</strong> El registro de avance queda como está: estas fotos son
+          <Icono nombre="candado" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} /><strong>Obra finalizada.</strong> El registro de avance queda como está: estas fotos son
           las que salen en el informe. Un administrador puede reabrir la obra si hay que corregir algo.
         </div>
       )}
 
       {subiendoFotos && (
-        <div style={{ background: "#fbfbfd", border: "1px solid #d2d2d7", color: "#1d1d1f", borderRadius: 10, padding: "9px 13px", fontSize: 12, marginBottom: 12, fontWeight: 600 }}>
+        <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--separator)", color: "var(--text-primary)", borderRadius: 10, padding: "9px 13px", fontSize: 12, marginBottom: 12, fontWeight: 600 }}>
           Procesando {subiendoFotos.total > 1 ? `${subiendoFotos.hechas} de ${subiendoFotos.total} fotos…` : "la foto…"} espera un momento.
         </div>
       )}
@@ -276,7 +277,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       {registros.length === 0 && (
         <div style={{ textAlign: "center", padding: "40px 24px", color: "var(--text-primary)", fontSize: 13, fontWeight: 600, background: "var(--surface-subtle)", borderRadius: 14 }}>
           Todavía no hay avances registrados en esta obra.
-          <div style={{ fontSize: 11.5, fontWeight: 400, marginTop: 6, color: "var(--text-secondary)" }}>
+          <div style={{ fontSize: 12, fontWeight: 400, marginTop: 6, color: "var(--text-secondary)" }}>
             Dale a «Registrar avance del día» y sube las fotos de lo que se hizo.
           </div>
           {!bloqueada && (
@@ -304,7 +305,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
               </div>
               <button
                 onClick={() => eliminarRegistro(registro)}
-                style={{ background: "transparent", border: "none", color: "var(--text-muted, #86868b)", borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontSize: 11.5, fontWeight: 500 }}
+                style={{ background: "transparent", border: "none", color: "var(--text-muted, #86868b)", borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontSize: 12, fontWeight: 500 }}
               >
                 × Eliminar jornada
               </button>
@@ -357,12 +358,12 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                   <span style={{ position: "absolute", right: 11, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "var(--text-tertiary)", pointerEvents: "none" }}>%</span>
                 </div>
                 {falta && (
-                  <div role="alert" style={{ fontSize: 11.5, color: "var(--danger-text)", marginTop: 5, lineHeight: 1.35 }}>
+                  <div role="alert" style={{ fontSize: 12, color: "var(--danger-text)", marginTop: 5, lineHeight: 1.35 }}>
                     Escríbelo para poder seguir.{" "}
                     <button
                       type="button"
                       onClick={() => pedirAvance({ registroId: registro.id, fecha: registro.fecha, valorInicial: registro.avance })}
-                      style={{ background: "none", border: "none", padding: 0, color: "var(--danger-text)", textDecoration: "underline", cursor: "pointer", fontSize: 11.5, fontFamily: "inherit" }}
+                      style={{ background: "none", border: "none", padding: 0, color: "var(--danger-text)", textDecoration: "underline", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}
                     >
                       Abrir
                     </button>
@@ -434,7 +435,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <LBL>Fotos del avance</LBL>
-              <span style={{ fontSize: 10.5, color: "var(--text-muted, #86868b)" }}>Se imprimen en el informe</span>
+              <span style={{ fontSize: 11, color: "var(--text-muted, #86868b)" }}>Se imprimen en el informe</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 140px), 1fr))", gap: 10, alignItems: "start", width: "100%", boxSizing: "border-box" }}>
               {(registro.fotos || []).map((foto, fi) => (
@@ -442,7 +443,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                   <div style={{ background: "var(--surface-subtle, #f8fafc)", padding: 6, minHeight: 120, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <img src={foto.img} alt="" style={{ width: "100%", height: "auto", maxHeight: 180, objectFit: "contain", display: "block", borderRadius: 4, background: "var(--surface, #fff)" }} />
                   </div>
-                  <div style={{ padding: "6px 8px", display: "flex", gap: 4, alignItems: "center", background: "#fbfbfd" }}>
+                  <div style={{ padding: "6px 8px", display: "flex", gap: 4, alignItems: "center", background: "var(--surface-subtle)" }}>
                     <input
                       value={foto.comentario || ""}
                       onChange={(e) => actualizarFoto(registro.id, fi, "comentario", e.target.value)}
@@ -484,9 +485,9 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                   transition: "all 0.15s ease",
                 }}
               >
-                <span style={{ fontSize: 20, lineHeight: 1, color: "#1d1d1f" }}>+</span>
-                <span style={{ fontSize: 11.5, color: "#1d1d1f" }}>Agregar fotos</span>
-                <span style={{ fontSize: 9.5, color: "#86868b" }}>Cámara o galería</span>
+                <span style={{ fontSize: 20, lineHeight: 1, color: "var(--text-primary)" }}>+</span>
+                <span style={{ fontSize: 12, color: "var(--text-primary)" }}>Agregar fotos</span>
+                <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>Cámara o galería</span>
               </div>
             </div>
 
@@ -503,8 +504,8 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
             />
 
             {subiendoFotos?.registroId === registro.id && (
-              <div style={{ fontSize: 11.5, color: "#f47c20", marginTop: 8, fontWeight: 600 }}>
-                ⏳ Cargando fotos… {subiendoFotos.hechas} de {subiendoFotos.total}
+              <div style={{ fontSize: 12, color: "var(--accent)", marginTop: 8, fontWeight: 600 }}>
+                Cargando fotos… {subiendoFotos.hechas} de {subiendoFotos.total}
               </div>
             )}
             </div>
@@ -525,7 +526,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       )}
 
       {registros.length > 0 && (
-        <div style={{ background: "var(--surface-subtle, #fbfbfd)", border: "1px solid var(--border, #e5e5ea)", borderRadius: 10, padding: "10px 14px", fontSize: 11.5, color: "var(--text-muted, #6e6e73)" }}>
+        <div style={{ background: "var(--surface-subtle, #fbfbfd)", border: "1px solid var(--border, #e5e5ea)", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "var(--text-muted, #6e6e73)" }}>
           Los cambios se guardan solos automáticamente. {resumen.sinFotos > 0
             ? `Atención: ${resumen.sinFotos} registro(s) no tienen ninguna foto adjunta.`
             : "Todos los registros cuentan con soporte fotográfico completo."}
@@ -646,12 +647,12 @@ function VentanaAvance({ avanceActual, fecha, esJornadaExistente, valorInicial =
           {valido && numero > 0 ? <> Con esta jornada quedaría en <strong style={{ color: "var(--text-primary)" }}>{quedaria}%</strong>.</> : null}
         </div>
         {seExcede && (
-          <div role="alert" style={{ fontSize: 12.5, color: "var(--danger-text)", textAlign: "center", maxWidth: 320, lineHeight: 1.4 }}>
+          <div role="alert" style={{ fontSize: 13, color: "var(--danger-text)", textAlign: "center", maxWidth: 320, lineHeight: 1.4 }}>
             Con eso la obra pasaría de 100%. A esta jornada le quedan como máximo {maximo}%.
           </div>
         )}
         {valido && quedaria === 100 && (
-          <div role="alert" style={{ fontSize: 12.5, color: "var(--danger-text)", textAlign: "center", maxWidth: 320, lineHeight: 1.4 }}>
+          <div role="alert" style={{ fontSize: 13, color: "var(--danger-text)", textAlign: "center", maxWidth: 320, lineHeight: 1.4 }}>
             Con esta jornada la obra llega al 100%: pasa a Finalizada y su bitácora queda cerrada. Úsalo solo si la obra ya terminó.
           </div>
         )}

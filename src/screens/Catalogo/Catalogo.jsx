@@ -127,7 +127,7 @@ export default function Catalogo({ ctx }) {
           <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main)", marginBottom: 6 }}>
             El catálogo todavía está vacío
           </div>
-          <div style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.6, maxWidth: 460, margin: "0 auto" }}>
+          <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6, maxWidth: 460, margin: "0 auto" }}>
             Mientras esté vacío se usan los servicios con los que venía el programa, así que nada
             deja de funcionar. {puedeEditar
               ? "Con «Cargar los de siempre» los traes aquí para poder editarlos."
@@ -147,7 +147,7 @@ export default function Catalogo({ ctx }) {
             <div style={{ minWidth: 640 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1.1fr 2.4fr .8fr 1.1fr .7fr",
                 gap: 8, padding: "8px 10px", background: "var(--surface-subtle, #f5f5f7)", borderRadius: 8,
-                fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", color: "var(--text-muted, #667085)", textTransform: "uppercase" }}>
+                fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", color: "var(--text-muted, #667085)", textTransform: "uppercase" }}>
                 <span>Categoría</span><span>Servicio</span><span>Unidad</span><span>Precio</span><span>Activo</span>
               </div>
 
@@ -157,17 +157,17 @@ export default function Catalogo({ ctx }) {
                   opacity: fila.disponible === false ? .55 : 1 }}>
                   <input value={fila.categoria || ""} disabled={!puedeEditar}
                     onChange={(e) => cambiar(fila.id, "categoria", e.target.value)}
-                    style={{ ...SI, fontSize: 11.5, padding: "5px 8px" }} />
+                    style={{ ...SI, fontSize: 12, padding: "5px 8px" }} />
 
                   <input data-campo="descripcion" value={fila.descripcion || ""} disabled={!puedeEditar}
                     onChange={(e) => cambiar(fila.id, "descripcion", e.target.value)}
                     onBlur={(e) => cambiar(fila.id, "descripcion", normalizarMayusculas(e.target.value))}
                     placeholder="Nombre del servicio, como sale impreso"
-                    style={{ ...SI, fontSize: 11.5, padding: "5px 8px", fontWeight: 600 }} />
+                    style={{ ...SI, fontSize: 12, padding: "5px 8px", fontWeight: 600 }} />
 
                   <select value={fila.unidad || "Und"} disabled={!puedeEditar}
                     onChange={(e) => cambiar(fila.id, "unidad", e.target.value)}
-                    style={{ ...SI, fontSize: 11.5, padding: "5px 6px" }}>
+                    style={{ ...SI, fontSize: 12, padding: "5px 6px" }}>
                     {[...new Set([...UNIDADES, fila.unidad].filter(Boolean))].map((u) => (
                       <option key={u} value={u}>{u}</option>
                     ))}
@@ -177,9 +177,9 @@ export default function Catalogo({ ctx }) {
                     <input type="number" min="0" step="1000" value={fila.precioBase ?? 0}
                       disabled={!puedeEditar}
                       onChange={(e) => cambiar(fila.id, "precioBase", Number(e.target.value) || 0)}
-                      style={{ ...SI, fontSize: 11.5, padding: "5px 8px", textAlign: "right",
+                      style={{ ...SI, fontSize: 12, padding: "5px 8px", textAlign: "right",
                         fontVariantNumeric: "tabular-nums" }} />
-                    <div style={{ fontSize: 9.5, color: "var(--text-muted)", textAlign: "right", marginTop: 1 }}>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "right", marginTop: 1 }}>
                       {fmt(Number(fila.precioBase) || 0)}
                     </div>
                   </div>
@@ -197,7 +197,7 @@ export default function Catalogo({ ctx }) {
           </div>
 
           {nuevo && (
-            <div style={{ fontSize: 11.5, color: "#166534", background: "rgba(34, 197, 94, 0.15)",
+            <div style={{ fontSize: 12, color: "var(--success-text)", background: "rgba(34, 197, 94, 0.15)",
               border: "1px solid rgba(34, 197, 94, 0.3)", borderRadius: 8, padding: "8px 11px", marginTop: 10 }}>
               Servicio agregado; el cursor ya está en su nombre. Ponle nombre y precio; se guarda solo.
             </div>

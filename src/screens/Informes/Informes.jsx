@@ -633,7 +633,9 @@ export default function Informes({ctx}){
 
     fotoRefs.current={};
     setForm(p=>({...p,actividades:[...propias,...nuevos]}));
-    window.alert(
+    // Confirmacion de algo que salio bien: aviso flotante, no una hoja que
+    // obliga a pulsar «Entendido».
+    toast.exito(
       nuevos.length===avancesDisponibles.length
         ? `Se agregaron ${nuevos.length} avance(s) de la obra.`
         : `Se agregaron ${nuevos.length} avance(s) nuevo(s). Los otros ${avancesDisponibles.length-nuevos.length} ya estaban.`
@@ -1036,7 +1038,7 @@ export default function Informes({ctx}){
       };
     });
 
-    window.alert(`Se agregaron ${itemsCot.length} actividades al informe basadas en la cotización ${cot?.numero || ""}.`);
+    toast.exito(`Se agregaron ${itemsCot.length} actividades al informe basadas en la cotización ${cot?.numero || ""}.`);
   };
 
   return(
@@ -1298,7 +1300,7 @@ export default function Informes({ctx}){
                     type="button"
                     title="Quitar técnico"
                     onClick={() => setForm(pf => ({ ...pf, personal: pf.personal.filter((_, j) => j !== i) }))}
-                    style={{ background: "transparent", border: "none", color: "#98a2b3", borderRadius: 6, cursor: "pointer", fontSize: 16, padding: 2, lineHeight: 1 }}
+                    style={{ background: "transparent", border: "none", color: "var(--text-quaternary)", borderRadius: 6, cursor: "pointer", fontSize: 16, padding: 2, lineHeight: 1 }}
                     onMouseEnter={e => { e.currentTarget.style.color = "#d92d20"; }}
                     onMouseLeave={e => { e.currentTarget.style.color = "#98a2b3"; }}
                   >×</button>
@@ -1444,7 +1446,7 @@ export default function Informes({ctx}){
                           type="button"
                           onClick={() => quitarFotoAct(ai, fi)}
                           title="Eliminar foto"
-                          style={{ background: "transparent", border: "none", color: "#98a2b3", borderRadius: 6, width: 22, height: 22, cursor: "pointer", fontSize: 16, flexShrink: 0, lineHeight: 1 }}
+                          style={{ background: "transparent", border: "none", color: "var(--text-quaternary)", borderRadius: 6, width: 22, height: 22, cursor: "pointer", fontSize: 16, flexShrink: 0, lineHeight: 1 }}
                           onMouseEnter={e => { e.currentTarget.style.color = "#d92d20"; }}
                           onMouseLeave={e => { e.currentTarget.style.color = "#98a2b3"; }}
                         >
@@ -1493,8 +1495,8 @@ export default function Informes({ctx}){
                 />
 
                 {subiendoFotos?.actividad===ai && (
-                  <div style={{fontSize:11.5,color:"#d97706",marginTop:8,fontWeight:600}}>
-                    ⏳ Cargando fotos… {subiendoFotos.hechas} de {subiendoFotos.total}
+                  <div style={{fontSize:11.5,color:"var(--warning)",marginTop:8,fontWeight:600}}>
+                    Cargando fotos… {subiendoFotos.hechas} de {subiendoFotos.total}
                   </div>
                 )}
               </div>
@@ -1912,9 +1914,12 @@ export default function Informes({ctx}){
                             <div key={fi} style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", background: "#ffffff", boxShadow: "0 1px 3px rgba(15,23,42,0.03)", display: "flex", flexDirection: "column" }}>
                               <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", overflow: "hidden", position: "relative" }}>
                                 <img src={ft.img || ft.url} alt={`Evidencia ${fi + 1}`} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#f8fafc" }} onError={e => { e.target.style.display = "none"; }} />
-                                <span style={{ position: "absolute", top: 7, left: 7, background: "rgba(15,23,42,0.82)", color: "#ffffff", fontSize: 8.5, fontVariantNumeric: "tabular-nums", fontWeight: 700, padding: "2.5px 8px", borderRadius: 999, letterSpacing: "0.03em" }}>
-                                  EVIDENCIA {ai + 1}.{fi + 1}
-                                </span>
+                                {/* El rotulo solo sale si la foto tiene descripcion (igual que en el impreso). */}
+                                {String(ft.comentario || "").trim() && (
+                                  <span style={{ position: "absolute", top: 7, left: 7, background: "rgba(15,23,42,0.82)", color: "#ffffff", fontSize: 8.5, fontVariantNumeric: "tabular-nums", fontWeight: 700, padding: "2.5px 8px", borderRadius: 999, letterSpacing: "0.03em" }}>
+                                    EVIDENCIA {ai + 1}.{fi + 1}
+                                  </span>
+                                )}
                               </div>
                               {String(ft.comentario || "").trim() && (
                                 <div style={{ padding: "7px 10px", fontSize: 9.5, color: "#1d1d1f", lineHeight: 1.4, background: "#ffffff" }}>

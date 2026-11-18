@@ -211,7 +211,6 @@ export default function MenuUsuario({ compact = false }) {
         />
       )}
 
-      {cambiandoClave && <CambiarMiClave onCerrar={() => setCambiandoClave(false)} />}
-    </div>
+      {cambiandoClave && <CambiarMiClave onCerrar={() => setCambiandoClave(false)} />}    </div>
   );
 }

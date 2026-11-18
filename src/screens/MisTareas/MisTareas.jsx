@@ -1,11 +1,18 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { CD } from "../../styles/tokens";
 import { confirmar } from "../../lib/dialogos";
+import { puedeVerReporteActividad } from "../../lib/permisos";
+import { AccesoReporteActividad } from "../../components/ReporteActividad";
+import Icono from "../../components/ui/Icono";
+import { Button, Input, Sheet } from "../../components/ui";
 
 // Lista de chequeo personal estilo Recordatorios de Apple. Cada usuario ve
 // solo la suya (la nube filtra por dueño); al marcar una tarea se tacha sola.
 
-const NARANJA = "#f47c20";
+// Era el naranja viejo #f47c20, que competia con el rojo del logotipo. Ahora
+// es el acento del sistema (y cambia solo en modo oscuro). El nombre se queda
+// para no tocar los once sitios que lo usan.
+const NARANJA = "var(--accent)";
 
 function hoyIso() {
   const d = new Date();
@@ -18,11 +25,37 @@ function fechaCorta(iso) {
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 }
 
+const MESES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
+// "2026-11-09" -> "2026-11" (vacío si la tarea no tiene fecha)
+function mesClave(iso) {
+  if (!iso || iso.length < 7) return "";
+  return iso.slice(0, 7);
+}
+
+// "2026-11" -> "Noviembre 2026"
+function mesTitulo(clave) {
+  if (!clave) return "Sin fecha";
+  const [anio, mes] = clave.split("-");
+  return `${MESES[Number(mes) - 1] || mes} ${anio}`;
+}
+
 function nuevoId() {
   return `TP-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
 const ESTILOS = `
+.mt-marco { display: flex; justify-content: center; align-items: flex-start; gap: 20px; }
+.mt-lado { width: 112px; flex-shrink: 0; padding-top: 22px; }
+@media (max-width: 1100px) {
+  .mt-marco { flex-direction: column; align-items: stretch; gap: 12px; }
+  .mt-marco > .mt-card { flex: none !important; align-self: center; }
+  .mt-lado { width: auto; padding: 0 4px; display: flex; justify-content: center; }
+  .mt-lado--vacio { display: none; }
+}
 .mt-fila { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 11px 6px; border-radius: 10px; transition: background .15s ease; }
 .mt-fila + .mt-fila::before { content: ""; position: absolute; top: 0; left: 40px; right: 6px; height: 1px; background: var(--border, #eaecf0); }
 .mt-fila:hover { background: var(--surface-subtle, #f6f7f9); }
@@ -45,9 +78,9 @@ const ESTILOS = `
 .mt-icono:hover { background: var(--surface, #fff); color: var(--text-main, #101828); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
 .mt-icono.peligro:hover { color: #e0342a; }
 .mt-composer { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface-subtle, #f6f7f9); border: 1px solid transparent; transition: border-color .15s ease, box-shadow .15s ease, background .15s ease; }
-.mt-composer:focus-within { background: var(--surface, #fff); border-color: rgba(244,124,32,.45); box-shadow: 0 0 0 4px rgba(244,124,32,.12); }
+.mt-composer:focus-within { background: var(--surface, #fff); border-color: var(--text-tertiary); box-shadow: 0 0 0 4px var(--fill); }
 .mt-composer input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 15px; color: var(--text-main, #101828); font-family: inherit; }
-.mt-edicion { width: 100%; box-sizing: border-box; font-size: 15px; line-height: 1.45; font-family: inherit; color: var(--text-main, #101828); background: var(--surface, #fff); border: 1px solid rgba(244,124,32,.5); box-shadow: 0 0 0 3px rgba(244,124,32,.12); border-radius: 8px; padding: 2px 8px; outline: none; }
+.mt-edicion { width: 100%; box-sizing: border-box; font-size: 15px; line-height: 1.45; font-family: inherit; color: var(--text-main, #101828); background: var(--surface, #fff); border: 1px solid var(--text-tertiary); box-shadow: 0 0 0 3px var(--fill); border-radius: 8px; padding: 2px 8px; outline: none; }
 .mt-seg { display: inline-flex; padding: 2px; border-radius: 9px; background: var(--surface-subtle, #f1f3f5); border: 1px solid var(--border, rgba(0,0,0,.06)); }
 .mt-seg button { border: none; background: transparent; padding: 5px 12px; font-size: 12px; font-weight: 600; border-radius: 7px; cursor: pointer; color: var(--text-muted, #667085); font-family: inherit; transition: all .15s ease; }
 .mt-seg button.activo { background: var(--surface, #fff); color: var(--text-main, #101828); box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 0 0 .5px rgba(0,0,0,.04); }
@@ -179,6 +212,73 @@ function FilaTarea({ tarea, onToggle, onGuardarTexto, onEliminar }) {
   );
 }
 
+// Caja colapsable que sirve igual para una lista desplegable o para un mes.
+function BloqueColapsable({ titulo, hechas, total, colapsada, onToggle, acciones, children }) {
+  return (
+    <div
+      style={{
+        border: "1px solid var(--border, rgba(0, 0, 0, 0.07))",
+        borderRadius: 14,
+        overflow: "hidden",
+        background: "var(--surface, #ffffff)",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+      }}
+    >
+      <div
+        onClick={onToggle}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "9px 12px",
+          background: "var(--surface-subtle, #f8f9fa)",
+          cursor: "pointer",
+          userSelect: "none",
+          borderBottom: colapsada ? "none" : "1px solid var(--border, rgba(0,0,0,0.05))",
+          transition: "background 0.12s ease",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.04)")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "var(--surface-subtle, #f8f9fa)")}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <span
+            style={{
+              fontSize: 11,
+              color: "var(--text-muted, #667085)",
+              display: "inline-block",
+              transform: colapsada ? "none" : "rotate(90deg)",
+              transition: "transform 0.15s ease",
+            }}
+          >
+            ▶
+          </span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)" }}>{titulo}</span>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "var(--text-muted, #667085)",
+              background: "rgba(0,0,0,0.05)",
+              padding: "1px 6px",
+              borderRadius: 999,
+            }}
+          >
+            {hechas}/{total}
+          </span>
+        </div>
+
+        {acciones && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }} onClick={(e) => e.stopPropagation()}>
+            {acciones}
+          </div>
+        )}
+      </div>
+
+      {!colapsada && <div style={{ padding: "4px 8px 8px" }}>{children}</div>}
+    </div>
+  );
+}
+
 export default function MisTareas({ ctx }) {
   const lista = ctx?.tareasPersonales;
   const tareas = useMemo(() => (Array.isArray(lista) ? lista : []), [lista]);
@@ -187,7 +287,8 @@ export default function MisTareas({ ctx }) {
   };
 
   const [texto, setTexto] = useState("");
-  const [filtro, setFiltro] = useState("todas"); // "todas" | "pendientes" | "completadas"
+  // Al entrar se arranca en Pendientes: es lo que hay que tachar hoy.
+  const [filtro, setFiltro] = useState("pendientes"); // "todas" | "pendientes" | "completadas"
   const [deshacer, setDeshacer] = useState(null); // { tareas, indice, mensaje }
   const timerDeshacer = useRef(null);
   const inputRef = useRef(null);
@@ -202,6 +303,22 @@ export default function MisTareas({ ctx }) {
   });
   const [seccionActiva, setSeccionActiva] = useState("General");
   const [seccionesColapsadas, setSeccionesColapsadas] = useState({});
+
+  // Agrupación de la lista: por mes (lo normal) o por lista desplegable.
+  const [agrupacion, setAgrupacion] = useState(() => {
+    try {
+      return localStorage.getItem("ingeanclajes_agrupacion_tareas") === "lista" ? "lista" : "mes";
+    } catch { /* sin almacenamiento del navegador: se sigue igual */ }
+    return "mes";
+  });
+  const [mesesColapsados, setMesesColapsados] = useState({});
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("ingeanclajes_agrupacion_tareas", agrupacion);
+    } catch { /* sin almacenamiento del navegador: se sigue igual */ }
+  }, [agrupacion]);
+
   const [menuPlusAbierto, setMenuPlusAbierto] = useState(false);
   const [modalSeccion, setModalSeccion] = useState(false);
   const [nombreNuevaSeccion, setNombreNuevaSeccion] = useState("");
@@ -261,6 +378,33 @@ export default function MisTareas({ ctx }) {
     if (filtro === "completadas") return tareas.filter((t) => t.completada);
     return tareas;
   }, [tareas, filtro]);
+
+  // Meses de mayor a menor; "Sin fecha" siempre de último.
+  const mesActual = hoyIso().slice(0, 7);
+  const gruposMes = useMemo(() => {
+    const mapa = new Map();
+    const grupo = (clave) => {
+      if (!mapa.has(clave)) mapa.set(clave, { clave, total: 0, hechas: 0, visibles: [] });
+      return mapa.get(clave);
+    };
+    tareas.forEach((t) => {
+      const g = grupo(mesClave(t.fecha));
+      g.total += 1;
+      if (t.completada) g.hechas += 1;
+    });
+    visibles.forEach((t) => grupo(mesClave(t.fecha)).visibles.push(t));
+    return Array.from(mapa.values()).sort((a, b) => {
+      if (!a.clave) return 1;
+      if (!b.clave) return -1;
+      return b.clave.localeCompare(a.clave);
+    });
+  }, [tareas, visibles]);
+
+  // Por defecto solo queda abierto el mes en curso.
+  const mesColapsado = (clave) => mesesColapsados[clave] ?? clave !== mesActual;
+  const toggleColapsarMes = (clave) => {
+    setMesesColapsados((prev) => ({ ...prev, [clave]: !mesColapsado(clave) }));
+  };
 
   const ofrecerDeshacer = (eliminadas, mensaje) => {
     clearTimeout(timerDeshacer.current);
@@ -338,10 +482,20 @@ export default function MisTareas({ ctx }) {
     setDeshacer(null);
   };
 
+  // El icono del reporte del equipo va al lado de la tarjeta, no dentro: solo
+  // le aparece a Camila Sepúlveda. Para los demas no hay columnas laterales y
+  // la pantalla queda igual que siempre.
+  const conReporte = puedeVerReporteActividad(ctx?.membresia);
+
   return (
-    <div style={{ width: "100%", padding: "4px 0 24px" }}>
-    <div className="mt-card" style={{ ...CD, padding: "28px 28px 20px", maxWidth: 860, margin: "0 auto", width: "100%" }}>
-      <style>{ESTILOS}</style>
+    <div className={conReporte ? "mt-marco" : undefined} style={{ width: "100%", padding: "4px 0 24px" }}>
+    <style>{ESTILOS}</style>
+    {conReporte && (
+      <div className="mt-lado">
+        <AccesoReporteActividad ctx={ctx} />
+      </div>
+    )}
+    <div className="mt-card" style={{ ...CD, padding: "28px 28px 20px", maxWidth: 860, margin: conReporte ? 0 : "0 auto", width: "100%", flex: "0 1 860px", minWidth: 0 }}>
 
       {/* Encabezado */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 22 }}>
@@ -362,7 +516,7 @@ export default function MisTareas({ ctx }) {
             style={{
               whiteSpace: "nowrap",
               fontSize: 30,
-              fontWeight: 800,
+              fontWeight: 700,
               letterSpacing: "-0.025em",
               margin: "2px 0 0",
               color: "var(--text-main, #101828)",
@@ -385,11 +539,11 @@ export default function MisTareas({ ctx }) {
         {tareas.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", color: "var(--text-main, #101828)", fontVariantNumeric: "tabular-nums" }}>
+              <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--text-main, #101828)", fontVariantNumeric: "tabular-nums" }}>
                 {hechas}
                 <span style={{ color: "var(--text-muted, #98a2b3)", fontWeight: 600 }}> / {tareas.length}</span>
               </div>
-              <div style={{ fontSize: 11.5, color: "var(--text-muted, #667085)", fontWeight: 500 }}>
+              <div style={{ fontSize: 12, color: "var(--text-muted, #667085)", fontWeight: 500 }}>
                 {pendientes === 0 ? "Todo al día" : `${pendientes} pendiente${pendientes === 1 ? "" : "s"}`}
               </div>
             </div>
@@ -469,12 +623,12 @@ export default function MisTareas({ ctx }) {
                 background: NARANJA,
                 color: "#fff",
                 fontWeight: 600,
-                fontSize: 12.5,
+                fontSize: 13,
                 borderRadius: 8,
                 padding: "6px 14px",
                 cursor: "pointer",
                 fontFamily: "inherit",
-                boxShadow: "0 1px 2px rgba(244,124,32,.3)",
+                boxShadow: "none",
               }}
             >
               Agregar
@@ -499,7 +653,7 @@ export default function MisTareas({ ctx }) {
               width: 270,
             }}
           >
-            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted, #86868b)", textTransform: "uppercase", padding: "4px 8px 6px", letterSpacing: "0.05em" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted, #86868b)", textTransform: "uppercase", padding: "4px 8px 6px", letterSpacing: "0.05em" }}>
               Opciones de Tareas
             </div>
             <button
@@ -519,14 +673,14 @@ export default function MisTareas({ ctx }) {
                 borderRadius: 8,
                 cursor: "pointer",
                 textAlign: "left",
-                fontSize: 12.5,
+                fontSize: 13,
                 fontWeight: 600,
                 color: "var(--text-main, #101828)",
               }}
               onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f7")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
-              <span>☑️</span>
+              <Icono nombre="check" size={14} />
               <span>Añadir tarea normal</span>
             </button>
             <button
@@ -547,17 +701,17 @@ export default function MisTareas({ ctx }) {
                 borderRadius: 8,
                 cursor: "pointer",
                 textAlign: "left",
-                fontSize: 12.5,
+                fontSize: 13,
                 fontWeight: 600,
                 color: "var(--text-main, #101828)",
               }}
               onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f7")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
-              <span>📂</span>
+              <Icono nombre="carpetaVacia" size={14} />
               <div>
                 <div>Nueva lista desplegable</div>
-                <div style={{ fontSize: 10.5, color: "var(--text-muted, #667085)", fontWeight: 400 }}>
+                <div style={{ fontSize: 11, color: "var(--text-muted, #667085)", fontWeight: 400 }}>
                   Categoría colapsable con flecha ▶
                 </div>
               </div>
@@ -590,6 +744,27 @@ export default function MisTareas({ ctx }) {
             </div>
           )}
 
+          {tareas.length > 0 && (
+            <div className="mt-seg" role="tablist" title="Cómo se agrupan las tareas">
+              {[
+                { id: "lista", label: "Por lista" },
+                { id: "mes", label: "Por mes" },
+              ].map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={agrupacion === g.id}
+                  className={agrupacion === g.id ? "activo" : ""}
+                  onClick={() => setAgrupacion(g.id)}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {agrupacion === "lista" && (
           <button
             type="button"
             onClick={() => {
@@ -622,6 +797,7 @@ export default function MisTareas({ ctx }) {
             <span>+</span>
             <span>Nueva lista desplegable</span>
           </button>
+          )}
         </div>
 
         {hechas > 0 && (
@@ -632,7 +808,7 @@ export default function MisTareas({ ctx }) {
               border: "none",
               background: "transparent",
               color: NARANJA,
-              fontSize: 12.5,
+              fontSize: 13,
               fontWeight: 600,
               cursor: "pointer",
               fontFamily: "inherit",
@@ -653,7 +829,7 @@ export default function MisTareas({ ctx }) {
               height: 56,
               margin: "0 auto 14px",
               borderRadius: 16,
-              background: "rgba(244,124,32,.1)",
+              background: "var(--accent-tint)",
               color: NARANJA,
               display: "flex",
               alignItems: "center",
@@ -676,116 +852,90 @@ export default function MisTareas({ ctx }) {
         </div>
       ) : (
         <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 12 }}>
-          {todasLasSecciones.map((sec) => {
-            const tareasSec = visibles.filter((t) => (t.seccion || "General") === sec);
-            const totalSec = tareas.filter((t) => (t.seccion || "General") === sec).length;
-            const hechasSec = tareas.filter((t) => (t.seccion || "General") === sec && t.completada).length;
-            const colapsada = !!seccionesColapsadas[sec];
+          {agrupacion === "mes"
+            ? gruposMes.map((g) => {
+                // Con un filtro activo, un mes sin tareas visibles no se muestra.
+                if (filtro !== "todas" && g.visibles.length === 0) return null;
 
-            // Si hay filtro activo y la sección no tiene tareas visibles, no mostrarla en esa vista
-            if (filtro !== "todas" && tareasSec.length === 0) return null;
-
-            return (
-              <div
-                key={sec}
-                style={{
-                  border: "1px solid var(--border, rgba(0, 0, 0, 0.07))",
-                  borderRadius: 14,
-                  overflow: "hidden",
-                  background: "var(--surface, #ffffff)",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
-                }}
-              >
-                {/* Encabezado colapsable de la Lista Desplegable */}
-                <div
-                  onClick={() => toggleColapsarSeccion(sec)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "9px 12px",
-                    background: "var(--surface-subtle, #f8f9fa)",
-                    cursor: "pointer",
-                    userSelect: "none",
-                    borderBottom: colapsada ? "none" : "1px solid var(--border, rgba(0,0,0,0.05))",
-                    transition: "background 0.12s ease",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.04)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "var(--surface-subtle, #f8f9fa)")}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span
-                      style={{
-                        fontSize: 10,
-                        color: "var(--text-muted, #667085)",
-                        display: "inline-block",
-                        transform: colapsada ? "none" : "rotate(90deg)",
-                        transition: "transform 0.15s ease",
-                      }}
-                    >
-                      ▶
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)" }}>
-                      {sec}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 10.5,
-                        fontWeight: 600,
-                        color: "var(--text-muted, #667085)",
-                        background: "rgba(0,0,0,0.05)",
-                        padding: "1px 6px",
-                        borderRadius: 999,
-                      }}
-                    >
-                      {hechasSec}/{totalSec}
-                    </span>
-                  </div>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }} onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSeccionActiva(sec);
-                        inputRef.current?.focus();
-                      }}
-                      style={{
-                        border: "none",
-                        background: "transparent",
-                        color: NARANJA,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        cursor: "pointer",
-                        padding: "2px 6px",
-                        borderRadius: 6,
-                      }}
-                      title={`Escribir tarea en ${sec}`}
-                    >
-                      + Tarea
-                    </button>
-                    {sec !== "General" && (
-                      <button
-                        type="button"
-                        onClick={() => eliminarSeccion(sec)}
-                        style={{
-                          border: "none",
-                          background: "transparent",
-                          color: "var(--text-muted, #98a2b3)",
-                          cursor: "pointer",
-                          fontSize: 14,
-                          padding: "1px 5px",
-                        }}
-                        title="Eliminar esta lista desplegable"
-                      >
-                        ×
-                      </button>
+                return (
+                  <BloqueColapsable
+                    key={g.clave || "sin-fecha"}
+                    titulo={mesTitulo(g.clave)}
+                    hechas={g.hechas}
+                    total={g.total}
+                    colapsada={mesColapsado(g.clave)}
+                    onToggle={() => toggleColapsarMes(g.clave)}
+                  >
+                    {g.visibles.length === 0 ? (
+                      <div style={{ padding: "12px 10px", fontSize: 12, color: "var(--text-muted, #98a2b3)", textAlign: "center", fontStyle: "italic" }}>
+                        Sin tareas en este mes.
+                      </div>
+                    ) : (
+                      g.visibles.map((t) => (
+                        <FilaTarea key={t.id} tarea={t} onToggle={toggle} onGuardarTexto={guardarTexto} onEliminar={eliminar} />
+                      ))
                     )}
-                  </div>
-                </div>
+                  </BloqueColapsable>
+                );
+              })
+            : todasLasSecciones.map((sec) => {
+                const tareasSec = visibles.filter((t) => (t.seccion || "General") === sec);
+                const totalSec = tareas.filter((t) => (t.seccion || "General") === sec).length;
+                const hechasSec = tareas.filter((t) => (t.seccion || "General") === sec && t.completada).length;
 
-                {/* Contenido de la Lista Desplegable (Tareas) */}
-                {!colapsada && (
-                  <div style={{ padding: "4px 8px 8px" }}>
+                // Si hay filtro activo y la sección no tiene tareas visibles, no mostrarla en esa vista
+                if (filtro !== "todas" && tareasSec.length === 0) return null;
+
+                return (
+                  <BloqueColapsable
+                    key={sec}
+                    titulo={sec}
+                    hechas={hechasSec}
+                    total={totalSec}
+                    colapsada={!!seccionesColapsadas[sec]}
+                    onToggle={() => toggleColapsarSeccion(sec)}
+                    acciones={
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSeccionActiva(sec);
+                            inputRef.current?.focus();
+                          }}
+                          style={{
+                            border: "none",
+                            background: "transparent",
+                            color: NARANJA,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            padding: "2px 6px",
+                            borderRadius: 6,
+                          }}
+                          title={`Escribir tarea en ${sec}`}
+                        >
+                          + Tarea
+                        </button>
+                        {sec !== "General" && (
+                          <button
+                            type="button"
+                            onClick={() => eliminarSeccion(sec)}
+                            style={{
+                              border: "none",
+                              background: "transparent",
+                              color: "var(--text-muted, #98a2b3)",
+                              cursor: "pointer",
+                              fontSize: 14,
+                              padding: "1px 5px",
+                            }}
+                            title="Eliminar esta lista desplegable"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </>
+                    }
+                  >
                     {tareasSec.length === 0 ? (
                       <div style={{ padding: "12px 10px", fontSize: 12, color: "var(--text-muted, #98a2b3)", textAlign: "center", fontStyle: "italic" }}>
                         Sin tareas en esta lista. Haz clic en '+ Tarea' arriba para añadir una.
@@ -795,166 +945,49 @@ export default function MisTareas({ ctx }) {
                         <FilaTarea key={t.id} tarea={t} onToggle={toggle} onGuardarTexto={guardarTexto} onEliminar={eliminar} />
                       ))
                     )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                  </BloqueColapsable>
+                );
+              })}
         </div>
       )}
 
-      {/* Modal Apple para Crear Nueva Lista Desplegable */}
-      {modalSeccion && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.45)",
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)",
-            zIndex: 999999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-          }}
-          onClick={() => setModalSeccion(false)}
-        >
-          <div
-            style={{
-              background: "#ffffff",
-              borderRadius: 18,
-              padding: "24px 24px 20px",
-              width: "100%",
-              maxWidth: 400,
-              boxShadow: "0 20px 50px -10px rgba(0,0,0,0.3)",
-              display: "flex",
-              flexDirection: "column",
-              gap: 16,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div>
-              <div style={{ fontSize: 17, fontWeight: 700, color: "#1d1d1f", letterSpacing: "-0.02em" }}>
-                Nueva Lista Desplegable
-              </div>
-              <div style={{ fontSize: 12.5, color: "#86868b", marginTop: 4 }}>
-                Crea una sección colapsable (con flecha ▶) para organizar tus tareas en grupos.
-              </div>
-            </div>
+      {/* Nueva lista desplegable */}
+      <Sheet
+        abierta={modalSeccion}
+        onCerrar={() => setModalSeccion(false)}
+        titulo="Nueva lista desplegable"
+        subtitulo="Crea una sección colapsable para organizar tus tareas en grupos."
+        pie={
+          <>
+            <Button variante="secondary" onClick={() => setModalSeccion(false)}>Cancelar</Button>
+            <Button variante="primary" onClick={() => crearSeccion(nombreNuevaSeccion)}>Crear lista</Button>
+          </>
+        }
+      >
+        <form onSubmit={(e) => { e.preventDefault(); crearSeccion(nombreNuevaSeccion); }}>
+          <Input
+            ref={inputNuevaSeccionRef}
+            aria-label="Nombre de la lista"
+            value={nombreNuevaSeccion}
+            onChange={(e) => setNombreNuevaSeccion(e.target.value)}
+            placeholder="Ej. Logros del ciclo, Obra, Compras…"
+          />
+        </form>
+      </Sheet>
 
-            <input
-              ref={inputNuevaSeccionRef}
-              value={nombreNuevaSeccion}
-              onChange={(e) => setNombreNuevaSeccion(e.target.value)}
-              placeholder="Ej. Logros del ciclo, Obra, Compras..."
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  crearSeccion(nombreNuevaSeccion);
-                } else if (e.key === "Escape") {
-                  setModalSeccion(false);
-                }
-              }}
-              style={{
-                border: "1px solid rgba(0,0,0,0.12)",
-                borderRadius: 10,
-                padding: "10px 14px",
-                fontSize: 14,
-                color: "#1d1d1f",
-                outline: "none",
-                background: "#f5f5f7",
-                width: "100%",
-                boxSizing: "border-box",
-              }}
-            />
-
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <button
-                type="button"
-                onClick={() => setModalSeccion(false)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "7px 14px",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "#6e6e73",
-                  cursor: "pointer",
-                }}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => crearSeccion(nombreNuevaSeccion)}
-                style={{
-                  background: NARANJA,
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "7px 16px",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  boxShadow: "0 1px 3px rgba(244,124,32,0.3)",
-                }}
-              >
-                Crear Lista
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Deshacer */}
+      {/* Deshacer: el aviso flotante del sistema, con su accion. */}
       {deshacer && (
-        <div
-          className="mt-toast"
-          role="status"
-          style={{
-            position: "fixed",
-            bottom: 28,
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            gap: 14,
-            padding: "10px 12px 10px 18px",
-            borderRadius: 999,
-            background: "rgba(16, 24, 40, 0.92)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            color: "#fff",
-            fontSize: 13,
-            fontWeight: 500,
-            boxShadow: "0 12px 30px -8px rgba(0,0,0,.35)",
-            maxWidth: "92vw",
-          }}
-        >
-          <span>{deshacer.mensaje}</span>
-          <button
-            type="button"
-            onClick={restaurar}
-            style={{
-              border: "none",
-              background: "rgba(255,255,255,.14)",
-              color: "#ffb37a",
-              fontWeight: 700,
-              fontSize: 12.5,
-              borderRadius: 999,
-              padding: "5px 12px",
-              cursor: "pointer",
-              fontFamily: "inherit",
-            }}
-          >
-            Deshacer
-          </button>
+        <div className="ui-toaster" aria-live="polite">
+          <div className="ui-toast" role="status">
+            <span className="ui-toast__dot" aria-hidden="true" />
+            <span className="ui-toast__texto">{deshacer.mensaje}</span>
+            <button type="button" className="ui-toast__accion" onClick={restaurar}>Deshacer</button>
           </div>
-        )}
+        </div>
+      )}
       </div>
+      {/* Columna vacia del mismo ancho, para que la tarjeta siga centrada. */}
+      {conReporte && <div className="mt-lado mt-lado--vacio" aria-hidden="true" />}
     </div>
   );
 }

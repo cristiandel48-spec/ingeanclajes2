@@ -2,6 +2,7 @@ import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import react from 'eslint-plugin-react'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
@@ -22,8 +23,13 @@ export default defineConfig([
         sourceType: 'module',
       },
     },
+    plugins: { react },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // Un componente usado en JSX sin importarlo (<Icono /> sin su import)
+      // compila igual y solo revienta al abrir la pantalla: asi se cayo
+      // Ejecucion de obra el 2026-11-13. Esta regla lo frena al compilar.
+      'react/jsx-no-undef': ['error', { allowGlobals: true }],
       // Consejos del compilador de React y de la recarga en caliente: hablan
       // de rendimiento o de comodidad al programar, no de errores. Quedan como
       // aviso para que no frenen la publicacion; los errores de verdad

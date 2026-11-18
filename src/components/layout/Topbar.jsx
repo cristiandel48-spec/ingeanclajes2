@@ -112,7 +112,12 @@ export default function Topbar({ scr, dark, onToggleTheme, isMobile, onOpenMenu,
         paddingBottom: 0,
         // Deja pasar el notch en iPhone cuando la app va a pantalla completa.
         paddingTop: "env(safe-area-inset-top)",
-        background: "var(--surface)",
+        // Translucida, como las barras de macOS e iOS: el contenido se ve
+        // pasar por debajo, desenfocado. Sin soporte de backdrop-filter queda
+        // casi opaca y se sigue leyendo.
+        background: "color-mix(in srgb, var(--surface) 78%, transparent)",
+        backdropFilter: "saturate(180%) blur(20px)",
+        WebkitBackdropFilter: "saturate(180%) blur(20px)",
         borderBottom: "1px solid var(--separator)",
         width: "100%",
         maxWidth: "100%",

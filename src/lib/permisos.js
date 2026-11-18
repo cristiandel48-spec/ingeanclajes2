@@ -135,6 +135,38 @@ export function puedeAprobarOrdenCompra(membresia) {
   );
 }
 
+/**
+ * Reporte de actividad por usuario (cuantos documentos hizo cada quien por
+ * mes). Es solo para Camila Sepúlveda: ni los demas administradores ni la
+ * cuenta de soporte lo ven.
+ *
+ * Se la reconoce como en el resto del programa, por el nombre o el correo de
+ * su cuenta. Si algun dia hay que darselo a otra persona sin tocar el codigo,
+ * se pone su correo en VITE_CUENTAS_REPORTE_ACTIVIDAD (separados por coma).
+ *
+ * OJO: esto decide quien ve el boton, no quien puede leer los datos. El
+ * reporte se arma con los documentos que la aplicacion ya le entrega a todo
+ * el que entra; no es una barrera de seguridad.
+ */
+const CUENTAS_REPORTE_ACTIVIDAD = (import.meta.env?.VITE_CUENTAS_REPORTE_ACTIVIDAD ?? "")
+  .split(",")
+  .map((correo) => correo.trim().toLowerCase())
+  .filter(Boolean);
+
+export function puedeVerReporteActividad(membresia) {
+  if (!membresia || membresia.activo === false) return false;
+  const nombre = String(membresia.nombre || "").toLowerCase().trim();
+  const email = String(membresia.email || "").toLowerCase().trim();
+  if (email && CUENTAS_REPORTE_ACTIVIDAD.includes(email)) return true;
+  if (esCuentaSoporte(email)) return false;
+  return (
+    nombre.includes("camila") ||
+    nombre.includes("sepulveda") ||
+    nombre.includes("sepúlveda") ||
+    email.includes("camila")
+  );
+}
+
 /** Quita del listado del equipo las cuentas de soporte. */
 export function sinCuentasSoporte(usuarios) {
   return (usuarios ?? []).filter((usuario) => !esCuentaSoporte(usuario?.email));

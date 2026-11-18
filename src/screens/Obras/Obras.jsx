@@ -191,7 +191,7 @@ export default function Obras({ctx}){
         type="button"
         style={{
           background: showNO ? "rgba(220, 38, 38, 0.08)" : "#f47c20",
-          color: showNO ? "#b91c1c" : "#ffffff",
+          color: showNO ? "var(--danger-text)" : "#ffffff",
           border: `1px solid ${showNO ? "rgba(220, 38, 38, 0.25)" : "#f47c20"}`,
           borderRadius: 8,
           padding: isMobile ? "6px 12px" : "7px 15px",
@@ -247,7 +247,7 @@ export default function Obras({ctx}){
             <span
               style={{
                 fontFamily: "'Inter', system-ui, sans-serif",
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 600,
                 color: "var(--text-muted, #667085)",
                 background: "var(--surface-subtle, #f1f5f9)",
@@ -299,7 +299,7 @@ export default function Obras({ctx}){
               ayuda="A este correo llegan los informes para firma de recibido. Se pide antes del primer registro de bitácora."/>            <div>
               <LBL>Fecha inicio</LBL>
               <input type="date" value={nob.fechaInicio} onChange={e=>setNob({...nob,fechaInicio:e.target.value})} style={SI}/>
-              <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>La fecha real en que empezaron.</div>
+              <div style={{fontSize:11,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>La fecha real en que empezaron.</div>
             </div>
             <div>
               <LBL>Fecha fin estimada</LBL>
@@ -325,7 +325,7 @@ export default function Obras({ctx}){
                     Sin esto se podia crear una segunda obra para la misma. */}
                 {cotizaciones.filter(c=>!c.obraId && !obras.some(o=>o?.cotizacionId && (String(o.cotizacionId)===String(c.id) || (c.numero && String(o.cotizacionId)===String(c.numero))))).map(c=><option key={c.id} value={c.id}>{c.numero} · {c.cliente} {c.total ? `($${c.total.toLocaleString()})` : ""}</option>)}
               </select>
-              <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>Si la vinculas, toma el valor total de la cotización y esa pasa a estado «Aprobada».</div>
+              <div style={{fontSize:11,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>Si la vinculas, toma el valor total de la cotización y esa pasa a estado «Aprobada».</div>
             </div>
           </div>
 
@@ -349,7 +349,7 @@ export default function Obras({ctx}){
             <button
               onClick={guardarObra}
               style={{
-                background: "#f47c20",
+                background: "var(--accent)",
                 color: "#ffffff",
                 border: "none",
                 borderRadius: 8,

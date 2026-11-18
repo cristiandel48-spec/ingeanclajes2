@@ -2,6 +2,7 @@ import { useState } from "react";
 import { generarDesgloseMateriales, generarRemisionDespachoHtml } from "../../lib/materialesObra";
 import { conFuenteInter } from "../../lib/fuenteInter";
 import { CD, ST, SI } from "../../styles/tokens";
+import Icono from "../../components/ui/Icono";
 
 export default function MaterialesDespachoObra({
   obra,
@@ -156,7 +157,7 @@ export default function MaterialesDespachoObra({
       >
         <div>
           <div style={ST}>Materiales y Lista de Despacho (Bodega)</div>
-          <div style={{ fontSize: 11.5, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
+          <div style={{ fontSize: 12, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
             Control de insumos de ingeniería, postes, cables y fijaciones químicas calculados desde la cotización{" "}
             {cotizacion?.numero && <strong>{cotizacion.numero}</strong>}.
           </div>
@@ -170,27 +171,27 @@ export default function MaterialesDespachoObra({
                 onClick={marcarTodoDespachado}
                 style={{
                   background: "var(--surface-subtle, #f2f4f7)",
-                  color: "#166534",
+                  color: "var(--success-text)",
                   border: "1px solid #bbf7d0",
                   borderRadius: 7,
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: 600,
                   padding: "6px 12px",
                   cursor: "pointer",
                 }}
                 title="Marcar todos los insumos como listos y despachados a obra"
               >
-                🚚 Despachar todo
+                Despachar todo
               </button>
               <button
                 type="button"
                 onClick={() => setMostrandoNuevo(!mostrandoNuevo)}
                 style={{
-                  background: "#FFFAEB",
-                  color: "#B54708",
+                  background: "var(--warning-bg)",
+                  color: "var(--warning-text)",
                   border: "1px solid #FCD34D",
                   borderRadius: 7,
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: 600,
                   padding: "6px 12px",
                   cursor: "pointer",
@@ -207,9 +208,9 @@ export default function MaterialesDespachoObra({
             style={{
               background: "#0f172a",
               color: "#ffffff",
-              border: "1px solid #0f172a",
+              border: "1px solid var(--text-primary)",
               borderRadius: 7,
-              fontSize: 11.5,
+              fontSize: 12,
               fontWeight: 700,
               padding: "6px 14px",
               cursor: "pointer",
@@ -219,7 +220,7 @@ export default function MaterialesDespachoObra({
             }}
             title="Imprimir remisión oficial de salida de almacén"
           >
-            <span>🖨️</span>
+            <Icono nombre="imprimir" size={14} />
             <span>Imprimir Remisión</span>
           </button>
         </div>
@@ -243,7 +244,7 @@ export default function MaterialesDespachoObra({
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div>
             <span style={{ fontSize: 11, color: "var(--text-muted, #64748b)" }}>Alistamiento de Bodega:</span>
-            <div style={{ fontSize: 14, fontWeight: 800, color: pctDespacho === 100 ? "#16a34a" : "#b45309" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: pctDespacho === 100 ? "var(--success)" : "var(--warning-text)" }}>
               {pctDespacho}% completado ({insumosDespachados} de {totalInsumos} insumos)
             </div>
           </div>
@@ -255,8 +256,8 @@ export default function MaterialesDespachoObra({
             onClick={() => irAPantalla("cotizacion", { cotizacionId: cotizacion.id })}
             style={{
               background: "#fff",
-              color: "#b45309",
-              border: "1px solid #fde68a",
+              color: "var(--warning-text)",
+              border: "1px solid var(--warning-bg)",
               borderRadius: 6,
               fontSize: 11,
               fontWeight: 600,
@@ -280,12 +281,12 @@ export default function MaterialesDespachoObra({
             marginBottom: 16,
           }}
         >
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#92400e", marginBottom: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--warning-text)", marginBottom: 8 }}>
             Registrar material adicional no contemplado en cotización
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 2fr auto", gap: 8, alignItems: "end" }}>
             <div>
-              <label style={{ fontSize: 10.5, color: "#64748b" }}>Material o Insumo</label>
+              <label style={{ fontSize: 11, color: "var(--text-tertiary)" }}>Material o Insumo</label>
               <input
                 value={nuevoInsumo.nombre}
                 onChange={(e) => setNuevoInsumo({ ...nuevoInsumo, nombre: e.target.value })}
@@ -294,7 +295,7 @@ export default function MaterialesDespachoObra({
               />
             </div>
             <div>
-              <label style={{ fontSize: 10.5, color: "#64748b" }}>Cantidad</label>
+              <label style={{ fontSize: 11, color: "var(--text-tertiary)" }}>Cantidad</label>
               <input
                 type="number"
                 min="1"
@@ -304,7 +305,7 @@ export default function MaterialesDespachoObra({
               />
             </div>
             <div>
-              <label style={{ fontSize: 10.5, color: "#64748b" }}>Unidad</label>
+              <label style={{ fontSize: 11, color: "var(--text-tertiary)" }}>Unidad</label>
               <input
                 value={nuevoInsumo.unidad}
                 onChange={(e) => setNuevoInsumo({ ...nuevoInsumo, unidad: e.target.value })}
@@ -313,7 +314,7 @@ export default function MaterialesDespachoObra({
               />
             </div>
             <div>
-              <label style={{ fontSize: 10.5, color: "#64748b" }}>Categoría</label>
+              <label style={{ fontSize: 11, color: "var(--text-tertiary)" }}>Categoría</label>
               <select
                 value={nuevoInsumo.categoria}
                 onChange={(e) => setNuevoInsumo({ ...nuevoInsumo, categoria: e.target.value })}
@@ -347,8 +348,8 @@ export default function MaterialesDespachoObra({
                 type="button"
                 onClick={() => setMostrandoNuevo(false)}
                 style={{
-                  background: "#f1f5f9",
-                  color: "#475569",
+                  background: "var(--fill)",
+                  color: "var(--text-secondary)",
                   border: "none",
                   borderRadius: 6,
                   padding: "6px 10px",
@@ -369,20 +370,20 @@ export default function MaterialesDespachoObra({
           1. Sistemas a Instalar (Entregables Contratados)
         </div>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
-              <tr style={{ background: "var(--surface-subtle, #f8fafc)", borderBottom: "1px solid #e2e8f0" }}>
-                <th style={{ padding: "6px 10px", textAlign: "left", width: 50, color: "#64748b" }}>Cant.</th>
-                <th style={{ padding: "6px 10px", textAlign: "left", width: 70, color: "#64748b" }}>Unidad</th>
-                <th style={{ padding: "6px 10px", textAlign: "left", color: "#64748b" }}>Descripción del Sistema</th>
-                <th style={{ padding: "6px 10px", textAlign: "left", width: 140, color: "#64748b" }}>Estado de Instalación</th>
+              <tr style={{ background: "var(--surface-subtle, #f8fafc)", borderBottom: "1px solid var(--separator)" }}>
+                <th style={{ padding: "6px 10px", textAlign: "left", width: 50, color: "var(--text-tertiary)" }}>Cant.</th>
+                <th style={{ padding: "6px 10px", textAlign: "left", width: 70, color: "var(--text-tertiary)" }}>Unidad</th>
+                <th style={{ padding: "6px 10px", textAlign: "left", color: "var(--text-tertiary)" }}>Descripción del Sistema</th>
+                <th style={{ padding: "6px 10px", textAlign: "left", width: 140, color: "var(--text-tertiary)" }}>Estado de Instalación</th>
               </tr>
             </thead>
             <tbody>
               {datos.entregables.map((ent) => (
-                <tr key={ent.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                  <td style={{ padding: "6px 10px", fontWeight: 700, color: "#92400e" }}>{ent.cant}</td>
-                  <td style={{ padding: "6px 10px", color: "#475569" }}>{ent.unidad}</td>
+                <tr key={ent.id} style={{ borderBottom: "1px solid var(--separator)" }}>
+                  <td style={{ padding: "6px 10px", fontWeight: 700, color: "var(--warning-text)" }}>{ent.cant}</td>
+                  <td style={{ padding: "6px 10px", color: "var(--text-secondary)" }}>{ent.unidad}</td>
                   <td style={{ padding: "6px 10px", color: "var(--text-main, #1e293b)", fontWeight: 500 }}>
                     {ent.descripcion}
                   </td>
@@ -395,7 +396,7 @@ export default function MaterialesDespachoObra({
                         padding: "3px 6px",
                         fontSize: 11,
                         borderRadius: 6,
-                        border: "1px solid #cbd5e1",
+                        border: "1px solid var(--border-strong)",
                         background:
                           ent.estado === "Instalado"
                             ? "#dcfce7"
@@ -434,15 +435,15 @@ export default function MaterialesDespachoObra({
           2. Insumos Técnicos y Salida de Bodega (Almacén)
         </div>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
-              <tr style={{ background: "var(--surface-subtle, #f8fafc)", borderBottom: "1px solid #e2e8f0" }}>
-                <th style={{ padding: "6px 10px", textAlign: "center", width: 40, color: "#64748b" }}>Desp.</th>
-                <th style={{ padding: "6px 10px", textAlign: "left", width: 50, color: "#64748b" }}>Cant.</th>
-                <th style={{ padding: "6px 10px", textAlign: "left", width: 65, color: "#64748b" }}>Unidad</th>
-                <th style={{ padding: "6px 10px", textAlign: "left", width: 140, color: "#64748b" }}>Categoría</th>
-                <th style={{ padding: "6px 10px", textAlign: "left", color: "#64748b" }}>Material / Insumo</th>
-                <th style={{ padding: "6px 10px", textAlign: "left", width: 130, color: "#64748b" }}>Estado</th>
+              <tr style={{ background: "var(--surface-subtle, #f8fafc)", borderBottom: "1px solid var(--separator)" }}>
+                <th style={{ padding: "6px 10px", textAlign: "center", width: 40, color: "var(--text-tertiary)" }}>Desp.</th>
+                <th style={{ padding: "6px 10px", textAlign: "left", width: 50, color: "var(--text-tertiary)" }}>Cant.</th>
+                <th style={{ padding: "6px 10px", textAlign: "left", width: 65, color: "var(--text-tertiary)" }}>Unidad</th>
+                <th style={{ padding: "6px 10px", textAlign: "left", width: 140, color: "var(--text-tertiary)" }}>Categoría</th>
+                <th style={{ padding: "6px 10px", textAlign: "left", color: "var(--text-tertiary)" }}>Material / Insumo</th>
+                <th style={{ padding: "6px 10px", textAlign: "left", width: 130, color: "var(--text-tertiary)" }}>Estado</th>
                 {!bloqueada && <th style={{ padding: "6px 10px", width: 35 }}></th>}
               </tr>
             </thead>
@@ -453,7 +454,7 @@ export default function MaterialesDespachoObra({
                   <tr
                     key={m.id}
                     style={{
-                      borderBottom: "1px solid #f1f5f9",
+                      borderBottom: "1px solid var(--separator)",
                       background: listo ? "rgba(240, 253, 244, 0.4)" : "transparent",
                     }}
                   >
@@ -466,18 +467,18 @@ export default function MaterialesDespachoObra({
                         style={{ cursor: bloqueada ? "default" : "pointer" }}
                       />
                     </td>
-                    <td style={{ padding: "6px 10px", fontWeight: 700, color: "#0f172a" }}>{m.cant}</td>
-                    <td style={{ padding: "6px 10px", color: "#64748b" }}>{m.unidad}</td>
-                    <td style={{ padding: "6px 10px", color: "#64748b", fontSize: 10.5 }}>{m.categoria}</td>
+                    <td style={{ padding: "6px 10px", fontWeight: 700, color: "var(--text-primary)" }}>{m.cant}</td>
+                    <td style={{ padding: "6px 10px", color: "var(--text-tertiary)" }}>{m.unidad}</td>
+                    <td style={{ padding: "6px 10px", color: "var(--text-tertiary)", fontSize: 11 }}>{m.categoria}</td>
                     <td style={{ padding: "6px 10px", color: "var(--text-main, #1e293b)" }}>
                       <span style={{ fontWeight: 600 }}>{m.nombre}</span>
                       {m.esPersonalizado && (
                         <span
                           style={{
                             marginLeft: 6,
-                            fontSize: 9.5,
-                            background: "#fef3c7",
-                            color: "#92400e",
+                            fontSize: 11,
+                            background: "var(--warning-bg)",
+                            color: "var(--warning-text)",
                             padding: "1px 5px",
                             borderRadius: 4,
                           }}
@@ -495,7 +496,7 @@ export default function MaterialesDespachoObra({
                           padding: "3px 6px",
                           fontSize: 11,
                           borderRadius: 6,
-                          border: "1px solid #cbd5e1",
+                          border: "1px solid var(--border-strong)",
                           background:
                             m.estado === "Despachado a Obra" || m.estado === "En Obra"
                               ? "#dcfce7"
@@ -521,7 +522,7 @@ export default function MaterialesDespachoObra({
                             style={{
                               background: "none",
                               border: "none",
-                              color: "#ef4444",
+                              color: "var(--danger)",
                               cursor: "pointer",
                               fontSize: 13,
                             }}

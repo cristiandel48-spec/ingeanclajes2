@@ -40,6 +40,20 @@ export function useToast() {
   return ctx;
 }
 
+// Puente para lanzar un aviso desde donde no hay hook a mano: funciones
+// sueltas, callbacks de subidas, codigo fuera de un componente. Es lo que
+// reemplaza a los alert() que quedaban. El proveedor se registra al montar;
+// sin proveedor el texto va a la consola, como hace useToast.
+let puente = null;
+const viaPuente = (metodo, respaldo) => (texto, opciones) =>
+  puente ? puente[metodo](texto, opciones) : respaldo("[aviso]", texto);
+export const aviso = {
+  mostrar: viaPuente("mostrar", console.info),
+  exito: viaPuente("exito", console.info),
+  error: viaPuente("error", console.warn),
+  warning: viaPuente("warning", console.warn),
+};
+
 let contador = 0;
 
 function Toast({ aviso, onCerrar }) {
@@ -106,6 +120,11 @@ export function ToastProvider({ children }) {
     warning: (texto, opciones) => mostrar(texto, { ...opciones, tono: "warning" }),
     cerrar,
   }), [mostrar, cerrar]);
+
+  useEffect(() => {
+    puente = valor;
+    return () => { if (puente === valor) puente = null; };
+  }, [valor]);
 
   return (
     <ToastContext.Provider value={valor}>

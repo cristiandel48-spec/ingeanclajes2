@@ -2,7 +2,8 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { fmtD } from "../../lib/format";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useIsMobile } from "../../hooks/useMediaQuery";
-import { BarraFija, CABECERA_FIJA } from "../../components/ui";
+import { BarraFija, CABECERA_FIJA, ConmutadorVista, EmptyState } from "../../components/ui";
+import Icono from "../../components/ui/Icono";
 
 const COLUMNAS_TABLA =
   "96px minmax(160px, 2fr) 128px 152px minmax(180px, 2.2fr) 224px";
@@ -52,10 +53,10 @@ export function calcularVigencia(fechaVence) {
       estado: "vencida",
       dias: diffDias,
       texto: `Vencida (${fmtD(fechaVence)})`,
-      color: "#b91c1c",
-      bg: "#fef2f2",
-      borde: "#fecaca",
-      icono: "⚠️",
+      color: "var(--danger-text)",
+      bg: "var(--danger-bg)",
+      borde: "var(--danger-bg)",
+      icono: "alerta",
     };
   }
   if (diffDias <= 60) {
@@ -63,20 +64,20 @@ export function calcularVigencia(fechaVence) {
       estado: "porVencer",
       dias: diffDias,
       texto: diffDias === 0 ? "Vence hoy" : `Vence en ${diffDias} d`,
-      color: "#b45309",
-      bg: "#fffbeb",
-      borde: "#fde68a",
-      icono: "⏳",
+      color: "var(--warning-text)",
+      bg: "var(--warning-bg)",
+      borde: "var(--warning-bg)",
+      icono: "reloj",
     };
   }
   return {
     estado: "vigente",
     dias: diffDias,
     texto: `Vigente · hasta ${fmtD(fechaVence)}`,
-    color: "#047857",
-    bg: "#ecfdf5",
-    borde: "#a7f3d0",
-    icono: "🛡️",
+    color: "var(--success-text)",
+    bg: "var(--success-bg)",
+    borde: "var(--success-bg)",
+    icono: "escudo",
   };
 }
 
@@ -222,7 +223,7 @@ export default function ListaCertificaciones({ certs = [], acciones = {} }) {
             borderRadius: 12,
             display: "inline-flex",
             alignItems: "center",
-            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            border: "none",
             overflowX: "auto",
             maxWidth: "100%",
           }}
@@ -289,7 +290,7 @@ export default function ListaCertificaciones({ certs = [], acciones = {} }) {
                 pointerEvents: "none",
               }}
             >
-              🔍
+              <Icono nombre="buscar" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />
             </span>
             <input
               ref={inputBusquedaRef}
@@ -300,7 +301,7 @@ export default function ListaCertificaciones({ certs = [], acciones = {} }) {
               style={{
                 width: "100%",
                 padding: !busqueda && !isMobile ? "8px 54px 8px 32px" : "8px 28px 8px 32px",
-                fontSize: 12.5,
+                fontSize: 13,
                 borderRadius: 10,
                 border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
                 background: "var(--surface, #ffffff)",
@@ -338,11 +339,11 @@ export default function ListaCertificaciones({ certs = [], acciones = {} }) {
                   right: 8,
                   top: "50%",
                   transform: "translateY(-50%)",
-                  fontSize: 10,
+                  fontSize: 11,
                   fontFamily: "'Inter', system-ui, sans-serif",
                   color: "var(--text-subtle, #86868b)",
                   background: "var(--surface-subtle, #f5f5f7)",
-                  border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                  border: "none",
                   padding: "1px 4px",
                   borderRadius: 4,
                   pointerEvents: "none",
@@ -376,90 +377,19 @@ export default function ListaCertificaciones({ certs = [], acciones = {} }) {
           </select>
 
           {/* Conmutador Cuadrícula / Lista */}
-          <div
-            style={{
-              background: "var(--surface-subtle, #f5f5f7)",
-              padding: 2,
-              borderRadius: 8,
-              border: "1px solid var(--border, rgba(0,0,0,0.08))",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 2,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => cambiarModoVista("tabla")}
-              title="Vista en tabla"
-              style={{
-                background: modoVista === "tabla" ? "#ffffff" : "transparent",
-                color: modoVista === "tabla" ? "#1d1d1f" : "#86868b",
-                border: "none",
-                borderRadius: 6,
-                padding: "5px 8px",
-                cursor: "pointer",
-                boxShadow: modoVista === "tabla" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              onClick={() => cambiarModoVista("cuadricula")}
-              title="Vista en cuadrícula"
-              style={{
-                background: modoVista === "cuadricula" ? "#ffffff" : "transparent",
-                color: modoVista === "cuadricula" ? "#1d1d1f" : "#86868b",
-                border: "none",
-                borderRadius: 6,
-                padding: "5px 8px",
-                cursor: "pointer",
-                boxShadow: modoVista === "cuadricula" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="7" height="7" rx="1" />
-                <rect x="14" y="3" width="7" height="7" rx="1" />
-                <rect x="14" y="14" width="7" height="7" rx="1" />
-                <rect x="3" y="14" width="7" height="7" rx="1" />
-              </svg>
-            </button>
-          </div>
+          <ConmutadorVista valor={modoVista} onChange={cambiarModoVista} opciones={[{ id: "cuadricula", icono: "cuadricula", titulo: "Ver como tarjetas" }, { id: "tabla", icono: "lista", titulo: "Ver como lista" }]} />
         </div>
       </div>
       </BarraFija>
 
       {/* Listado de Certificaciones */}
       {certsFiltradas.length === 0 ? (
-        <div
-          style={{
-            background: "var(--surface, #ffffff)",
-            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-            borderRadius: 16,
-            padding: "48px 24px",
-            textAlign: "center",
-            boxShadow: "0 2px 8px -2px rgba(0, 0, 0, 0.02)",
-          }}
-        >
-          <div style={{ fontSize: 32, marginBottom: 10 }}>🛡️</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-main, #1d1d1f)", marginBottom: 4 }}>
-            No se encontraron certificaciones
-          </div>
-          <p style={{ fontSize: 13, color: "var(--text-muted, #6e6e73)", maxWidth: 420, margin: "0 auto" }}>
-            {busqueda
-              ? `No hay ninguna certificación que coincida con "${busqueda}". Prueba con otro término.`
-              : "Las certificaciones de calidad se emiten una vez finalizadas las obras y aprobados los informes técnicos."}
-          </p>
+        <div style={{ background: "var(--surface)", borderRadius: 18 }}>
+          <EmptyState
+            icono="escudo"
+            titulo="No se encontraron certificaciones"
+            texto={busqueda ? `No hay ninguna certificación que coincida con «${busqueda}». Prueba con otro término.` : "Las certificaciones de calidad se emiten una vez finalizadas las obras y aprobados los informes técnicos."}
+          />
         </div>
       ) : modoVista === "cuadricula" ? (
         <div
@@ -481,11 +411,11 @@ export default function ListaCertificaciones({ certs = [], acciones = {} }) {
         <div
           style={{
             background: "var(--surface, #ffffff)",
-            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            border: "none",
             borderRadius: 16,
             // En escritorio clip y no auto: auto no deja pegar los titulos al bajar.
             ...(isMobile ? { overflowX: "auto" } : { overflow: "clip" }),
-            boxShadow: "0 2px 8px -2px rgba(0, 0, 0, 0.02)",
+            boxShadow: "none",
           }}
         >
           <div style={{ minWidth: 920 }}>
@@ -545,8 +475,8 @@ export default function ListaCertificaciones({ certs = [], acciones = {} }) {
           <span>
             Mostrando <strong>{certsFiltradas.length}</strong> de <strong>{certs.length}</strong> certificaciones
           </span>
-          <span style={{ fontSize: 11.5 }}>
-            🛡️ Certificaciones vigentes según Resolución 4272 de 2021
+          <span style={{ fontSize: 12 }}>
+            <Icono nombre="escudo" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />Certificaciones vigentes según Resolución 4272 de 2021
           </span>
         </div>
       )}
@@ -561,7 +491,7 @@ function BotonSegmentado({ activo, onClick, label }) {
       onClick={onClick}
       style={{
         background: activo ? "#ffffff" : "transparent",
-        color: activo ? "#1d1d1f" : "#6e6e73",
+        color: activo ? "var(--text-primary)" : "var(--text-secondary)",
         border: "none",
         borderRadius: 8,
         fontSize: 12,
@@ -646,7 +576,7 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
               gap: 4,
             }}
           >
-            <span>{esEscalera ? "🪜" : (recert ? "🔄" : "🛡️")}</span>
+            <Icono nombre="escudo" size={13} />
             <span>{esEscalera ? "Escaleras" : (c.tipo || "Certificación")}</span>
           </span>
 
@@ -659,7 +589,7 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
               borderRadius: 6,
               background: "var(--surface-subtle, #f5f5f7)",
               color: "var(--text-subtle, #55555a)",
-              border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+              border: "none",
               fontVariantNumeric: "tabular-nums",
             }}
           >
@@ -684,7 +614,7 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
               whiteSpace: "nowrap",
             }}
           >
-            <span>{semaforo.icono}</span>
+            <Icono nombre={semaforo.icono} size={13} />
             <span>{semaforo.texto}</span>
           </span>
         )}
@@ -716,11 +646,11 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
               whiteSpace: "nowrap",
             }}
           >
-            <span>📍</span>
+            <Icono nombre="ubicacion" size={14} />
             <span>{subtitulo}</span>
           </div>
         ) : (
-          <div style={{ fontSize: 11.5, color: "var(--text-subtle, #86868b)" }}>
+          <div style={{ fontSize: 12, color: "var(--text-subtle, #86868b)" }}>
             Emitido el {fmtD(c.fecha) || "—"}
           </div>
         )}
@@ -731,10 +661,10 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
         <div
           style={{
             background: "var(--surface-subtle, #f8f9fa)",
-            border: "1px solid var(--border, rgba(0,0,0,0.06))",
+            border: "none",
             borderRadius: 10,
             padding: "8px 12px",
-            fontSize: 11.5,
+            fontSize: 12,
             lineHeight: 1.45,
             color: "var(--text-main, #333336)",
             display: "-webkit-box",
@@ -753,15 +683,15 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
           display: "flex",
           alignItems: "center",
           gap: 12,
-          fontSize: 11.5,
+          fontSize: 12,
           color: "var(--text-subtle, #86868b)",
           paddingTop: 4,
           flexWrap: "wrap",
         }}
       >
-        <span>📅 Emisión: <strong style={{ color: "var(--text-main, #1d1d1f)" }}>{fmtD(c.fecha) || "—"}</strong></span>
+        <span><Icono nombre="calendario" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />Emisión: <strong style={{ color: "var(--text-main, #1d1d1f)" }}>{fmtD(c.fecha) || "—"}</strong></span>
         {c.proxMant && (
-          <span>⏳ Próx. mant.: <strong style={{ color: semaforo ? semaforo.color : "var(--text-main, #1d1d1f)" }}>{fmtD(c.proxMant)}</strong></span>
+          <span>Próx. mant.: <strong style={{ color: semaforo ? semaforo.color : "var(--text-main, #1d1d1f)" }}>{fmtD(c.proxMant)}</strong></span>
         )}
         {Array.isArray(c.elementos) && c.elementos.length > 0 && (
           <span>{c.elementos.length} comp.</span>
@@ -814,7 +744,7 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
                 border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
                 borderRadius: 10,
                 padding: "7px 11px",
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
               }}
@@ -831,10 +761,10 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
               style={{
                 background: "transparent",
                 color: "var(--text-muted, #6e6e73)",
-                border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+                border: "none",
                 borderRadius: 10,
                 padding: "7px 10px",
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
                 display: "inline-flex",
@@ -854,10 +784,10 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
               style={{
                 background: "transparent",
                 color: "var(--danger, #b3261e)",
-                border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+                border: "none",
                 borderRadius: 10,
                 padding: "7px 10px",
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
               }}
@@ -907,7 +837,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
         borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.06))",
         cursor: "pointer",
         transition: "background 0.12s ease",
-        fontSize: 12.5,
+        fontSize: 13,
       }}
     >
       {/* Documento */}
@@ -916,12 +846,12 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
           style={{
             fontVariantNumeric: "tabular-nums",
             fontWeight: 700,
-            fontSize: 11.5,
+            fontSize: 12,
             color: "var(--text-main, #1d1d1f)",
             background: "var(--surface-subtle, #f5f5f7)",
             padding: "2px 6px",
             borderRadius: 6,
-            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            border: "none",
             whiteSpace: "nowrap",
           }}
         >
@@ -961,7 +891,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
       <div style={{ minWidth: 0 }}>
         <span
           style={{
-            fontSize: 10.5,
+            fontSize: 11,
             fontWeight: 600,
             padding: "2px 7px",
             borderRadius: 6,
@@ -974,7 +904,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
             whiteSpace: "nowrap",
           }}
         >
-          <span>{esEscalera ? "🪜" : (recert ? "🔄" : "🛡️")}</span>
+          <Icono nombre="escudo" size={13} />
           <span>{esEscalera ? "Escaleras" : (c.tipo || "Certificación")}</span>
         </span>
       </div>
@@ -985,7 +915,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
           <div>
             <span
               style={{
-                fontSize: 10.5,
+                fontSize: 11,
                 fontWeight: 600,
                 color: semaforo.color,
                 background: semaforo.bg,
@@ -998,7 +928,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
                 whiteSpace: "nowrap",
               }}
             >
-              <span>{semaforo.icono}</span>
+              <Icono nombre={semaforo.icono} size={13} />
               <span>
                 {semaforo.estado === "vigente"
                   ? "Vigente"
@@ -1010,7 +940,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
             {c.proxMant && (
               <div
                 style={{
-                  fontSize: 10.5,
+                  fontSize: 11,
                   color: "var(--text-subtle, #86868b)",
                   marginTop: 2,
                   whiteSpace: "nowrap",
@@ -1031,7 +961,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
       <div
         style={{
           minWidth: 0,
-          fontSize: 11.5,
+          fontSize: 12,
           color: "var(--text-muted, #475467)",
           overflow: "hidden",
           textOverflow: "ellipsis",
@@ -1078,7 +1008,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
             title="Descargar PDF oficial"
             style={{
               background: "var(--surface, #ffffff)",
-              color: "#16a34a",
+              color: "var(--success)",
               border: "1px solid rgba(22, 163, 74, 0.3)",
               borderRadius: 8,
               padding: "4px 8px",

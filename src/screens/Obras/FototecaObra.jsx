@@ -3,6 +3,7 @@ import JSZip from "jszip";
 import { B, CD, SI } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
 import { normalizarBitacora } from "../../lib/bitacoraObra";
+import Icono from "../../components/ui/Icono";
 
 function limpiarNombreArchivo(texto = "") {
   return texto
@@ -200,7 +201,7 @@ export default function FototecaObra({ obra, ctx = {} }) {
             {cargandoDetalle ? "Cargando fotos..." : `${todasLasFotos.length} ${todasLasFotos.length === 1 ? "foto disponible" : "fotos disponibles"}`}
           </span>
           {cargandoDetalle && (
-            <span style={{ fontSize: 12, color: "#B54708" }}>⏳ Sincronizando fotos de la obra...</span>
+            <span style={{ fontSize: 12, color: "var(--warning-text)" }}>Sincronizando fotos de la obra...</span>
           )}
         </div>
 
@@ -243,7 +244,7 @@ export default function FototecaObra({ obra, ctx = {} }) {
             color: "var(--text-muted, #667085)",
           }}
         >
-          <div style={{ fontSize: 36, marginBottom: 8 }}>📷</div>
+          <div style={{ marginBottom: 8, display: "flex", justifyContent: "center", color: "var(--text-quaternary)" }}><Icono nombre="camara" size={36} strokeWidth={1.5} /></div>
           <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-main, #101828)", marginBottom: 4 }}>
             {busqueda ? "No hay fotos que coincidan con la búsqueda" : "Esta obra aún no tiene fotos registradas"}
           </div>
@@ -318,12 +319,12 @@ export default function FototecaObra({ obra, ctx = {} }) {
               {/* Pie de foto limpio con botón directo de descarga */}
               <div style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: 6, flex: 1, justifyContent: "space-between" }}>
                 <div>
-                  <div style={{ fontSize: 10.5, color: "var(--text-muted, #64748b)" }}>
-                    📅 {fmtD(foto.fecha)}
+                  <div style={{ fontSize: 11, color: "var(--text-muted, #64748b)" }}>
+                    <Icono nombre="calendario" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />{fmtD(foto.fecha)}
                   </div>
                   <div
                     style={{
-                      fontSize: 11.5,
+                      fontSize: 12,
                       fontWeight: 600,
                       color: "var(--text-main, #1e293b)",
                       marginTop: 2,
@@ -341,8 +342,8 @@ export default function FototecaObra({ obra, ctx = {} }) {
                   <button
                     onClick={(e) => descargarFoto(foto, e)}
                     style={{
-                      background: "#eff6ff",
-                      color: "#1d4ed8",
+                      background: "var(--info-bg)",
+                      color: "var(--info-text)",
                       border: "1px solid #bfdbfe",
                       borderRadius: 6,
                       padding: "3px 8px",
@@ -395,8 +396,8 @@ export default function FototecaObra({ obra, ctx = {} }) {
               paddingBottom: 10,
             }}
           >
-            <div style={{ fontSize: 13, color: "#cbd5e1" }}>
-              📅 {fmtD(fotoActiva.fecha)} {fotoActiva.comentario ? `· ${fotoActiva.comentario}` : ""}
+            <div style={{ fontSize: 13, color: "var(--text-quaternary)" }}>
+              <Icono nombre="calendario" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />{fmtD(fotoActiva.fecha)} {fotoActiva.comentario ? `· ${fotoActiva.comentario}` : ""}
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -522,7 +523,7 @@ export default function FototecaObra({ obra, ctx = {} }) {
           </div>
 
           {/* Pie de foto en visor */}
-          <div style={{ color: "#94a3b8", fontSize: 11.5, textAlign: "center" }}>
+          <div style={{ color: "var(--text-quaternary)", fontSize: 12, textAlign: "center" }}>
             Usa las flechas del teclado (◀ ▶) para cambiar de foto o Esc para salir.
           </div>
         </div>

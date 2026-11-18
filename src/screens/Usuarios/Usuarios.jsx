@@ -1,8 +1,9 @@
+import Icono from "../../components/ui/Icono";
 // Administración del equipo: crear cuentas y decidir a qué módulos entra cada
 // persona. Solo la ve quien tiene rol Administrador.
 import AvisoFlujo from "../../components/AvisoFlujo";
 import LBL from "../../components/ui/LBL";
-import { Button } from "../../components/ui";
+import { Button, Sheet, Input, aviso } from "../../components/ui";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
@@ -167,9 +168,19 @@ export default function Usuarios({ ctx }) {
     if (ok) { setAbierto(false); setEditId(null); }
   };
 
-  const nuevaClave = async (u) => {
-    const clave = window.prompt(`Nueva contraseña para ${u.email}\n\nMínimo 8 caracteres. Anótala: no se puede volver a ver.`);
-    if (!clave) return;
+  // La contraseña nueva se pedía con window.prompt: una ventana del navegador
+  // que mostraba lo escrito a la vista y no validaba el largo. Ahora es una
+  // hoja del sistema con un campo de contraseña.
+  const [claveDe, setClaveDe] = useState(null);
+  const [claveTexto, setClaveTexto] = useState("");
+  const [claveError, setClaveError] = useState("");
+  const nuevaClave = (u) => { setClaveDe(u); setClaveTexto(""); setClaveError(""); };
+  const cerrarClave = () => { setClaveDe(null); setClaveTexto(""); setClaveError(""); };
+  const confirmarClave = async () => {
+    const u = claveDe;
+    const clave = claveTexto;
+    if (clave.length < 8) { setClaveError("Debe tener al menos 8 caracteres."); return; }
+    cerrarClave();
     const avisar = await confirmar({
       titulo: `¿Enviarle la nueva contraseña por correo a ${u.email}?`,
       mensaje: "Aceptar: se la mandamos.\nCancelar: se la entregas tú.",
@@ -306,7 +317,7 @@ export default function Usuarios({ ctx }) {
                   width: 12,
                   height: 12,
                   borderRadius: "50%",
-                  background: "#10b981",
+                  background: "var(--success)",
                   boxShadow: "0 0 10px #10b981",
                   display: "inline-block",
                 }}
@@ -323,11 +334,11 @@ export default function Usuarios({ ctx }) {
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span
                 style={{
-                  background: "#10b981",
+                  background: "var(--success)",
                   color: "#ffffff",
                   padding: "5px 14px",
                   borderRadius: 999,
-                  fontSize: 12.5,
+                  fontSize: 13,
                   fontWeight: 700,
                   display: "inline-flex",
                   alignItems: "center",
@@ -343,7 +354,7 @@ export default function Usuarios({ ctx }) {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: appBloqueada ? "#ef4444" : "var(--text-main)" }}>
-                  Estado de la Plataforma (Apagado remoto): {appBloqueada ? "🔴 APAGADA / BLOQUEADA" : "🟢 ACTIVA"}
+                  Estado de la Plataforma (Apagado remoto): {appBloqueada ? "APAGADA / BLOQUEADA" : "ACTIVA"}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
                   {appBloqueada
@@ -357,7 +368,7 @@ export default function Usuarios({ ctx }) {
                   const nuevoEstado = !appBloqueada;
                   const mensajeConfirm = nuevoEstado
                     ? {
-                        titulo: "🚨 ¿Seguro que quieres APAGAR la aplicación?",
+                        titulo: "¿Apagar la aplicación?",
                         mensaje: "Nadie salvo tú podrá entrar y verán la pantalla en blanco.",
                         destructivo: true,
                       }
@@ -366,7 +377,7 @@ export default function Usuarios({ ctx }) {
                     setGuardando(true);
                     try {
                       await setAppBloqueada(nuevoEstado);
-                      alert(nuevoEstado ? "🛑 La aplicación ha sido APAGADA con éxito en la nube." : "🟢 La aplicación ha sido ACTIVADA con éxito en la nube.");
+                      aviso.exito(nuevoEstado ? "La aplicación quedó apagada." : "La aplicación quedó activa de nuevo.");
                     } catch (e) {
                       alert("Error al cambiar estado: " + (e.message || e));
                     } finally {
@@ -381,7 +392,7 @@ export default function Usuarios({ ctx }) {
                   cursor: guardando ? "wait" : "pointer",
                 }}
               >
-                {guardando ? "⏳ Guardando..." : appBloqueada ? "🟢 Reactivar Sistema" : "🛑 Apagar Sistema Ahora"}
+                {guardando ? "Guardando..." : appBloqueada ? "Reactivar Sistema" : "Apagar Sistema Ahora"}
               </button>
             </div>
           </div>
@@ -430,14 +441,14 @@ export default function Usuarios({ ctx }) {
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="persona@ingeanclajessas.com"
                 style={{ ...SI, ...(editId ? { background: "var(--surface-subtle)", color: "var(--text-muted)" } : {}) }} />
-              {editId && <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}>El correo no se puede cambiar.</div>}
+              {editId && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>El correo no se puede cambiar.</div>}
             </div>
             {!editId && (
               <div>
                 <LBL>Contraseña provisional</LBL>
                 <input value={form.clave} onChange={(e) => setForm({ ...form, clave: e.target.value })}
                   placeholder="Mínimo 8 caracteres" style={SI} />
-                <label style={{ display: "flex", alignItems: "flex-start", gap: 7, marginTop: 7, fontSize: 11.5, color: "var(--text-main)", cursor: "pointer" }}>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 7, marginTop: 7, fontSize: 12, color: "var(--text-main)", cursor: "pointer" }}>
                   <input type="checkbox" checked={form.enviarCorreo} style={{ marginTop: 2 }}
                     onChange={(e) => setForm({ ...form, enviarCorreo: e.target.checked })} />
                   <span>
@@ -472,7 +483,7 @@ export default function Usuarios({ ctx }) {
               >
                 {ROLES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
               </select>
-              <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
                 {ROLES.find((r) => r.id === form.rol)?.detalle}
               </div>
             </div>
@@ -491,7 +502,7 @@ export default function Usuarios({ ctx }) {
                   .filter((s) => s.items.length > 0)
                   .map((seccion) => (
                   <div key={seccion.title} style={{ border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px" }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 7 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 7 }}>
                       {seccion.title}
                     </div>
                     {seccion.items.filter((item) => !MODULOS_SOLO_ADMIN.includes(item.id)).map((item) => {
@@ -564,14 +575,14 @@ export default function Usuarios({ ctx }) {
                               padding: "2px 9px",
                               borderRadius: 999,
                               background: "rgba(34, 197, 94, 0.15)",
-                              color: "#16a34a",
+                              color: "var(--success)",
                               border: "1px solid rgba(34, 197, 94, 0.3)",
                               fontSize: 11,
                               fontWeight: 600,
                             }}
                             title={`Conectado en tiempo real desde ${dispositivo}`}
                           >
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#16a34a", boxShadow: "0 0 6px #16a34a" }} />
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--success)", boxShadow: "0 0 6px #16a34a" }} />
                             En línea · {dispositivo} {esMiUsuario ? "(esta sesión)" : ""}
                           </span>
                         ) : (
@@ -589,13 +600,13 @@ export default function Usuarios({ ctx }) {
                             }}
                             title={`Última hora de conexión registrada: ${textoUltimaConexion} (${dispositivo})`}
                           >
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#9ca3af" }} />
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--text-quaternary)" }} />
                             Desconectado · Última vez: {textoUltimaConexion}
                           </span>
                         )
                       )}
                     </div>
-                    <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 2 }}>{u.email}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{u.email}</div>
                     {esAdminOdueno && (
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                         <span>Última hora de conexión:</span>
@@ -604,11 +615,11 @@ export default function Usuarios({ ctx }) {
                         </strong>
                       </div>
                     )}
-                    <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 6 }}>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6 }}>
                       <strong style={{ color: "var(--text-main)" }}>{ROL_LABEL[u.role] || u.role}</strong>
-                      {!u.activo && <span style={{ color: "#ef4444" }}> · acceso suspendido</span>}
+                      {!u.activo && <span style={{ color: "var(--danger)" }}> · acceso suspendido</span>}
                     </div>
-                    <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.5 }}>
                       {modulos === null
                         ? "Entra a todos los módulos."
                         : modulos.length === 0
@@ -618,16 +629,16 @@ export default function Usuarios({ ctx }) {
                   </div>
 
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
-                    <button style={{ ...B("rgba(37, 99, 235, 0.15)", "#60a5fa"), border: "1px solid rgba(37, 99, 235, 0.3)", fontSize: 11.5, padding: "7px 13px" }}
+                    <button style={{ ...B("rgba(37, 99, 235, 0.15)", "#60a5fa"), border: "1px solid rgba(37, 99, 235, 0.3)", fontSize: 12, padding: "7px 13px" }}
                       onClick={() => abrirEdicion(u)} disabled={guardando}>Editar</button>
-                    <button style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border: "1px solid var(--border)", fontSize: 11.5, padding: "7px 13px" }}
+                    <button style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border: "1px solid var(--border)", fontSize: 12, padding: "7px 13px" }}
                       onClick={() => nuevaClave(u)} disabled={guardando}>Cambiar contraseña</button>
                     {esSuperAdminCristian && !soyYo(u) && (
                       <button
                         style={{
                           ...B("rgba(225, 29, 72, 0.12)", "#e11d48"),
                           border: "1px solid rgba(225, 29, 72, 0.3)",
-                          fontSize: 11.5,
+                          fontSize: 12,
                           padding: "7px 13px",
                           display: "inline-flex",
                           alignItems: "center",
@@ -637,20 +648,20 @@ export default function Usuarios({ ctx }) {
                         onClick={() => handleCerrarSesion(u)}
                         disabled={guardando}
                       >
-                        🚪 Cerrar sesión
+                        <Icono nombre="salir" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />Cerrar sesión
                       </button>
                     )}
                     {!soyYo(u) && (u.activo ? (
-                      <button style={{ ...B("rgba(245, 158, 11, 0.15)", "#fbbf24"), border: "1px solid rgba(245, 158, 11, 0.3)", fontSize: 11.5, padding: "7px 13px" }}
+                      <button style={{ ...B("rgba(245, 158, 11, 0.15)", "#fbbf24"), border: "1px solid rgba(245, 158, 11, 0.3)", fontSize: 12, padding: "7px 13px" }}
                         onClick={() => ejecutar(() => desactivarUsuario(u.user_id), `${u.email} quedó suspendido.`)}
                         disabled={guardando}>Suspender</button>
                     ) : (
-                      <button style={{ ...B("rgba(34, 197, 94, 0.15)", "var(--green-700, #4ade80)"), border: "1px solid rgba(34, 197, 94, 0.3)", fontSize: 11.5, padding: "7px 13px" }}
+                      <button style={{ ...B("rgba(34, 197, 94, 0.15)", "var(--green-700, #4ade80)"), border: "1px solid rgba(34, 197, 94, 0.3)", fontSize: 12, padding: "7px 13px" }}
                         onClick={() => ejecutar(() => reactivarUsuario(u.user_id), `${u.email} volvió a tener acceso.`)}
                         disabled={guardando}>Reactivar</button>
                     ))}
                     {!soyYo(u) && (
-                      <button style={{ ...B("rgba(239, 68, 68, 0.15)", "#ef4444"), border: "1px solid rgba(239, 68, 68, 0.3)", fontSize: 11.5, padding: "7px 13px" }}
+                      <button style={{ ...B("rgba(239, 68, 68, 0.15)", "#ef4444"), border: "1px solid rgba(239, 68, 68, 0.3)", fontSize: 12, padding: "7px 13px" }}
                         onClick={() => quitarAcceso(u)} disabled={guardando}>Quitar</button>
                     )}
                   </div>
@@ -664,6 +675,32 @@ export default function Usuarios({ ctx }) {
       {/* Herramienta de mantenimiento. Vive aqui porque esta pantalla ya es
           solo para administradores y reescribe datos de toda la empresa. */}
       <OptimizarFotos ctx={ctx} />
+
+      <Sheet
+        abierta={Boolean(claveDe)}
+        onCerrar={cerrarClave}
+        titulo="Nueva contraseña"
+        subtitulo={claveDe ? `Para ${claveDe.email}. Anótala: no se puede volver a ver.` : ""}
+        pie={
+          <>
+            <Button variante="secondary" onClick={cerrarClave}>Cancelar</Button>
+            <Button variante="primary" onClick={confirmarClave} disabled={!claveTexto}>Cambiar contraseña</Button>
+          </>
+        }
+      >
+        <form onSubmit={(e) => { e.preventDefault(); confirmarClave(); }}>
+          <Input
+            label="Contraseña"
+            type="password"
+            autoComplete="new-password"
+            value={claveTexto}
+            onChange={(e) => { setClaveTexto(e.target.value); if (claveError) setClaveError(""); }}
+            ayuda="Mínimo 8 caracteres."
+            error={claveError}
+            obligatorio
+          />
+        </form>
+      </Sheet>
     </div>
   );
 }

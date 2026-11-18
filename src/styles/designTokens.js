@@ -33,7 +33,9 @@ export const CIFRA = { fontVariantNumeric: "tabular-nums" };
 // -- Espaciado, radios, alturas ----------------------------------------------
 export const ESPACIO = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32, max: 40 };
 
-export const RADIO = { chip: 6, control: 10, tarjeta: 14, hoja: 20, pildora: 999 };
+// Las tarjetas iban a 14 en el token, 22 en .ui-card y 22 en CD: tres medidas
+// para la misma pieza. Queda una, 18, la de los bloques de apple.com.
+export const RADIO = { chip: 6, control: 10, tarjeta: 18, hoja: 20, pildora: 999 };
 
 // Altura de los controles. 44 es el minimo para usar con el dedo, y con
 // guantes en obra: por debajo de eso no se acierta.
@@ -203,11 +205,13 @@ ${ALIAS}
       color-scheme: dark;
 `;
 
-// -- Definicion en CSS -------------------------------------------------------
-// GlobalStyles inyecta esto. El bloque oscuro cuelga de .app-shell porque es
-// donde vive el interruptor de tema.
-export const tokensCss = `
-    :root {
+// -- Tema claro --------------------------------------------------------------
+// Los valores del modo claro, sueltos por la misma razon que VARS_OSCURO:
+// se cuelgan de :root y ademas de los documentos (.doc-shell, #pz), que son
+// papel y tienen que verse claros aunque el armazon este en oscuro. Sin esto,
+// un texto escrito con var(--text-primary) dentro de un documento se volvia
+// blanco sobre la hoja blanca al cambiar de tema.
+const VARS_CLARO = `
       /* Acento: el rojo del logotipo, y solo el */
       --accent: #E0342A;
       --accent-hover: #C42B22;
@@ -276,15 +280,29 @@ export const tokensCss = `
       --naranja-heredado-tint: #fff3e8;
       --naranja-heredado-text: #cc6600;
 ${ALIAS}
+      color-scheme: light;
+`;
+
+// -- Definicion en CSS -------------------------------------------------------
+// GlobalStyles inyecta esto. El bloque oscuro cuelga de .app-shell porque es
+// donde vive el interruptor de tema.
+export const tokensCss = `
+    :root {
+${VARS_CLARO}
       /* Area segura del telefono */
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-right: env(safe-area-inset-right, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
       --safe-left: env(safe-area-inset-left, 0px);
-      color-scheme: light;
     }
 
     .app-shell[data-theme="dark"] {
 ${VARS_OSCURO}
+    }
+
+    /* Los documentos son papel: claros siempre, con o sin modo oscuro. */
+    .app-shell[data-theme="dark"] .doc-shell,
+    .app-shell[data-theme="dark"] #pz {
+${VARS_CLARO}
     }
 `;

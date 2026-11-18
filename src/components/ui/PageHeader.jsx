@@ -12,13 +12,14 @@ export default function PageHeader({
   titulo,
   subtitulo,
   acciones,
-  linea = true,
+  // Sin linea por defecto: el titulo grande se separa con aire, como en Apple.
+  linea = false,
   className = "",
   ...props
 }) {
   return (
     <div
-      className={`ui-page-header ${linea ? "" : "ui-page-header--sin-linea"} ${className}`.trim()}
+      className={`ui-page-header ${linea ? "ui-page-header--con-linea" : "ui-page-header--sin-linea"} ${className}`.trim()}
       {...props}
     >
       <div style={{ minWidth: 0, flex: "1 1 240px" }}>

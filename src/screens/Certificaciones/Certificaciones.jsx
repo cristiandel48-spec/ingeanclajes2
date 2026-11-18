@@ -667,7 +667,7 @@ export default function Certificaciones({ctx}){
           accion={
             <button
               onClick={()=>irAPantalla("cotizacion")}
-              style={{...B("#1d1d1f"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center",borderRadius:10}}
+              style={{...B("#1d1d1f"),fontSize:12,padding:"8px 14px",flexShrink:0,alignSelf:"center",borderRadius:10}}
             >
               Ir a Cotizaciones
             </button>
@@ -716,7 +716,7 @@ export default function Certificaciones({ctx}){
           </div>
 
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
-            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");setActividadSeleccionadaKey("");const o=obras.find(x=>x.id===id);const f=fechaDeLaObra(id);const c=sistemasDesdeCotizacionDeObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:buscarDireccionCliente(o),nit:buscarNit(o),cantidad:c?.cantidadTotal || 1,...(f?{fecha:f}:{})}, "", "auto", "");}} style={SI}>{obrasMasNuevasPrimero(obras).map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:11,color:"var(--warning-text)",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");setActividadSeleccionadaKey("");const o=obras.find(x=>x.id===id);const f=fechaDeLaObra(id);const c=sistemasDesdeCotizacionDeObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:buscarDireccionCliente(o),nit:buscarNit(o),cantidad:c?.cantidadTotal || 1,...(f?{fecha:f}:{})}, "", "auto", "");}} style={SI}>{obrasMasNuevasPrimero(obras).map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             {/* Una obra con varias sedes lleva un informe por sede, y de cada
                 uno sale su propia certificacion. Aqui se elige cual. */}
             {informesDeObra(form.obraId).length > 1 && (
@@ -753,7 +753,7 @@ export default function Certificaciones({ctx}){
                     </option>
                   ))}
                 </select>
-                <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3,lineHeight:1.45}}>
+                <div style={{fontSize:11,color:"var(--text-subtle, #94a3b8)",marginTop:3,lineHeight:1.45}}>
                   Esta obra tiene {informesDeObra(form.obraId).length} informes. Elige uno y el
                   certificado toma su sede, su fecha y lo que se hizo ahí. Haz una certificación
                   por cada informe.
@@ -795,7 +795,7 @@ export default function Certificaciones({ctx}){
               <LBL>Fecha</LBL>
               <input type="date" value={form.fecha} onChange={e=>aplicarCambio({fecha:e.target.value})} style={SI}/>
               {fechaDeLaObra(form.obraId) && (
-                <div style={{fontSize:10.5,color: form.fecha===fechaDeLaObra(form.obraId) ? "var(--success-text)" : "var(--warning-text)", marginTop:3, lineHeight:1.4}}>
+                <div style={{fontSize:11,color: form.fecha===fechaDeLaObra(form.obraId) ? "var(--success-text)" : "var(--warning-text)", marginTop:3, lineHeight:1.4}}>
                   {form.fecha===fechaDeLaObra(form.obraId)
                     ? <>Es el fin del período del informe de {form.obraId}.</>
                     : <>El informe de {form.obraId} termina el {fmtD(fechaDeLaObra(form.obraId))}.</>}
@@ -814,7 +814,7 @@ export default function Certificaciones({ctx}){
               <LBL>Próximo mantenimiento</LBL>
               <input type="date" value={form.proxMant}
                 onChange={e=>setForm({...form,proxMant:e.target.value,proxMantAuto:false})} style={SI}/>
-              <div style={{fontSize:10.5,color:form.proxMant?"var(--text-tertiary)":"var(--warning-text)",marginTop:3,lineHeight:1.4}}>
+              <div style={{fontSize:11,color:form.proxMant?"var(--text-tertiary)":"var(--warning-text)",marginTop:3,lineHeight:1.4}}>
                 {form.proxMant
                   ? (form.proxMantAuto!==false
                       ? "Propuesto a un año de la fecha. Cámbialo si aplica otro plazo."

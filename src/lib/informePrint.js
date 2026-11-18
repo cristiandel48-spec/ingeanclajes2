@@ -340,19 +340,22 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
     </div>
   `;
 
-  const renderFotoCard = (ft, actIdx, fotoIdx) => `
+  const renderFotoCard = (ft, actIdx, fotoIdx) => {
+    const comentario = String(ft.comentario || "").trim();
+    return `
     <div class="foto-card" style="border:1px solid ${LINEA_SUAVE};border-radius:10px;overflow:hidden;background:#ffffff;display:flex;flex-direction:column;">
       <div style="height:155px;display:flex;align-items:center;justify-content:center;background:${FONDO};border-bottom:1px solid ${LINEA_SUAVE};overflow:hidden;position:relative;">
         <img src="${ft.img || ft.url}" alt="Evidencia ${fotoIdx + 1}" style="width:100%;height:100%;object-fit:contain;object-position:center;display:block;background:${FONDO};"/>
-        <span style="position:absolute;top:6px;left:6px;background:rgba(15,23,42,0.82);color:#ffffff;font-size:8.5px;font-variant-numeric:tabular-nums;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:0.03em;">
+        ${comentario ? `<span style="position:absolute;top:6px;left:6px;background:rgba(15,23,42,0.82);color:#ffffff;font-size:8.5px;font-variant-numeric:tabular-nums;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:0.03em;">
           EVIDENCIA ${actIdx + 1}.${fotoIdx + 1}
-        </span>
+        </span>` : ""}
       </div>
-      ${String(ft.comentario || "").trim() ? `<div style="padding:5.5px 9px;font-size:9px;color:${TINTA};line-height:1.38;background:#ffffff;">
+      ${comentario ? `<div style="padding:5.5px 9px;font-size:9px;color:${TINTA};line-height:1.38;background:#ffffff;">
         ${escapeHtml(ft.comentario)}
       </div>` : ""}
     </div>
   `;
+  };
 
   const renderFotosFila = (parFotos, actIdx, startFotoIdx) => `
     <div style="display:grid;grid-template-columns:${parFotos.length === 1 ? "calc(50% - 4.5px)" : "1fr 1fr"};justify-content:center;gap:9px;margin-bottom:9px;align-items:start;">

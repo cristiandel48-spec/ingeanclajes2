@@ -4,6 +4,7 @@ import CampoTexto from "../../components/ui/CampoTexto";
 import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
 import DictarCotizacion from "./DictarCotizacion";
 import ImportarCotizacion from "./ImportarCotizacion";
+import PlantillaCotizacion from "./PlantillaCotizacion";
 import DocumentoEnVivo from "./DocumentoEnVivo";
 import ListaCotizaciones from "./ListaCotizaciones";
 import EnviarCotizacion from "./EnviarCotizacion";
@@ -83,6 +84,7 @@ export default function Cotizacion({ctx}){
   const [editCot,setEditCot]=useState(null);
   const [dictando,setDictando]=useState(false);
   const [importando,setImportando]=useState(false);
+  const [usandoPlantilla,setUsandoPlantilla]=useState(false);
   const [cot,setCot]=useState("");
 
   // Si al guardar esta cotizacion choco con un numero que otra persona ya
@@ -396,6 +398,17 @@ export default function Cotizacion({ctx}){
 
     setDictando(false);
     scrollAppToTop();
+  };
+
+  // Plantilla inteligente: pone el tipo de sistema de la plantilla y entra por
+  // la misma puerta que el dictado, que solo rellena lo vacio y agrega items.
+  // El tipo se cambia solo si los items van a la propuesta que lo manda (la
+  // primera, o la unica): con varias propuestas el tipo es el de la primera.
+  const aplicarPlantilla = (borrador)=>{
+    const activaEsPrimera = propuestas.length===1 || propuestas[0]?.id===propuestaActivaId;
+    if (borrador.tipo && activaEsPrimera) elegirSistemaRapido(borrador.tipo);
+    aplicarDictado({ cliente:"", contacto:"", ciudad:"", obra:"", telefono:"", alcance:borrador.alcance, items:borrador.items });
+    setUsandoPlantilla(false);
   };
 
   // Borrador que deja otra pantalla: el plano que pasa sus mediciones a una
@@ -1266,7 +1279,7 @@ export default function Cotizacion({ctx}){
               <span style={{ minWidth: 0 }}>
                 <span style={{ display: "block", fontWeight: 600 }}>{nombreMostrar}</span>
                 {p.alcance && (
-                  <span style={{ display: "block", fontSize: 12.5, color: "var(--text-tertiary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <span style={{ display: "block", fontSize: 13, color: "var(--text-tertiary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {p.alcance}
                   </span>
                 )}
@@ -1295,7 +1308,7 @@ export default function Cotizacion({ctx}){
             }}
           >
             <div style={{display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap"}}>
-              <h1 style={{fontSize: 17, fontWeight: 800, margin: 0, color: "var(--text-h1, #101828)", lineHeight: 1.2}}>
+              <h1 style={{fontSize: 18, fontWeight: 700, margin: 0, color: "var(--text-h1, #101828)", lineHeight: 1.2}}>
                 Cotización {previewCot.numero || previewCot.id}
               </h1>
               <span style={{fontSize: 12, color: "var(--text-muted, #667085)"}}>
@@ -1314,9 +1327,9 @@ export default function Cotizacion({ctx}){
                     : "Maximizar horizontalmente (pantalla completa)"
                 }
                 style={{
-                  background: previewExpandido ? "var(--boton-principal, #1d1d1f)" : "var(--fill, #f2f4f7)",
-                  color: "var(--text-primary, #101828)",
-                  border: "1px solid var(--border, #eaecf0)",
+                  background: previewExpandido ? "#1d1d1f" : "var(--fill, #f2f4f7)",
+                  color: previewExpandido ? "#ffffff" : "var(--text-primary, #101828)",
+                  border: `1px solid ${previewExpandido ? "#1d1d1f" : "var(--border, #eaecf0)"}`,
                   borderRadius: 980,
                   padding: isMobile ? "5px 10px" : "5px 12px",
                   fontSize: 11.5,
@@ -1444,17 +1457,17 @@ export default function Cotizacion({ctx}){
         {/* Al aprobar, se explica que se creo y cual es el siguiente paso:
             quien cotiza no tiene por que saber que ahora existe una obra. */}
         {obraCreada && (
-          <div style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:14,padding:"16px 20px",marginBottom:18}}>
+          <div style={{background:"var(--success-bg)",border:"1px solid #BBF7D0",borderRadius:14,padding:"16px 20px",marginBottom:18}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
               <div style={{minWidth:0}}>
-                <div style={{fontSize:14,fontWeight:700,color:"#15803D"}}>
+                <div style={{fontSize:14,fontWeight:700,color:"var(--success-text)"}}>
                   Listo: se creó la obra {obraCreada.id}
                 </div>
-                <div style={{fontSize:12.5,color:"#166534",marginTop:6,lineHeight:1.55}}>
+                <div style={{fontSize:13,color:"var(--success-text)",marginTop:6,lineHeight:1.55}}>
                   {obraCreada.cliente}{obraCreada.proyecto?` · ${obraCreada.proyecto}`:""}. Los datos del cliente,
                   el valor y las mediciones ya pasaron a la obra: <strong>no hay que volver a escribirlos</strong>.
                 </div>
-                <div style={{fontSize:12.5,color:"#166534",marginTop:8,lineHeight:1.55}}>
+                <div style={{fontSize:13,color:"var(--success-text)",marginTop:8,lineHeight:1.55}}>
                   Desde la obra se generan el <strong>informe de actividades</strong> y la <strong>certificación</strong>,
                   también con los datos ya cargados. Entra a la obra y ahí te dice qué falta para cada uno.
                 </div>
@@ -1462,29 +1475,29 @@ export default function Cotizacion({ctx}){
                 {/* El correo sale solo, pero el resultado se ve: si no llego,
                     quien aprobo tiene que enterarse para avisar por otro medio. */}
                 {obraCreada.correo==="enviando" && (
-                  <div style={{fontSize:12,color:"#166534",marginTop:8,opacity:.75}}>
+                  <div style={{fontSize:12,color:"var(--success-text)",marginTop:8,opacity:.75}}>
                     Preparando la cotización en PDF y avisando al cliente…
                   </div>
                 )}
                 {obraCreada.correo==="enviado" && (
-                  <div style={{fontSize:12,color:"#166534",marginTop:8}}>
+                  <div style={{fontSize:12,color:"var(--success-text)",marginTop:8}}>
                     Se le confirmó por correo a <strong>{obraCreada.destino}</strong>, con la cotización adjunta.
                   </div>
                 )}
                 {obraCreada.correo==="enviado-sin-pdf" && (
-                  <div style={{fontSize:12,color:"#B54708",marginTop:8,lineHeight:1.5}}>
+                  <div style={{fontSize:12,color:"var(--warning-text)",marginTop:8,lineHeight:1.5}}>
                     Se le confirmó por correo a <strong>{obraCreada.destino}</strong>, pero
                     <strong> sin la cotización adjunta</strong>: el PDF no se pudo generar. Mándaselo
                     aparte desde «Ver / Imprimir».
                   </div>
                 )}
                 {obraCreada.correo==="sin-direccion" && (
-                  <div style={{fontSize:12,color:"#B54708",marginTop:8,lineHeight:1.5}}>
+                  <div style={{fontSize:12,color:"var(--warning-text)",marginTop:8,lineHeight:1.5}}>
                     No se avisó al cliente: esta cotización no tiene correo de contacto.
                   </div>
                 )}
                 {obraCreada.correo==="fallo" && (
-                  <div style={{fontSize:12,color:"#B42318",marginTop:8,lineHeight:1.5}}>
+                  <div style={{fontSize:12,color:"var(--danger-text)",marginTop:8,lineHeight:1.5}}>
                     <strong>El correo al cliente no salió</strong> ({obraCreada.motivo}). La obra sí quedó
                     creada; avísale tú.
                   </div>
@@ -1493,7 +1506,7 @@ export default function Cotizacion({ctx}){
               <button
                 onClick={()=>setObraCreada(null)}
                 title="Cerrar aviso"
-                style={{background:"transparent",border:"none",color:"#15803D",cursor:"pointer",fontSize:18,lineHeight:1,padding:4,flexShrink:0}}
+                style={{background:"transparent",border:"none",color:"var(--success-text)",cursor:"pointer",fontSize:18,lineHeight:1,padding:4,flexShrink:0}}
               >×</button>
             </div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:14}}>
@@ -1607,13 +1620,13 @@ export default function Cotizacion({ctx}){
 
           <span style={{ width: 1, height: 18, background: "var(--separator)", flexShrink: 0 }} />
 
-          <span style={{ fontSize: 12.5, color: "var(--text-tertiary)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+          <span style={{ fontSize: 13, color: "var(--text-tertiary)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
             {cot || "Borrador"}
           </span>
 
           <span
             style={{
-              fontSize: 13.5,
+              fontSize: 14,
               fontWeight: 600,
               letterSpacing: "-0.01em",
               color: "var(--text-primary)",
@@ -1627,7 +1640,7 @@ export default function Cotizacion({ctx}){
             {cl.nombre ? cl.nombre : "Nuevo cliente"}
           </span>
 
-          <span style={{ fontSize: 13.5, color: "var(--text-secondary)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>
+          <span style={{ fontSize: 14, color: "var(--text-secondary)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>
             {variasPropuestas ? `Desde ${fmt(totalCotizacionCalculado)}` : fmt(totalCotizacionCalculado)}
           </span>
         </div>
@@ -1638,6 +1651,17 @@ export default function Cotizacion({ctx}){
           flexWrap: isMobile ? "wrap" : "nowrap",
           width: isMobile ? "100%" : "auto",
         }}>
+          {!usandoPlantilla && (
+            <Button
+              variante="texto"
+              tam="sm"
+              onClick={() => { setUsandoPlantilla(true); if (!cabeEnDosColumnas) setVerDocumento(false); scrollAppToTop(); }}
+              title="Elegir el tipo de trabajo, dar las medidas y armar los ítems con el catálogo"
+            >
+              Plantilla
+            </Button>
+          )}
+
           {!dictando && (
             <Button variante="texto" tam="sm" onClick={() => { setDictando(true); if (!cabeEnDosColumnas) setVerDocumento(false); }} title="Armar la cotización hablando">
               Dictar
@@ -1717,6 +1741,15 @@ export default function Cotizacion({ctx}){
         alignItems:"start",
       }}>
       <div style={{minWidth:0, display: verDocumento && !cabeEnDosColumnas ? "none" : "block"}}>
+
+      {/* Armar con plantilla: tipo de trabajo + medidas -> items del catalogo. */}
+      {usandoPlantilla && (
+        <PlantillaCotizacion
+          onAplicar={aplicarPlantilla}
+          onCerrar={()=>setUsandoPlantilla(false)}
+          hayItems={Boolean(propuestaActiva?.items?.length)}
+        />
+      )}
 
       {/* Armar hablando: rellena el formulario a partir de un dictado. El
           botón que lo abre está arriba, con el resto de acciones. */}
@@ -1853,7 +1886,7 @@ export default function Cotizacion({ctx}){
                 <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #1e293b)" }}>
                   Tipo de sistema {propuestasSnapshot.length > 1 ? "(Propuesta A)" : "de la cotización"}
                 </span>
-                <span style={{ fontSize: 10.5, color: "#64748b" }}>
+                <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
                   Elígelo primero: actualiza automáticamente el título, la frase de apertura, las definiciones y las fichas del PDF
                 </span>
               </div>
@@ -1869,7 +1902,7 @@ export default function Cotizacion({ctx}){
                       style={{
                         padding: "6px 12px",
                         borderRadius: 999,
-                        fontSize: 11.5,
+                        fontSize: 12,
                         fontWeight: activo ? 700 : 500,
                         cursor: "pointer",
                         fontFamily: "inherit",
@@ -1894,8 +1927,8 @@ export default function Cotizacion({ctx}){
                     borderRadius: 8,
                     background: "#ecfdf3",
                     border: "1px solid #abefc6",
-                    color: "#067647",
-                    fontSize: 11.5,
+                    color: "var(--success-text)",
+                    fontSize: 12,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
@@ -1904,14 +1937,14 @@ export default function Cotizacion({ctx}){
                   }}
                 >
                   <span>
-                    ✨ Sistema cambiado automáticamente a <strong>{getTipoCotizacionLabel(avisoCambioSistema.a)}</strong> según el título que escribiste.
+                    Sistema cambiado automáticamente a <strong>{getTipoCotizacionLabel(avisoCambioSistema.a)}</strong> según el título que escribiste.
                   </span>
                   <button
                     type="button"
                     onClick={() => elegirSistemaRapido(avisoCambioSistema.de, { actualizarTitulo: false, rechazarTipoAuto: avisoCambioSistema.a })}
                     style={{
                       background: "#ffffff",
-                      color: "#067647",
+                      color: "var(--success-text)",
                       border: "1px solid #6ce9a6",
                       borderRadius: 999,
                       fontSize: 11,
@@ -1931,10 +1964,10 @@ export default function Cotizacion({ctx}){
                     marginTop: 8,
                     padding: "6px 10px",
                     borderRadius: 8,
-                    background: "#fffaeb",
+                    background: "var(--warning-bg)",
                     border: "1px solid #fedf89",
-                    color: "#b54708",
-                    fontSize: 11.5,
+                    color: "var(--warning-text)",
+                    fontSize: 12,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
@@ -1951,7 +1984,7 @@ export default function Cotizacion({ctx}){
                       onClick={() => sincronizarTipoConTitulo(textosDocumento.tituloPortada, { forzar: true })}
                       style={{
                         background: "#ffffff",
-                        color: "#b54708",
+                        color: "var(--warning-text)",
                         border: "1px solid rgba(181,71,8,0.35)",
                         borderRadius: 999,
                         fontSize: 11,
@@ -2044,7 +2077,7 @@ export default function Cotizacion({ctx}){
                     cursor: "pointer",
                     fontSize: 11,
                     fontWeight: 600,
-                    color: "#0369a1",
+                    color: "var(--info)",
                     fontFamily: "inherit",
                   }}
                 >
@@ -2053,7 +2086,7 @@ export default function Cotizacion({ctx}){
               </div>
             );
           })()}
-          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>
+          <div style={{fontSize:11,color:"var(--text-quaternary)",marginTop:4}}>
             El título grande de la primera hoja. Cámbialo según el trabajo (se formatea automáticamente con mayúsculas iniciales por palabra). Sale centrado en la portada; si es largo, la hoja lo reparte solo en varias líneas.
           </div>
         </div>
@@ -2084,7 +2117,7 @@ export default function Cotizacion({ctx}){
                     cursor: "pointer",
                     fontSize: 11,
                     fontWeight: 600,
-                    color: "#0369a1",
+                    color: "var(--info)",
                     fontFamily: "inherit",
                   }}
                 >
@@ -2093,7 +2126,7 @@ export default function Cotizacion({ctx}){
               </div>
             );
           })()}
-          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Cambia automáticamente según el tipo de sistema mientras no la edites a mano. Se imprime después de &quot;Cordial saludo, [cliente]&quot;; si la obra tiene nombre, se agrega al final. No hace falta el punto final.</div>
+          <div style={{fontSize:11,color:"var(--text-quaternary)",marginTop:4}}>Cambia automáticamente según el tipo de sistema mientras no la edites a mano. Se imprime después de &quot;Cordial saludo, [cliente]&quot;; si la obra tiene nombre, se agrega al final. No hace falta el punto final.</div>
         </div>
         {/* Se oculta de la visual «Presentación de la empresa»: el valor se
             conserva en textosDocumento.presentacion y se sigue imprimiendo en
@@ -2112,16 +2145,16 @@ export default function Cotizacion({ctx}){
       <div style={{...CD,marginBottom:14,border:"1px solid var(--border, #eaecf0)"}}>
         <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
           <div style={{...ST,marginBottom:0,borderBottom:"none",paddingBottom:0}}>03 · Propuestas</div>
-          <div style={{width:1,height:20,background:"#e2e8f0"}} />
+          <div style={{width:1,height:20,background:"var(--separator)"}} />
           <div style={{display:"flex",gap:8}}>
             <button
               onClick={agregarPropuesta}
               style={{
-                background: "#FFFAEB",
-                color: "#B54708",
+                background: "var(--warning-bg)",
+                color: "var(--warning-text)",
                 border: "1px solid rgba(181, 71, 8, 0.35)",
                 borderRadius: 8,
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 700,
                 padding: "6px 14px",
                 cursor: "pointer",
@@ -2140,7 +2173,7 @@ export default function Cotizacion({ctx}){
                 color: "var(--text-main, #101828)",
                 border: "1px solid var(--border, #eaecf0)",
                 borderRadius: 8,
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 600,
                 padding: "6px 14px",
                 cursor: "pointer",
@@ -2153,7 +2186,7 @@ export default function Cotizacion({ctx}){
             </button>
           </div>
         </div>
-        <div style={{fontSize:11,color:"#64748b",marginTop:8}}>
+        <div style={{fontSize:11,color:"var(--text-tertiary)",marginTop:8}}>
           Se imprimen en este mismo orden. Cada una lleva sus propios ítems, fotos, medición y condiciones.
         </div>
       </div>

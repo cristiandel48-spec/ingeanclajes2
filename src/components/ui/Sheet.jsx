@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import Button from "./Button";
 
 // Hoja / dialogo del sistema.
@@ -31,6 +31,14 @@ export default function Sheet({
 }) {
   const cajaRef = useRef(null);
   const focoPrevioRef = useRef(null);
+  // `onCerrar` suele llegar como funcion nueva en cada render. Si fuera
+  // dependencia del efecto, cada tecla que se escribe en un campo volvia a
+  // correrlo y le robaba el foco al campo (se mandaba al primero de la
+  // hoja): solo dejaba borrar una letra. Se guarda en una ref.
+  const onCerrarRef = useRef(onCerrar);
+  useLayoutEffect(() => {
+    onCerrarRef.current = onCerrar;
+  }, [onCerrar]);
 
   useEffect(() => {
     if (!abierta) return undefined;
@@ -46,7 +54,7 @@ export default function Sheet({
     const alPulsarTecla = (e) => {
       if (e.key === "Escape") {
         e.stopPropagation();
-        onCerrar?.();
+        onCerrarRef.current?.();
         return;
       }
       if (e.key !== "Tab") return;
@@ -69,7 +77,7 @@ export default function Sheet({
       document.body.style.overflow = overflowAntes;
       focoPrevioRef.current?.focus?.();
     };
-  }, [abierta, onCerrar]);
+  }, [abierta]);
 
   if (!abierta) return null;
 

@@ -26,7 +26,7 @@ const fechaCorta = (iso) =>
 // poder comprobarla sin tener que pulsar «Enviar», que manda de verdad.
 const direccionWhatsApp = urlWhatsAppOElegirContacto;
 
-export function PanelFirmaRecibido({ envios, onRecargar, onEnviar, celular = "", proyecto = "", tipo = "informe" }) {
+export function PanelFirmaRecibido({ envios, onRecargar, onEnviar, onDescargarConstancia, celular = "", proyecto = "", tipo = "informe" }) {
   const toast = useToast();
   const [ocupado, setOcupado] = useState("");
   const [verTodos, setVerTodos] = useState(false);
@@ -35,8 +35,12 @@ export function PanelFirmaRecibido({ envios, onRecargar, onEnviar, celular = "",
   const descargarConstancia = async (e) => {
     setOcupado(e.id);
     try {
-      const original = await descargarPdfEnviado(e.pdfRuta);
-      descargarBlob(await armarPdfConConstancia(original, e), nombreConConstancia(e));
+      if (typeof onDescargarConstancia === "function") {
+        await onDescargarConstancia(e);
+      } else {
+        const original = await descargarPdfEnviado(e.pdfRuta);
+        descargarBlob(await armarPdfConConstancia(original, e), nombreConConstancia(e));
+      }
     } catch (fallo) {
       toast.error(fallo.message || "No se pudo armar el PDF con la constancia.");
     } finally {

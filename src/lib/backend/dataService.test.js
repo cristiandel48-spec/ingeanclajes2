@@ -289,4 +289,30 @@ describe("fotos en Storage (migracion 071)", () => {
 
     expect(db.informes[0].actividades[0].fotos[0].img).toBe(foto);
   });
+
+  it("las firmas en empresa_config se suben a Supabase Storage y en la tabla queda solo la referencia", async () => {
+    const storage = storageFalso();
+    const { db, supabase } = baseFalsa({ empresa_config: [] }, { storage });
+    // Firma PNG liviana (~1.5 KB): menor al tope de 8 KB de fotos grandes,
+    // pero al ir en columnasStorage igualmente sube al bucket.
+    const firma = `data:image/png;base64,${"A".repeat(1600)}`;
+
+    await createDataService({ supabase, tenantId: TENANT }).upsertMany("empresa_config", [{
+      id: "firma_coord:yesli-paola-escobar-sanchez",
+      firmaImg: firma,
+      firmaNombre: "Yesli Paola Escobar Sanchez",
+      firmaCargo: "COORDINADORA SST",
+      controlDocumental: { tipo: "firma_coordinador", cedula: "1017200333" },
+    }]);
+
+    expect(storage.archivos.size).toBe(1);
+    expect(db.empresa_config[0].firma_img.startsWith(PREFIJO_FOTO + TENANT + "/")).toBe(true);
+    expect(db.empresa_config[0].firma_img.endsWith(".png")).toBe(true);
+
+    // Otra sesion fresca: list descarga la firma desde Storage y la devuelve lista.
+    const cargadas = await createDataService({ supabase, tenantId: TENANT }).list("empresa_config");
+    expect(cargadas).toHaveLength(1);
+    expect(cargadas[0].firmaImg).toBe(firma);
+    expect(cargadas[0].firmaNombre).toBe("Yesli Paola Escobar Sanchez");
+  });
 });

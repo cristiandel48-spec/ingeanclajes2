@@ -28,6 +28,8 @@ import { getFirmaImg } from "../../lib/firmaEmpresa";
 import { selloDe } from "../../lib/controlDocumental";
 import { asuntoAprobacion, mensajeAprobacion } from "../../lib/correoAprobacion";
 import { blobABase64, generarCotizacionPdf } from "../../lib/cotizacionPdf";
+import { openPrintTab } from "../../lib/abrirImpresion";
+import { buildCotizacionPrintHtml } from "../../lib/cotizacionPrint";
 import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
@@ -808,6 +810,13 @@ export default function Cotizacion({ctx}){
       editar: () => { setEditCot(previewCot.id); hydrate(previewCot); setTab("form"); setPreviewCot(null); },
       enviar: () => setEnviarCot(previewCot),
       descargar: () => descargarPdf(previewCot),
+      imprimir: () => {
+        const html = buildCotizacionPrintHtml(previewCot, { firmaImg, sello: selloCotizacion });
+        openPrintTab(
+          html,
+          `Cotización ${previewCot.numero || previewCot.id} ${previewCot.cliente || ""}`.trim()
+        );
+      },
     };
   });
   useAccionesPantalla(
@@ -819,6 +828,15 @@ export default function Cotizacion({ctx}){
           </Button>
           <Button variante="texto" tam="sm" onClick={() => accionesCotRef.current.editar()}>Editar</Button>
           <Button variante="texto" tam="sm" onClick={() => accionesCotRef.current.enviar()}>Enviar al cliente</Button>
+          <Button
+            variante="texto"
+            tam="sm"
+            icono="imprimir"
+            onClick={() => accionesCotRef.current.imprimir()}
+            title="Imprimir documento vectorial o guardar como PDF de alta definición"
+          >
+            Imprimir
+          </Button>
           <Button
             variante="oscuro"
             tam="sm"
@@ -1296,13 +1314,13 @@ export default function Cotizacion({ctx}){
                     : "Maximizar horizontalmente (pantalla completa)"
                 }
                 style={{
-                  background: previewExpandido ? "#1d1d1f" : "var(--surface-subtle, #f2f4f7)",
-                  color: previewExpandido ? "#ffffff" : "var(--text-main, #101828)",
-                  border: `1px solid ${previewExpandido ? "#1d1d1f" : "var(--border, #eaecf0)"}`,
-                  borderRadius: 6,
-                  padding: isMobile ? "5px 9px" : "5px 11px",
+                  background: previewExpandido ? "var(--boton-principal, #1d1d1f)" : "var(--fill, #f2f4f7)",
+                  color: "var(--text-primary, #101828)",
+                  border: "1px solid var(--border, #eaecf0)",
+                  borderRadius: 980,
+                  padding: isMobile ? "5px 10px" : "5px 12px",
                   fontSize: 11.5,
-                  fontWeight: 700,
+                  fontWeight: 600,
                   cursor: "pointer",
                   display: "inline-flex",
                   alignItems: "center",
@@ -1314,47 +1332,57 @@ export default function Cotizacion({ctx}){
                 <span>{previewExpandido ? "Minimizar" : "Maximizar"}</span>
               </button>
 
-              {/* Controles de vista: Ajustar a pantalla o 100% Lectura */}
-              <button
-                type="button"
-                onClick={() => setModoPreview("auto")}
-                title="Ajusta el documento al ancho completo de tu pantalla para ver la página entera"
-                style={{
-                  background: modoPreview === "auto" ? "var(--btn-guardar-bg, #cc0000)" : "var(--btn-cancelar-bg, #f1f5f9)",
-                  color: modoPreview === "auto" ? "#fff" : "var(--btn-cancelar-txt, #475569)",
-                  border: `1px solid ${modoPreview === "auto" ? "var(--btn-guardar-bg, #cc0000)" : "var(--border, #cbd5e1)"}`,
-                  borderRadius: 6,
-                  padding: isMobile ? "5px 9px" : "5px 11px",
-                  fontSize: 11.5,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                }}
+              {/* Controles de vista estilo Apple: Ajustar a pantalla o 100% Lectura */}
+              <div style={{ display: "inline-flex", background: "var(--fill, #f2f4f7)", borderRadius: 980, padding: 2, gap: 2 }}>
+                <button
+                  type="button"
+                  onClick={() => setModoPreview("auto")}
+                  title="Ajusta el documento al ancho de la pantalla"
+                  style={{
+                    background: modoPreview === "auto" ? "var(--surface, #ffffff)" : "transparent",
+                    color: modoPreview === "auto" ? "var(--text-primary, #101828)" : "var(--text-secondary, #667085)",
+                    border: "none",
+                    borderRadius: 980,
+                    padding: isMobile ? "4px 8px" : "4px 10px",
+                    fontSize: 11.5,
+                    fontWeight: modoPreview === "auto" ? 600 : 500,
+                    boxShadow: modoPreview === "auto" ? "var(--sombra-sm)" : "none",
+                    cursor: "pointer",
+                    transition: "all 0.16s ease",
+                  }}
+                >
+                  Ajustar ({Math.round(escalaPreview * 100)}%)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModoPreview("real")}
+                  title="Muestra el documento al 100% de tamaño"
+                  style={{
+                    background: modoPreview === "real" ? "var(--surface, #ffffff)" : "transparent",
+                    color: modoPreview === "real" ? "var(--text-primary, #101828)" : "var(--text-secondary, #667085)",
+                    border: "none",
+                    borderRadius: 980,
+                    padding: isMobile ? "4px 8px" : "4px 10px",
+                    fontSize: 11.5,
+                    fontWeight: modoPreview === "real" ? 600 : 500,
+                    boxShadow: modoPreview === "real" ? "var(--sombra-sm)" : "none",
+                    cursor: "pointer",
+                    transition: "all 0.16s ease",
+                  }}
+                >
+                  100%
+                </button>
+              </div>
+
+              <Button
+                variante="secondary"
+                tam="sm"
+                icono="imprimir"
+                onClick={() => accionesCotRef.current.imprimir()}
+                title="Imprimir documento vectorial o guardar como PDF nítido"
               >
-                <span>Ajustar ({Math.round(escalaPreview * 100)}%)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setModoPreview("real")}
-                title="Muestra el documento al 100% de tamaño para lectura cómoda deslizando con el dedo"
-                style={{
-                  background: modoPreview === "real" ? "var(--btn-guardar-bg, #cc0000)" : "var(--btn-cancelar-bg, #f1f5f9)",
-                  color: modoPreview === "real" ? "#fff" : "var(--btn-cancelar-txt, #475569)",
-                  border: `1px solid ${modoPreview === "real" ? "var(--btn-guardar-bg, #cc0000)" : "var(--border, #cbd5e1)"}`,
-                  borderRadius: 6,
-                  padding: isMobile ? "5px 9px" : "5px 11px",
-                  fontSize: 11.5,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                }}
-              >
-                <span>100% Lectura</span>
-              </button>
+                Imprimir
+              </Button>
 
               {/* Editar, Enviar al cliente y Descargar PDF van en la barra de
                   arriba, que no se mueve al bajar. WhatsApp queda aqui, solo
@@ -1513,6 +1541,14 @@ export default function Cotizacion({ctx}){
             },
             reactivar: (c)=>setCotizaciones((prev)=>prev.map((x)=>x.id===c.id?{...x,estado:x.enviadaEn?"Enviada":"Pendiente"}:x)),
             duplicar: (c)=>duplicarCotizacion(c.id),
+            imprimir: async (c) => {
+              const completa = (await asegurarDetalle("cotizaciones", c.id)) || c;
+              const html = buildCotizacionPrintHtml(completa, { firmaImg, sello: selloCotizacion });
+              openPrintTab(
+                html,
+                `Cotización ${completa.numero || completa.id} ${completa.cliente || ""}`.trim()
+              );
+            },
             pdf: async (c)=>descargarPdf((await asegurarDetalle("cotizaciones", c.id)) || c),
             enviar: async (c)=>setEnviarCot((await asegurarDetalle("cotizaciones", c.id)) || c),
             ...(puedeEliminar ? { eliminar: eliminarCotizacion } : {}),
@@ -1630,6 +1666,24 @@ export default function Cotizacion({ctx}){
             title="Muestra el documento completo tal como se imprimirá, mientras editas"
           >
             {isMobile ? "Documento" : verDocumento ? "Ocultar documento" : "Ver documento"}
+          </Button>
+
+          <Button
+            variante="texto"
+            tam="sm"
+            icono="imprimir"
+            onClick={() => {
+              const guardada = persistCotizacion({ volverALista: false });
+              const cotParaImprimir = guardada || cotizacionEnVivo;
+              const html = buildCotizacionPrintHtml(cotParaImprimir, { firmaImg, sello: selloCotizacion });
+              openPrintTab(
+                html,
+                `Cotización ${cotParaImprimir.numero || cotParaImprimir.id || "Borrador"} ${cotParaImprimir.cliente || ""}`.trim()
+              );
+            }}
+            title="Imprimir documento o guardar como PDF vectorial"
+          >
+            Imprimir
           </Button>
 
           <Button

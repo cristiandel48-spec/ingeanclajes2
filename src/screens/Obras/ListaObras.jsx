@@ -835,8 +835,8 @@ function FilaTablaObraApple({
         <div
           style={{
             width: "100%",
-            height: 4,
-            background: "var(--border, #e2e8f0)",
+            height: 5,
+            background: "var(--fill, #e5e5ea)",
             borderRadius: 999,
             overflow: "hidden",
             marginBottom: 2,
@@ -973,12 +973,12 @@ function TarjetaObraApple({
       onMouseLeave={() => setHover(false)}
       style={{
         background: "var(--surface, #ffffff)",
-        border: `1px solid ${hover ? "#0071e3" : "var(--border, rgba(0, 0, 0, 0.08))"}`,
+        border: `1px solid ${hover ? "var(--border-strong, rgba(0, 0, 0, 0.18))" : "var(--border, rgba(0, 0, 0, 0.08))"}`,
         borderRadius: 16,
         padding: "15px 16px",
         boxShadow: hover
-          ? "0 12px 28px -6px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04)"
-          : "0 2px 8px -2px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.02)",
+          ? "var(--sombra-md, 0 10px 24px -4px rgba(0, 0, 0, 0.08))"
+          : "var(--sombra-sm, 0 1px 3px rgba(0, 0, 0, 0.04))",
         transform: hover ? "translateY(-2px)" : "translateY(0)",
         transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
         cursor: "pointer",
@@ -1126,11 +1126,11 @@ function TarjetaObraApple({
         <div
           style={{
             width: "100%",
-            height: 4,
-            background: "var(--border, #e2e8f0)",
+            height: 5,
+            background: "var(--fill, #e5e5ea)",
             borderRadius: 999,
             overflow: "hidden",
-            marginBottom: 3,
+            marginBottom: 4,
           }}
         >
           <div
@@ -1145,9 +1145,9 @@ function TarjetaObraApple({
         </div>
 
         <div className="no-wrap" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, width: "100%", minWidth: 0 }}>
-          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-            <span style={{ color: "var(--text-muted, #475467)" }}>{totalEmpleados}</span>
-            <span style={{ color: fotosCount > 0 ? "#0071e3" : "#98a2b3" }}>{fotosCount}</span>
+          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            <span style={{ color: "var(--text-muted, #475467)" }}>{totalEmpleados} 👷</span>
+            <span style={{ color: fotosCount > 0 ? "#0071e3" : "#98a2b3" }}>{fotosCount} 📸</span>
           </div>
           <span style={{ fontWeight: 600, color: "#0071e3", flexShrink: 0 }}>Ver Obra &rarr;</span>
         </div>

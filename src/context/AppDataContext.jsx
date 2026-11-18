@@ -199,6 +199,7 @@ export function AppDataProvider({ children }) {
   const [catalogoItems, setCatalogoItems] = useState([]);
   // Rol y modulos de quien tiene la sesion abierta. null mientras carga.
   const [membresia, setMembresia] = useState(null);
+  const [nubeLista, setNubeLista] = useState(false);
   const [cotDraft, setCotDraft] = useState(null);
 
   // Numeros reasignados al guardar. Si un registro nuevo choco con un numero
@@ -415,7 +416,7 @@ export function AppDataProvider({ children }) {
   // suyos. El autoguardado sube lo que salga de aqui.
   const buildCloudPayload = () => {
     const empLista = Array.isArray(empresaConfig) ? empresaConfig : [];
-    const empRow = empLista.find((r) => r?.id === "empresa") || empLista[0] || { id: "empresa" };
+    const empRow = empLista.find((r) => r?.id === "empresa") || { id: "empresa" };
     const empActualizado = {
       ...empRow,
       id: empRow.id || "empresa",
@@ -423,7 +424,7 @@ export function AppDataProvider({ children }) {
     };
     const empresaConfigConConexiones = empLista.some((r) => r.id === empActualizado.id)
       ? empLista.map((r) => (r.id === empActualizado.id ? empActualizado : r))
-      : [empActualizado];
+      : [...empLista, empActualizado];
 
     return {
       obras: sinEjemplos(obras),
@@ -755,7 +756,10 @@ export function AppDataProvider({ children }) {
         // reales del cliente, sin ninguna senal de que algo fallo.
         if (!cancel) setLoadError(error);
       } finally {
-        if (!cancel) bootstrappedRef.current = true;
+        if (!cancel) {
+          bootstrappedRef.current = true;
+          setNubeLista(true);
+        }
       }
     };
 
@@ -1057,6 +1061,7 @@ export function AppDataProvider({ children }) {
     catalogoItems, setCatalogoItems,
     membresia,
     authUserEmail,
+    nubeLista,
     // Presencia y control remoto exclusivo (cristiandel48@gmail.com)
     usuariosEnLinea,
     ultimasConexiones,

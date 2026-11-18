@@ -991,14 +991,19 @@ export const entityConfig = {
   empresa_config: {
     table: "empresa_config",
     optional: true,
+    // Las firmas (gerencia y coordinadores SST) se suben al bucket `fotos` de
+    // Supabase Storage para no sobrecargar la base de datos ni el codigo,
+    // dejando en la fila solo la referencia `sb-foto:...` y descargandolas al arrancar.
+    columnasStorage: ["firma_img"],
     toRow: (item) => {
       const doc = typeof item.controlDocumental === "object" && item.controlDocumental !== null
         ? { ...item.controlDocumental }
         : {};
-      if (item.appBloqueada !== undefined) {
+      const esEmpresa = !item.id || item.id === "empresa";
+      if (esEmpresa && item.appBloqueada !== undefined) {
         doc.appBloqueada = Boolean(item.appBloqueada);
       }
-      if (item.ultimasConexiones && typeof item.ultimasConexiones === "object") {
+      if (esEmpresa && item.ultimasConexiones && typeof item.ultimasConexiones === "object") {
         doc.ultimasConexiones = item.ultimasConexiones;
       }
       return {

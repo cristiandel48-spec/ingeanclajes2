@@ -200,18 +200,31 @@ export function createDataService({ supabase, tenantId }) {
   // pesadas: ahi estan las fotos, y son las que no se traen al arrancar, asi
   // que descargarlas no retrasa la entrada.
   const fotos = supabase.storage ? crearAlmacenFotos({ supabase, tenantId }) : null;
-  const columnasConFotos = (cfg) => (fotos && cfg.columnasPesadas?.length ? cfg.columnasPesadas : null);
-  const cambiarFotos = async (cfg, fila, cambiar) => {
+  const columnasConFotos = (cfg) => {
+    if (!fotos) return null;
+    const cols = [...(cfg.columnasPesadas ?? []), ...(cfg.columnasStorage ?? [])];
+    return cols.length ? cols : null;
+  };
+  const cambiarFotos = async (cfg, fila, modo) => {
     const columnas = columnasConFotos(cfg);
     if (!columnas || !fila) return fila;
+    const storageSet = new Set(cfg.columnasStorage ?? []);
     const copia = { ...fila };
     for (const columna of columnas) {
-      if (columna in copia) copia[columna] = await cambiar(copia[columna]);
+      if (!(columna in copia)) continue;
+      if (modo === "guardar") {
+        // Las columnas declaradas en columnasStorage (p. ej. firmas en
+        // empresa_config) siempre suben al bucket, incluso si son livianas.
+        const opts = storageSet.has(columna) ? { minBytes: 256 } : undefined;
+        copia[columna] = await fotos.paraGuardar(copia[columna], opts);
+      } else {
+        copia[columna] = await fotos.paraMostrar(copia[columna]);
+      }
     }
     return copia;
   };
-  const subirFotos = (cfg, filas) => Promise.all(filas.map((fila) => cambiarFotos(cfg, fila, fotos?.paraGuardar)));
-  const mostrarFotos = (cfg, fila) => cambiarFotos(cfg, fila, fotos?.paraMostrar);
+  const subirFotos = (cfg, filas) => Promise.all(filas.map((fila) => cambiarFotos(cfg, fila, "guardar")));
+  const mostrarFotos = (cfg, fila) => cambiarFotos(cfg, fila, "mostrar");
 
   // Version de cada registro tal como se descargo: su updated_at, que la base
   // cambia en cada modificacion. Al guardar, un registro solo se actualiza si

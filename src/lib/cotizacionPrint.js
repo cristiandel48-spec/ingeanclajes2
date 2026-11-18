@@ -380,29 +380,44 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
 
   const footerHtml = `
     <div class="footer">
-      <div class="footer-col footer-col-left">
-        <div class="footer-label">Sede Principal</div>
-        <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
-        <div class="footer-sub">Envigado</div>
-      </div>
-      <div class="footer-col footer-col-center">
-        <div class="footer-label">Líneas de Atención</div>
-        <div class="footer-main">PBX (604) 448 26 86</div>
-        <div class="footer-sub">Cel. 315 288 9541</div>
-      </div>
-      <div class="footer-col footer-col-right">
-        <div class="footer-label">Contacto Digital</div>
-        <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
-        <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+      <div class="footer-accent"></div>
+      <div class="footer-grid">
+        <div class="footer-col footer-col-left">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>Sede Principal</span>
+          </div>
+          <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
+          <div class="footer-sub">Envigado</div>
+        </div>
+        <div class="footer-col footer-col-center">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>Líneas de Atención</span>
+          </div>
+          <div class="footer-main">PBX (604) 448 26 86</div>
+          <div class="footer-sub">Cel. 315 288 9541</div>
+        </div>
+        <div class="footer-col footer-col-right">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span>Contacto Digital</span>
+          </div>
+          <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
+          <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+        </div>
       </div>
     </div>
   `;
 
   const headerHtml = `
     <div class="header">
-      <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+      <div class="header-brand">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+      </div>
       <div class="header-right">
-        <div>Ingeanclajes S.A.S. &middot; Cotización ${escapeHtml(c?.numero || c?.id || "")}</div>
+        <span class="header-company">Ingeanclajes S.A.S.</span>
+        <span class="header-pill">Cotización ${escapeHtml(c?.numero || c?.id || "")}</span>
       </div>
     </div>
   `;

@@ -148,13 +148,27 @@ export function repaginarHojas(doc, { altoUtil }) {
     return resto;
   };
 
+  // Muestra u oculta el rotulo "(cont.)" embebido dentro de una fila de fotos
+  // segun quede al inicio de una hoja nueva (justo tras el encabezado) o
+  // pegada debajo de la fila anterior en la misma hoja. Asi nunca queda un
+  // titulo huerfano al final de una pagina ni un "(cont.)" en mitad de hoja.
+  const actualizarBannerCont = (bloque, cajaActual, esPrimeraHoja) => {
+    const banner = bloque.querySelector?.('[data-banner-cont="1"]');
+    if (!banner) return;
+    const soloEncabezado = !esPrimeraHoja && cajaActual.children.length === 1 && cajaActual.children[0]?.getAttribute?.("data-rol") === "encabezado";
+    const vacia = !esPrimeraHoja && cajaActual.children.length === 0;
+    banner.style.display = (soloEncabezado || vacia) ? "flex" : "none";
+  };
+
   const pendientes = [...bloques];
   while (pendientes.length) {
     const bloque = pendientes.shift();
+    const esPrimeraHoja = nuevas.length === 1;
+    actualizarBannerCont(bloque, caja, esPrimeraHoja);
     caja.appendChild(bloque);
     if (altoDe(caja) <= altoUtil) continue;
 
-    const eraElUnico = caja.children.length === 1;
+    const eraElUnico = caja.children.length === 1 || (!esPrimeraHoja && caja.children.length === 2 && caja.children[0]?.getAttribute?.("data-rol") === "encabezado");
     caja.removeChild(bloque);
 
     const resto = bloque.dataset?.divisible === "1" ? partir(bloque) : null;
@@ -170,10 +184,12 @@ export function repaginarHojas(doc, { altoUtil }) {
     // queda igual, porque moverlo no arreglaria nada y lo dejaria dando
     // saltos de hoja en hoja.
     if (eraElUnico) {
+      actualizarBannerCont(bloque, caja, esPrimeraHoja);
       caja.appendChild(bloque);
       continue;
     }
     caja = abrirHoja(false);
+    actualizarBannerCont(bloque, caja, false);
     caja.appendChild(bloque);
     movidos += 1;
   }

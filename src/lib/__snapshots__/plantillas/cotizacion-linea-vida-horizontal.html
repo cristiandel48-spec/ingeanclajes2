@@ -52,6 +52,45 @@
     thead { display: table-header-group; }
     tfoot { display: table-footer-group; }
 
+    @media print {
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        color: #1d1d1f !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        -webkit-font-smoothing: antialiased !important;
+        text-rendering: geometricPrecision !important;
+      }
+      .page {
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        background: #ffffff !important;
+        width: 100% !important;
+      }
+      #print-toolbar, #print-toolbar + div, .no-print, button, nav {
+        display: none !important;
+      }
+      img {
+        max-width: 100% !important;
+        height: auto !important;
+        image-rendering: -webkit-optimize-contrast !important;
+        image-rendering: crisp-edges !important;
+      }
+      tr, thead, .no-partir, .foto-card, .bloque-firma, figure {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      h1, h2, h3, h4, .doc-h2, .doc-h3 {
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+      }
+    }
+
     
     /* Solo en pantalla: se dibuja la hoja para poder revisar antes de enviar.
        Al imprimir desaparece y manda @page, que es quien sabe cuanto cabe. */
@@ -622,6 +661,131 @@
       .contact-box { background:var(--fondo-suave); border:none; border-radius:12px; }
       .ficha-llamada-guia { background:var(--linea); opacity:1; }
 
+      /* Encabezado y pie de pagina estilo Apple con identidad Ingeanclajes
+         (rojo corporativo #E0342A, carbon Apple #1D1D1F y superficie perla #F8FAFC). */
+      .header {
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        border-bottom:none;
+        padding-bottom:3mm;
+        margin:0 0 5.5mm;
+        background:linear-gradient(90deg, #E0342A 0%, #B91C1C 26%, #E2E8F0 26%, #E2E8F0 100%) bottom / 100% 2px no-repeat;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+      }
+      .header-brand { display:flex; align-items:center; }
+      .header .logo { height:28px; width:auto; object-fit:contain; display:block; }
+      .header-right {
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        text-transform:none;
+        letter-spacing:0;
+        text-align:right;
+      }
+      .header-company {
+        font-size:10.5px;
+        font-weight:600;
+        color:#6E6E73;
+        letter-spacing:0.01em;
+      }
+      .header-pill {
+        display:inline-flex;
+        align-items:center;
+        background:#FEF2F2;
+        color:#B91C1C;
+        border:1px solid #FECACA;
+        border-radius:999px;
+        padding:2.5px 10px;
+        font-size:10.5px;
+        font-weight:700;
+        font-variant-numeric:tabular-nums;
+        letter-spacing:0.01em;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+      }
+
+      .cover-header {
+        border-bottom:none;
+        padding-bottom:5.5mm;
+        background:linear-gradient(90deg, transparent 0%, #E2E8F0 18%, #E0342A 50%, #E2E8F0 82%, transparent 100%) bottom / 100% 2px no-repeat;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+      }
+
+      .footer {
+        display:block;
+        margin-top:auto;
+        padding:0;
+        border:1px solid #E2E8F0;
+        border-top:none;
+        border-radius:10px;
+        overflow:hidden;
+        background:#F8FAFC;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+      }
+      .footer-accent {
+        height:2.5px;
+        width:100%;
+        background:linear-gradient(90deg, #E0342A 0%, #B91C1C 55%, #1D1D1F 100%);
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+      }
+      .footer-grid {
+        display:grid;
+        grid-template-columns:1fr 1fr 1fr;
+        gap:0;
+        padding:2.6mm 3.8mm;
+        line-height:1.35;
+        align-items:center;
+      }
+      .footer-col-left { text-align:left; padding-right:3mm; }
+      .footer-col-center {
+        text-align:center;
+        border-left:1px solid #E2E8F0;
+        border-right:1px solid #E2E8F0;
+        padding:0 3mm;
+      }
+      .footer-col-right { text-align:right; padding-left:3mm; }
+      .footer-label {
+        display:inline-flex;
+        align-items:center;
+        gap:4px;
+        font-size:8.5px;
+        font-weight:700;
+        text-transform:uppercase;
+        letter-spacing:0.07em;
+        color:#C42B22;
+        margin-bottom:2px;
+      }
+      .footer-ico {
+        width:10px;
+        height:10px;
+        color:#E0342A;
+        flex-shrink:0;
+        display:block;
+      }
+      .footer-main {
+        font-weight:600;
+        color:#1D1D1F;
+        font-size:10.5px;
+        font-variant-numeric:tabular-nums;
+      }
+      .footer-sub {
+        font-weight:500;
+        color:#6E6E73;
+        font-size:9.8px;
+        margin-top:1px;
+        font-variant-numeric:tabular-nums;
+      }
+      .footer-brand {
+        color:#B91C1C;
+        font-weight:700;
+        letter-spacing:0.01em;
+      }
+
       @media print {
         body { background:#fff; }
         .page { margin:0; }
@@ -687,20 +851,32 @@
         </div>
         
     <div class="footer">
-      <div class="footer-col footer-col-left">
-        <div class="footer-label">Sede Principal</div>
-        <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
-        <div class="footer-sub">Envigado</div>
-      </div>
-      <div class="footer-col footer-col-center">
-        <div class="footer-label">Líneas de Atención</div>
-        <div class="footer-main">PBX (604) 448 26 86</div>
-        <div class="footer-sub">Cel. 315 288 9541</div>
-      </div>
-      <div class="footer-col footer-col-right">
-        <div class="footer-label">Contacto Digital</div>
-        <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
-        <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+      <div class="footer-accent"></div>
+      <div class="footer-grid">
+        <div class="footer-col footer-col-left">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>Sede Principal</span>
+          </div>
+          <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
+          <div class="footer-sub">Envigado</div>
+        </div>
+        <div class="footer-col footer-col-center">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>Líneas de Atención</span>
+          </div>
+          <div class="footer-main">PBX (604) 448 26 86</div>
+          <div class="footer-sub">Cel. 315 288 9541</div>
+        </div>
+        <div class="footer-col footer-col-right">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span>Contacto Digital</span>
+          </div>
+          <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
+          <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+        </div>
       </div>
     </div>
   
@@ -712,9 +888,12 @@
       <div class="page-inner">
         
     <div class="header">
-      <img src="/src/assets/logo-ingeanclajes.jpeg" class="logo" alt="Ingeanclajes" />
+      <div class="header-brand">
+        <img src="/src/assets/logo-ingeanclajes.jpeg" class="logo" alt="Ingeanclajes" />
+      </div>
       <div class="header-right">
-        <div>Ingeanclajes S.A.S. &middot; Cotización C-26001</div>
+        <span class="header-company">Ingeanclajes S.A.S.</span>
+        <span class="header-pill">Cotización C-26001</span>
       </div>
     </div>
   
@@ -753,20 +932,32 @@
         </div>
         
     <div class="footer">
-      <div class="footer-col footer-col-left">
-        <div class="footer-label">Sede Principal</div>
-        <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
-        <div class="footer-sub">Envigado</div>
-      </div>
-      <div class="footer-col footer-col-center">
-        <div class="footer-label">Líneas de Atención</div>
-        <div class="footer-main">PBX (604) 448 26 86</div>
-        <div class="footer-sub">Cel. 315 288 9541</div>
-      </div>
-      <div class="footer-col footer-col-right">
-        <div class="footer-label">Contacto Digital</div>
-        <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
-        <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+      <div class="footer-accent"></div>
+      <div class="footer-grid">
+        <div class="footer-col footer-col-left">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>Sede Principal</span>
+          </div>
+          <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
+          <div class="footer-sub">Envigado</div>
+        </div>
+        <div class="footer-col footer-col-center">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>Líneas de Atención</span>
+          </div>
+          <div class="footer-main">PBX (604) 448 26 86</div>
+          <div class="footer-sub">Cel. 315 288 9541</div>
+        </div>
+        <div class="footer-col footer-col-right">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span>Contacto Digital</span>
+          </div>
+          <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
+          <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+        </div>
       </div>
     </div>
   
@@ -783,9 +974,12 @@
       <div class="page-inner">
         
     <div class="header">
-      <img src="/src/assets/logo-ingeanclajes.jpeg" class="logo" alt="Ingeanclajes" />
+      <div class="header-brand">
+        <img src="/src/assets/logo-ingeanclajes.jpeg" class="logo" alt="Ingeanclajes" />
+      </div>
       <div class="header-right">
-        <div>Ingeanclajes S.A.S. &middot; Cotización C-26001</div>
+        <span class="header-company">Ingeanclajes S.A.S.</span>
+        <span class="header-pill">Cotización C-26001</span>
       </div>
     </div>
   
@@ -849,20 +1043,32 @@
         </div>
         
     <div class="footer">
-      <div class="footer-col footer-col-left">
-        <div class="footer-label">Sede Principal</div>
-        <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
-        <div class="footer-sub">Envigado</div>
-      </div>
-      <div class="footer-col footer-col-center">
-        <div class="footer-label">Líneas de Atención</div>
-        <div class="footer-main">PBX (604) 448 26 86</div>
-        <div class="footer-sub">Cel. 315 288 9541</div>
-      </div>
-      <div class="footer-col footer-col-right">
-        <div class="footer-label">Contacto Digital</div>
-        <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
-        <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+      <div class="footer-accent"></div>
+      <div class="footer-grid">
+        <div class="footer-col footer-col-left">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>Sede Principal</span>
+          </div>
+          <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
+          <div class="footer-sub">Envigado</div>
+        </div>
+        <div class="footer-col footer-col-center">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>Líneas de Atención</span>
+          </div>
+          <div class="footer-main">PBX (604) 448 26 86</div>
+          <div class="footer-sub">Cel. 315 288 9541</div>
+        </div>
+        <div class="footer-col footer-col-right">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span>Contacto Digital</span>
+          </div>
+          <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
+          <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+        </div>
       </div>
     </div>
   
@@ -874,9 +1080,12 @@
       <div class="page-inner">
         
     <div class="header">
-      <img src="/src/assets/logo-ingeanclajes.jpeg" class="logo" alt="Ingeanclajes" />
+      <div class="header-brand">
+        <img src="/src/assets/logo-ingeanclajes.jpeg" class="logo" alt="Ingeanclajes" />
+      </div>
       <div class="header-right">
-        <div>Ingeanclajes S.A.S. &middot; Cotización C-26001</div>
+        <span class="header-company">Ingeanclajes S.A.S.</span>
+        <span class="header-pill">Cotización C-26001</span>
       </div>
     </div>
   
@@ -920,20 +1129,32 @@
         </div>
         
     <div class="footer">
-      <div class="footer-col footer-col-left">
-        <div class="footer-label">Sede Principal</div>
-        <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
-        <div class="footer-sub">Envigado</div>
-      </div>
-      <div class="footer-col footer-col-center">
-        <div class="footer-label">Líneas de Atención</div>
-        <div class="footer-main">PBX (604) 448 26 86</div>
-        <div class="footer-sub">Cel. 315 288 9541</div>
-      </div>
-      <div class="footer-col footer-col-right">
-        <div class="footer-label">Contacto Digital</div>
-        <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
-        <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+      <div class="footer-accent"></div>
+      <div class="footer-grid">
+        <div class="footer-col footer-col-left">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>Sede Principal</span>
+          </div>
+          <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
+          <div class="footer-sub">Envigado</div>
+        </div>
+        <div class="footer-col footer-col-center">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>Líneas de Atención</span>
+          </div>
+          <div class="footer-main">PBX (604) 448 26 86</div>
+          <div class="footer-sub">Cel. 315 288 9541</div>
+        </div>
+        <div class="footer-col footer-col-right">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span>Contacto Digital</span>
+          </div>
+          <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
+          <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+        </div>
       </div>
     </div>
   
@@ -945,9 +1166,12 @@
         <div class="page-inner">
           
     <div class="header">
-      <img src="/src/assets/logo-ingeanclajes.jpeg" class="logo" alt="Ingeanclajes" />
+      <div class="header-brand">
+        <img src="/src/assets/logo-ingeanclajes.jpeg" class="logo" alt="Ingeanclajes" />
+      </div>
       <div class="header-right">
-        <div>Ingeanclajes S.A.S. &middot; Cotización C-26001</div>
+        <span class="header-company">Ingeanclajes S.A.S.</span>
+        <span class="header-pill">Cotización C-26001</span>
       </div>
     </div>
   
@@ -1019,20 +1243,32 @@
           </div>
           
     <div class="footer">
-      <div class="footer-col footer-col-left">
-        <div class="footer-label">Sede Principal</div>
-        <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
-        <div class="footer-sub">Envigado</div>
-      </div>
-      <div class="footer-col footer-col-center">
-        <div class="footer-label">Líneas de Atención</div>
-        <div class="footer-main">PBX (604) 448 26 86</div>
-        <div class="footer-sub">Cel. 315 288 9541</div>
-      </div>
-      <div class="footer-col footer-col-right">
-        <div class="footer-label">Contacto Digital</div>
-        <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
-        <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+      <div class="footer-accent"></div>
+      <div class="footer-grid">
+        <div class="footer-col footer-col-left">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>Sede Principal</span>
+          </div>
+          <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
+          <div class="footer-sub">Envigado</div>
+        </div>
+        <div class="footer-col footer-col-center">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>Líneas de Atención</span>
+          </div>
+          <div class="footer-main">PBX (604) 448 26 86</div>
+          <div class="footer-sub">Cel. 315 288 9541</div>
+        </div>
+        <div class="footer-col footer-col-right">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span>Contacto Digital</span>
+          </div>
+          <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
+          <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+        </div>
       </div>
     </div>
   
@@ -1046,9 +1282,12 @@
         <div class="page-inner">
           
     <div class="header">
-      <img src="/src/assets/logo-ingeanclajes.jpeg" class="logo" alt="Ingeanclajes" />
+      <div class="header-brand">
+        <img src="/src/assets/logo-ingeanclajes.jpeg" class="logo" alt="Ingeanclajes" />
+      </div>
       <div class="header-right">
-        <div>Ingeanclajes S.A.S. &middot; Cotización C-26001</div>
+        <span class="header-company">Ingeanclajes S.A.S.</span>
+        <span class="header-pill">Cotización C-26001</span>
       </div>
     </div>
   
@@ -1115,20 +1354,32 @@
           </div>
           
     <div class="footer">
-      <div class="footer-col footer-col-left">
-        <div class="footer-label">Sede Principal</div>
-        <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
-        <div class="footer-sub">Envigado</div>
-      </div>
-      <div class="footer-col footer-col-center">
-        <div class="footer-label">Líneas de Atención</div>
-        <div class="footer-main">PBX (604) 448 26 86</div>
-        <div class="footer-sub">Cel. 315 288 9541</div>
-      </div>
-      <div class="footer-col footer-col-right">
-        <div class="footer-label">Contacto Digital</div>
-        <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
-        <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+      <div class="footer-accent"></div>
+      <div class="footer-grid">
+        <div class="footer-col footer-col-left">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>Sede Principal</span>
+          </div>
+          <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
+          <div class="footer-sub">Envigado</div>
+        </div>
+        <div class="footer-col footer-col-center">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>Líneas de Atención</span>
+          </div>
+          <div class="footer-main">PBX (604) 448 26 86</div>
+          <div class="footer-sub">Cel. 315 288 9541</div>
+        </div>
+        <div class="footer-col footer-col-right">
+          <div class="footer-label">
+            <svg class="footer-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span>Contacto Digital</span>
+          </div>
+          <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
+          <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+        </div>
       </div>
     </div>
   

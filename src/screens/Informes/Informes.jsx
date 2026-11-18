@@ -33,7 +33,7 @@ import { obrasMasNuevasPrimero } from "../../lib/identificadores";
 import ModalCotizacionDetalle from "./ModalCotizacionDetalle";
 import { ModalEnviarFirma, PanelFirmaRecibido } from "../../components/FirmaRecibidoDocumento";
 import { useEnviosFirma, useEstadosFirmaActas, useEstadosFirmaInformes } from "../../hooks/useEnviosFirma";
-import { descargarPdfEnviado, listarEnviosFirma } from "../../lib/firmaRecibido";
+import { listarEnviosFirma } from "../../lib/firmaRecibido";
 import { armarPdfConConstancia, descargarBlob, nombreConConstancia } from "../../lib/constanciaRecibido";
 import ModalQuienRecibe from "../../components/ModalQuienRecibe";
 import { celularDeInforme, clienteDeObra, clientesConQuienRecibe, correoValido, destinatarioDeInforme, quienRecibeDeCliente } from "../../lib/quienRecibe";
@@ -46,6 +46,19 @@ import { Button, Callout, useToast } from "../../components/ui";
 import { confirmar } from "../../lib/dialogos";
 import { getQuoteActiveProposal, normalizeProposalItems } from "../../lib/cotizaciones";
 import { FUENTE } from "../../styles/designTokens";
+import PanelCoordinadorFirma from "./PanelCoordinadorFirma";
+import {
+  TIPOS_FIRMA_ACEPTADOS,
+  aplicarCoordinadorAPersonal,
+  claveCoordinador,
+  detectarCoordinadorEnSesion,
+  esCargoCoordinador,
+  extraerCoordinadorDeInforme,
+  guardarFirmaCoordinador,
+  leerFirmaCoordinadorComoDataUri,
+  personalVisibleEnInforme,
+  quitarFirmaCoordinador,
+} from "../../lib/firmasCoordinadores";
 
 // Editor del informe al estilo de apple.com: sin bordes ni sombras. Cada
 // seccion es un bloque blanco sobre el gris de la pagina, con su titulo
@@ -81,7 +94,7 @@ const fmtTurno12=(turno)=>{
 
 export default function Informes({ctx}){
   const isMobile = useIsMobile();
-  const {informes,setInformes,obras,setObras,clientes=[],setClientes,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla,asegurarDetalle,cotizaciones=[]}=ctx;
+  const {informes,setInformes,obras,setObras,clientes=[],setClientes,empleados,horarios,intencion,limpiarIntencion,empresaConfig,setEmpresaConfig,irAPantalla,asegurarDetalle,cotizaciones=[]}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
   const [sel,setSel]=useState(null);
   const [generandoPdf,setGenerandoPdf]=useState(false);
@@ -91,6 +104,37 @@ export default function Informes({ctx}){
   const [nuevo,setNuevo]=useState(()=>Boolean(ctx.intencion?.pantalla==="informes" && ctx.intencion?.obraId));
   const [editId,setEditId]=useState(null);
   const toast = useToast();
+  const firmaCoordPreviewRef = useRef(null);
+
+  const guardarPerfilFirmaCoordinador = (datosCoord) => {
+    if (!datosCoord?.nombre || typeof setEmpresaConfig !== "function") return;
+    setEmpresaConfig((prev) => guardarFirmaCoordinador(prev, datosCoord));
+    if (datosCoord.firmaImg) {
+      toast.exito(`Firma de ${datosCoord.nombre} guardada. Se firmará automáticamente en sus informes.`);
+    }
+  };
+
+  const quitarPerfilFirmaCoordinador = (datosCoord) => {
+    if (!datosCoord?.nombre || typeof setEmpresaConfig !== "function") return;
+    setEmpresaConfig((prev) => quitarFirmaCoordinador(prev, datosCoord));
+    toast.mostrar(`Se quitó la firma automática de ${datosCoord.nombre}.`);
+  };
+
+  const cambiarCoordinadorEnInformeAbierto = (nuevoCoord) => {
+    if (!sel) return;
+    const personalActualizado = aplicarCoordinadorAPersonal(sel.personal, nuevoCoord);
+    const actualizado = {
+      ...sel,
+      personal: personalActualizado,
+      coordinador: nuevoCoord || null,
+    };
+    setSel(actualizado);
+    setInformes((prev) => prev.map((item) => (
+      item.id === sel.id
+        ? { ...item, personal: personalActualizado, coordinador: nuevoCoord || null }
+        : item
+    )));
+  };
   const { envios: enviosFirma, recargar: recargarEnviosFirma } = useEnviosFirma(sel && !nuevo && !editId ? sel.id : null, {
     onFirmado: (e) => toast.exito(`${e.firmanteNombre || "El cliente"} firmó el recibido del informe ${e.numero || ""}.`),
   });
@@ -285,6 +329,21 @@ export default function Informes({ctx}){
     const cotBase = cotizaciones.find((c) => c.id === (data.cotizacionId || obraBase?.cotizacionId))
       || (obraBase?.cliente ? cotizaciones.find((c) => c.cliente && normalizarRazonSocial(c.cliente) === normalizarRazonSocial(obraBase.cliente)) : null);
 
+    const personalInicial = Array.isArray(data.personal) && data.personal.length
+      ? data.personal
+      : (obraBase ? buildPersonalDesdeObra(obraBase.id, periodoInicio, periodoFin, []) : []);
+    const coordinadorInicial = extraerCoordinadorDeInforme(
+      { ...data, personal: personalInicial },
+      { empleados, empresaConfig }
+    ) || (!data.id
+      ? detectarCoordinadorEnSesion({
+          membresia: ctx?.membresia,
+          authUserEmail: ctx?.authUserEmail,
+          empleados,
+          empresaConfig,
+        })
+      : null);
+
     return {
     obraId:data.obraId ?? obraBase?.id ?? firstObraId,
     cotizacionId:data.cotizacionId ?? cotBase?.id ?? obraBase?.cotizacionId ?? "",
@@ -296,9 +355,8 @@ export default function Informes({ctx}){
     fechaInforme:data.fechaInforme ?? today(),
     periodoInicio,
     periodoFin,
-    personal:Array.isArray(data.personal) && data.personal.length
-      ? data.personal
-      : (obraBase ? buildPersonalDesdeObra(obraBase.id, periodoInicio, periodoFin, []) : []),
+    personal: personalVisibleEnInforme(personalInicial),
+    coordinador: coordinadorInicial,
     recomendaciones:data.recomendaciones ?? DEFAULT_INFORME_RECOMENDACIONES,
     actividades:desdeObra.length ? desdeObra : normalizeInformeActividades(data),
     };
@@ -619,6 +677,8 @@ export default function Informes({ctx}){
       return [direccion, actual].filter(Boolean).join(", ");
     })();
 
+    const coordinadorEnriquecido = extraerCoordinadorDeInforme(inf, { empleados, empresaConfig });
+
     return {
       ...inf,
       cliente: clienteFinal,
@@ -626,6 +686,7 @@ export default function Informes({ctx}){
       localizacion: localizacionFinal,
       cotizacionNumero: cotNumFinal,
       cotizacionRef: inf.cotizacionRef || cotNumFinal,
+      coordinador: coordinadorEnriquecido,
       // A quien proponer el envio a firma de recibido: quien recibe en la
       // obra, si no el contacto de la cotizacion, si no el del directorio.
       ...(() => {
@@ -718,27 +779,21 @@ export default function Informes({ctx}){
     if (!infEntrada || generandoPdf) return;
     const inf = await informeCompleto(infEntrada);
     if (!inf) return;
-    // Firmado por el cliente: se entrega el PDF que recibio con la constancia
-    // al final, no uno nuevo sin firma.
-    const firmado = await envioFirmadoDe(inf);
-    if (firmado) {
-      setGenerandoPdf(true);
-      try {
-        const original = await descargarPdfEnviado(firmado.pdfRuta);
-        descargarBlob(await armarPdfConConstancia(original, firmado), nombreConConstancia(firmado));
-      } catch (fallo) {
-        console.error("Error al armar el PDF firmado:", fallo);
-        window.alert(fallo?.message || "No se pudo armar el PDF firmado.");
-      } finally {
-        setGenerandoPdf(false);
-      }
-      return;
-    }
     const listo = enriquecerInforme(inf);
     setGenerandoPdf(true);
     try {
-      const firmaCliente = await firmaDelActaDeLaObra(listo);
-      await descargarInformePdf(listo, { empresaConfig, firmaImg, firmaCliente });
+      const firmado = await envioFirmadoDe(inf);
+      const firmaCliente = firmado || (await firmaDelActaDeLaObra(listo));
+      if (firmado) {
+        // Genera el nuevo diseño nítido a 336 DPI PNG con las firmas del
+        // coordinador SST y del cliente ya estampadas, y adjunta la constancia
+        // oficial de recepción electrónica al final.
+        const { blob } = await generarInformePdf(listo, { empresaConfig, firmaImg, firmaCliente });
+        const bytesNuevo = new Uint8Array(await blob.arrayBuffer());
+        descargarBlob(await armarPdfConConstancia(bytesNuevo, firmado), nombreConConstancia(firmado));
+      } else {
+        await descargarInformePdf(listo, { empresaConfig, firmaImg, firmaCliente });
+      }
     } catch (fallo) {
       console.error("Error al generar PDF del informe:", fallo);
       window.alert(fallo?.message || "No se pudo generar el PDF.");
@@ -752,7 +807,7 @@ export default function Informes({ctx}){
     const inf = await informeCompleto(infEntrada);
     if (!inf) return;
     const listo = enriquecerInforme(inf);
-    const firmaCliente = await firmaDelActaDeLaObra(listo);
+    const firmaCliente = (await envioFirmadoDe(inf)) || (await firmaDelActaDeLaObra(listo));
     const html = buildInformePrintHtml(listo, { empresaConfig, firmaImg, firmaCliente });
     openPrintTab(
       html,
@@ -917,11 +972,13 @@ export default function Informes({ctx}){
 
     const clienteFinal = form.cliente || form.contratante || obraAct?.cliente || "";
     const cotNumFinal = form.cotizacionNumero || cotVinc?.numero || cotVinc?.id || obraAct?.cotizacionId || "";
+    const coordinadorFinal = form.coordinador?.nombre ? form.coordinador : null;
+    const personalFinal = aplicarCoordinadorAPersonal(form.personal, coordinadorFinal);
 
     const inf={
       ...(editId
-        ? {id:editId,...form,obraId:obraIdNormalizado,cliente:clienteFinal,contratante:clienteFinal,cotizacionNumero:cotNumFinal,cotizacionRef:cotNumFinal,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}
-        : {id:siguienteIdUnico(informes,"INF"),...form,obraId:obraIdNormalizado,cliente:clienteFinal,contratante:clienteFinal,cotizacionNumero:cotNumFinal,cotizacionRef:cotNumFinal,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}),
+        ? {id:editId,...form,personal:personalFinal,coordinador:coordinadorFinal,obraId:obraIdNormalizado,cliente:clienteFinal,contratante:clienteFinal,cotizacionNumero:cotNumFinal,cotizacionRef:cotNumFinal,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}
+        : {id:siguienteIdUnico(informes,"INF"),...form,personal:personalFinal,coordinador:coordinadorFinal,obraId:obraIdNormalizado,cliente:clienteFinal,contratante:clienteFinal,cotizacionNumero:cotNumFinal,cotizacionRef:cotNumFinal,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}),
       creadoPor: prev?.creadoPor || miUserId,
       creadoPorNombre: prev?.creadoPorNombre ? normalizarNombrePersona(prev.creadoPorNombre, "Camila Sepúlveda") : (resolverAutorGuardado(ctx?.membresia) || "Camila Sepúlveda"),
       creadoEn: prev?.creadoEn || new Date().toISOString(),
@@ -1047,6 +1104,8 @@ export default function Informes({ctx}){
                 const inicio=todasFechas[0]||p.periodoInicio;
                 const fin=todasFechas[todasFechas.length-1]||p.periodoFin;
                 const traidas=actividadesDesdeObra(nuevaObraId,inicio,fin);
+                const nuevoPersonal = buildPersonalDesdeObra(nuevaObraId,inicio,fin,[]);
+                const nuevoCoord = extraerCoordinadorDeInforme({ personal: nuevoPersonal }, { empleados, empresaConfig });
                 return {
                   ...p,
                   obraId:nuevaObraId,
@@ -1056,7 +1115,8 @@ export default function Informes({ctx}){
                   localizacion:normalizarMayusculas(o?.ciudad||""),
                   periodoInicio:inicio,
                   periodoFin:fin,
-                  personal:buildPersonalDesdeObra(nuevaObraId,inicio,fin,[]),
+                  personal:personalVisibleEnInforme(nuevoPersonal),
+                  coordinador:nuevoCoord || p.coordinador || null,
                   actividades:(!hayContenidoEscrito && traidas.length) ? traidas : p.actividades,
                 };
               });
@@ -1144,6 +1204,17 @@ export default function Informes({ctx}){
             );
           })()}
 
+          {/* Coordinador de obra / SST con firma automática JPEG */}
+          <PanelCoordinadorFirma
+            coordinador={form.coordinador}
+            empleados={empleados}
+            empresaConfig={empresaConfig}
+            isMobile={isMobile}
+            onCambiarCoordinador={(nuevoCoord) => setForm((p) => ({ ...p, coordinador: nuevoCoord }))}
+            onGuardarFirma={guardarPerfilFirmaCoordinador}
+            onQuitarFirma={quitarPerfilFirmaCoordinador}
+          />
+
           {/* Personal */}
           <section style={BLOQUE}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10,flexWrap:"wrap",gap:8}}>
@@ -1155,10 +1226,15 @@ export default function Informes({ctx}){
                 variante="texto"
                 tam="sm"
                 onClick={() => {
-                  setForm(p => ({
-                    ...p,
-                    personal: buildPersonalDesdeObra(p.obraId, p.periodoInicio, p.periodoFin, [])
-                  }));
+                  setForm((p) => {
+                    const nuevoPersonal = buildPersonalDesdeObra(p.obraId, p.periodoInicio, p.periodoFin, []);
+                    const coordDetectado = extraerCoordinadorDeInforme({ personal: nuevoPersonal }, { empleados, empresaConfig });
+                    return {
+                      ...p,
+                      personal: personalVisibleEnInforme(nuevoPersonal),
+                      coordinador: p.coordinador?.nombre ? p.coordinador : (coordDetectado || null),
+                    };
+                  });
                 }}
                 title="Recargar el personal asignado a esta obra"
               >
@@ -1475,7 +1551,10 @@ export default function Informes({ctx}){
         const cliente = normalizarMayusculas(sel?.cliente || (obras?.find(o => o.id === sel?.obraId)?.cliente) || "");
         const fechaInforme = fmtL(sel?.fechaInforme);
         const periodo = fmtPeriodo(sel?.periodoInicio, sel?.periodoFin);
-        const personal = Array.isArray(sel?.personal) ? sel.personal : [];
+        const personal = personalVisibleEnInforme(sel?.personal);
+        const coordinadorSel = extraerCoordinadorDeInforme(sel, { empleados, empresaConfig });
+        const claveCoordSel = coordinadorSel?.nombre ? claveCoordinador(coordinadorSel.nombre) : "";
+        const firmaClienteVista = enviosFirma.find((e) => e.estado === "firmado") || firmaActa;
         const numDoc = sel?.id ? String(sel.id).trim() : (sel?.numero ? String(sel.numero).trim() : "");
         const rawActividades = (sel.actividades || [{ titulo: sel.actividad, descripcion: sel.descripcion, observaciones: sel.observaciones, fotos: sel.fotos || [] }]).map(conActividadSeparada);
         const obraDeSel = obras?.find(o => o.id === sel?.obraId);
@@ -1530,6 +1609,36 @@ export default function Informes({ctx}){
               envios={enviosFirma}
               onRecargar={recargarEnviosFirma}
               onEnviar={abrirEnvioFirma}
+              onDescargarConstancia={() => descargarPdf(sel)}
+            />
+            <PanelCoordinadorFirma
+              compacto
+              coordinador={coordinadorSel}
+              empleados={empleados}
+              empresaConfig={empresaConfig}
+              isMobile={isMobile}
+              onCambiarCoordinador={cambiarCoordinadorEnInformeAbierto}
+              onGuardarFirma={guardarPerfilFirmaCoordinador}
+              onQuitarFirma={quitarPerfilFirmaCoordinador}
+            />
+            <input
+              ref={firmaCoordPreviewRef}
+              type="file"
+              accept={TIPOS_FIRMA_ACEPTADOS}
+              style={{ display: "none" }}
+              onChange={async (ev) => {
+                const archivo = ev.target.files?.[0];
+                ev.target.value = "";
+                if (!archivo || !coordinadorSel?.nombre) return;
+                try {
+                  const dataUri = await leerFirmaCoordinadorComoDataUri(archivo);
+                  const actualizado = { ...coordinadorSel, firmaImg: dataUri };
+                  guardarPerfilFirmaCoordinador(actualizado);
+                  cambiarCoordinadorEnInformeAbierto(actualizado);
+                } catch (err) {
+                  toast.mostrar(err?.message || "No se pudo subir la firma.");
+                }
+              }}
             />
             <div className="doc-paper-wrapper" style={{ maxWidth: 920, margin: "0 auto", width: "100%" }}>
               <div
@@ -1537,123 +1646,141 @@ export default function Informes({ctx}){
                 className="doc-shell"
                 style={{
                   background: "#ffffff",
-                  color: "#18181b",
+                  color: "#1d1d1f",
                   fontFamily: FUENTE,
                   fontSize: 12,
                   lineHeight: 1.5,
-                  border: "1px solid rgba(0,0,0,0.08)",
-                  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.06)",
-                  padding: isMobile ? "18px 14px 18px" : "36px 44px 28px",
-                  borderRadius: 12,
+                  border: "1px solid rgba(15,23,42,0.08)",
+                  boxShadow: "0 14px 36px rgba(15, 23, 42, 0.08)",
+                  padding: isMobile ? "18px 14px 18px" : "34px 42px 28px",
+                  borderRadius: 16,
                   maxWidth: 920,
                   width: "100%",
                   boxSizing: "border-box",
                   margin: "0 auto",
                 }}
               >
-                {/* El mismo encabezado del PDF (informePrint.js): tres casillas
-                    de igual alto -logo, titulo y datos de control-. El de antes
-                    repetia el nombre de la empresa junto al logo y partia el
-                    titulo en dos lineas, y los dos lados no cuadraban. */}
-                <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, border: "1px solid #d2d2d7", borderRadius: 8, marginBottom: 14, tableLayout: isMobile ? "auto" : "fixed" }}>
-                  <tbody>
-                    <tr>
-                      {!isMobile && (
-                        <td style={{ width: "27%", padding: "10px 14px", borderRight: "1px solid #d2d2d7", verticalAlign: "middle", textAlign: "center" }}>
-                          {LOGO_INGEANCLAJES ? (
-                            <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{ height: 48, maxWidth: "100%", objectFit: "contain", display: "inline-block" }} />
-                          ) : (
-                            <div style={{ fontSize: 18, fontWeight: 800, color: "#1d1d1f" }}>INGEANCLAJES</div>
-                          )}
-                        </td>
-                      )}
-                      <td style={{ padding: "10px 14px", verticalAlign: "middle", textAlign: "center" }}>
-                        {isMobile && LOGO_INGEANCLAJES && (
-                          <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{ height: 36, objectFit: "contain", display: "block", margin: "0 auto 6px" }} />
+                {/* Encabezado ejecutivo estilo macOS con acento cromático */}
+                <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden", marginBottom: 14, background: "#ffffff" }}>
+                  <div style={{ height: 4, background: "linear-gradient(90deg, #E0342A 0%, #F97316 48%, #0071E3 100%)" }} />
+                  <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: isMobile ? "auto" : "fixed" }}>
+                    <tbody>
+                      <tr>
+                        {!isMobile && (
+                          <td style={{ width: "27%", padding: "11px 14px", borderRight: "1px solid #e2e8f0", verticalAlign: "middle", textAlign: "center" }}>
+                            {LOGO_INGEANCLAJES ? (
+                              <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{ height: 48, maxWidth: "100%", objectFit: "contain", display: "inline-block" }} />
+                            ) : (
+                              <div style={{ fontSize: 18, fontWeight: 800, color: "#1d1d1f" }}><span style={{ color: "#E0342A" }}>INGE</span>ANCLAJES</div>
+                            )}
+                          </td>
                         )}
-                        <div style={{ fontSize: 9.5, fontWeight: 600, color: "#6e6e73", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                          Sistema de gestión de calidad
-                        </div>
-                        <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 800, color: "#1d1d1f", letterSpacing: "0.01em", textTransform: "uppercase", marginTop: 3, lineHeight: 1.25 }}>
-                          Informe técnico de actividades en obra
-                        </div>
-                        <div style={{ fontSize: 9.5, color: "#6e6e73", marginTop: 4 }}>
-                          Ingeanclajes S.A.S. · NIT 900.193.965-4 · PBX (604) 448 26 86
-                        </div>
-                      </td>
-                      <td style={{ width: isMobile ? "38%" : "24%", padding: 0, borderLeft: "1px solid #d2d2d7", verticalAlign: "middle" }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                          <tbody>
-                            {[["Código", docCodigo], ["Versión", docVersion], ["Consecutivo", numDoc || "INF-OFICIAL"]].map(([rotulo, valor], i) => (
-                              <tr key={rotulo}>
-                                <td style={{ padding: "5px 10px", fontSize: 9.5, fontWeight: 600, color: "#6e6e73", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: i < 2 ? "1px solid #e8e8ed" : "none" }}>{rotulo}</td>
-                                <td style={{ padding: "5px 10px", fontSize: 10.5, fontWeight: 700, color: "#1d1d1f", textAlign: "right", whiteSpace: "nowrap", borderBottom: i < 2 ? "1px solid #e8e8ed" : "none" }}>{valor}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                        <td style={{ padding: "11px 14px", verticalAlign: "middle", textAlign: "center" }}>
+                          {isMobile && LOGO_INGEANCLAJES && (
+                            <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{ height: 36, objectFit: "contain", display: "block", margin: "0 auto 6px" }} />
+                          )}
+                          <span style={{ display: "inline-block", background: "#FEF2F2", color: "#B91C1C", border: "1px solid #FECACA", fontSize: 8.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", padding: "2px 9px", borderRadius: 999 }}>
+                            Sistema de gestión de calidad
+                          </span>
+                          <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 800, color: "#1d1d1f", letterSpacing: "-0.01em", textTransform: "uppercase", marginTop: 5, lineHeight: 1.22 }}>
+                            Informe técnico de actividades en obra
+                          </div>
+                          <div style={{ fontSize: 9.5, color: "#6e6e73", marginTop: 4 }}>
+                            Ingeanclajes S.A.S. · NIT 900.193.965-4 · PBX (604) 448 26 86
+                          </div>
+                        </td>
+                        <td style={{ width: isMobile ? "38%" : "25%", padding: 0, borderLeft: "1px solid #e2e8f0", verticalAlign: "middle", background: "#f8fafc" }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                            <tbody>
+                              {[["Código", docCodigo, false], ["Versión", docVersion, false], ["Consecutivo", numDoc || "INF-OFICIAL", true]].map(([rotulo, valor, dest], i) => (
+                                <tr key={rotulo}>
+                                  <td style={{ padding: "5.5px 10px", fontSize: 9, fontWeight: 700, color: "#6e6e73", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: i < 2 ? "1px solid #e2e8f0" : "none" }}>{rotulo}</td>
+                                  <td style={{ padding: "5.5px 10px", fontSize: 10, fontWeight: 700, color: dest ? "#B91C1C" : "#1d1d1f", textAlign: "right", whiteSpace: "nowrap", borderBottom: i < 2 ? "1px solid #e2e8f0" : "none", fontVariantNumeric: "tabular-nums" }}>
+                                    {dest ? (
+                                      <span style={{ background: "#FEF2F2", color: "#B91C1C", border: "1px solid #FECACA", padding: "1.5px 7px", borderRadius: 999, fontSize: 9.5, fontWeight: 800 }}>{valor}</span>
+                                    ) : valor}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
 
                 {/* Ficha de Datos del Proyecto */}
-                <div style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, padding: "10px 14px", marginBottom: 14, background: "#fafafa" }}>
+                <div style={{ border: "1px solid #e2e8f0", borderLeft: "4px solid #0071E3", borderRadius: 10, padding: "10px 14px", marginBottom: 15, background: "#f8fafc" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10 }}>
                     <tbody>
                       <tr>
-                        <td style={{ width: "16%", fontWeight: 700, color: "#52525b", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px" }}>PROYECTO:</td>
-                        <td style={{ width: "40%", fontWeight: 700, color: "#18181b", fontSize: 11, padding: "4px 6px" }}>{proyecto || "OBRA GENERAL"}</td>
-                        <td style={{ width: "16%", fontWeight: 700, color: "#52525b", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderLeft: "1px solid rgba(0,0,0,0.06)" }}>PERÍODO:</td>
-                        <td style={{ width: "28%", color: "#18181b", fontWeight: 600, fontSize: 10.5, padding: "4px 6px" }}>{periodo}</td>
+                        <td style={{ width: "17%", fontWeight: 700, color: "#1D4ED8", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", fontSize: 9 }}>PROYECTO:</td>
+                        <td style={{ width: "39%", fontWeight: 700, color: "#1d1d1f", fontSize: 11, padding: "4px 6px" }}>{proyecto || "OBRA GENERAL"}</td>
+                        <td style={{ width: "17%", fontWeight: 700, color: "#1D4ED8", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderLeft: "1px solid #e2e8f0", fontSize: 9 }}>PERÍODO:</td>
+                        <td style={{ width: "27%", color: "#1d1d1f", fontWeight: 600, fontSize: 10, padding: "4px 6px" }}>{periodo}</td>
                       </tr>
                       <tr>
-                        <td style={{ fontWeight: 700, color: "#52525b", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>CONTRATANTE:</td>
-                        <td style={{ color: "#18181b", fontWeight: 600, fontSize: 10.5, padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>{cliente || "A QUIEN INTERESE"}</td>
-                        <td style={{ fontWeight: 700, color: "#52525b", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderLeft: "1px solid rgba(0,0,0,0.06)", borderTop: "1px solid rgba(0,0,0,0.04)" }}>FECHA EMISIÓN:</td>
-                        <td style={{ color: "#18181b", fontWeight: 600, fontSize: 10.5, padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>{fechaInforme}</td>
+                        <td style={{ fontWeight: 700, color: "#6e6e73", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderTop: "1px solid #e2e8f0", fontSize: 9 }}>CONTRATANTE:</td>
+                        <td style={{ color: "#1d1d1f", fontWeight: 600, fontSize: 10.5, padding: "4px 6px", borderTop: "1px solid #e2e8f0" }}>{cliente || "A QUIEN INTERESE"}</td>
+                        <td style={{ fontWeight: 700, color: "#6e6e73", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderLeft: "1px solid #e2e8f0", borderTop: "1px solid #e2e8f0", fontSize: 9 }}>FECHA EMISIÓN:</td>
+                        <td style={{ color: "#1d1d1f", fontWeight: 600, fontSize: 10, padding: "4px 6px", borderTop: "1px solid #e2e8f0" }}>{fechaInforme}</td>
                       </tr>
                       <tr>
-                        <td style={{ fontWeight: 700, color: "#52525b", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>LOCALIZACIÓN:</td>
-                        <td style={{ color: "#18181b", fontWeight: 600, fontSize: 10.5, padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>{localizacion || "MEDELLÍN"}</td>
-                        <td style={{ fontWeight: 700, color: "#52525b", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderLeft: "1px solid rgba(0,0,0,0.06)", borderTop: "1px solid rgba(0,0,0,0.04)" }}>NORMATIVA:</td>
-                        <td style={{ padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>
-                          <span style={{ background: "#ffffff", color: "#18181b", border: "1px solid #d4d4d8", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 4, display: "inline-block" }}>
-                            Res. 4272/2021 · OSHA 1926.502
+                        <td style={{ fontWeight: 700, color: "#6e6e73", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderTop: "1px solid #e2e8f0", fontSize: 9 }}>LOCALIZACIÓN:</td>
+                        <td style={{ color: "#1d1d1f", fontWeight: 600, fontSize: 10, padding: "4px 6px", borderTop: "1px solid #e2e8f0" }}>{localizacion || "MEDELLÍN"}</td>
+                        <td style={{ fontWeight: 700, color: "#6e6e73", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderLeft: "1px solid #e2e8f0", borderTop: "1px solid #e2e8f0", fontSize: 9 }}>NORMATIVA:</td>
+                        <td style={{ padding: "4px 6px", borderTop: "1px solid #e2e8f0" }}>
+                          <span style={{ background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE", fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 999, display: "inline-block" }}>
+                            Res. 4272/2021 · OSHA 1926
                           </span>
                         </td>
                       </tr>
-                      {(sel.cotizacionNumero || cotVincSel?.numero) && (
+                      {((sel.cotizacionNumero || cotVincSel?.numero) || coordinadorSel?.nombre) && (
                         <tr>
-                          <td style={{ fontWeight: 700, color: "#52525b", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>REF. COTIZACIÓN:</td>
-                          <td colSpan={3} style={{ color: "#18181b", fontWeight: 700, padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)", fontVariantNumeric: "tabular-nums" }}>
-                            <span style={{ background: "#ffffff", color: "#18181b", padding: "2px 7px", borderRadius: 4, border: "1px solid #d4d4d8", fontSize: 9.5 }}>
-                              {sel.cotizacionNumero || cotVincSel?.numero}
-                            </span>
-                            {cotVincSel && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCotizacionModalData(cotVincSel);
-                                  setModalCotizacion(true);
-                                }}
-                                style={{
-                                  marginLeft: 12,
-                                  background: "#ffffff",
-                                  color: "#18181b",
-                                  border: "1px solid #d4d4d8",
-                                  borderRadius: 6,
-                                  padding: "3px 10px",
-                                  fontSize: 10,
-                                  fontWeight: 600,
-                                  cursor: "pointer",
-                                  transition: "all 0.15s ease",
-                                }}
-                              >
-                                Ver detalle de cotización
-                              </button>
-                            )}
-                          </td>
+                          {(sel.cotizacionNumero || cotVincSel?.numero) && (
+                            <>
+                              <td style={{ fontWeight: 700, color: "#6e6e73", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderTop: "1px solid #e2e8f0", fontSize: 9 }}>REF. COTIZACIÓN:</td>
+                              <td colSpan={coordinadorSel?.nombre ? 1 : 3} style={{ color: "#1d1d1f", fontWeight: 700, padding: "4px 6px", borderTop: "1px solid #e2e8f0", fontVariantNumeric: "tabular-nums" }}>
+                                <span style={{ background: "#ffffff", color: "#1d1d1f", padding: "2px 8px", borderRadius: 999, border: "1px solid #cbd5e1", fontSize: 9.5 }}>
+                                  📄 {sel.cotizacionNumero || cotVincSel?.numero}
+                                </span>
+                                {cotVincSel && (
+                                  <button
+                                    type="button"
+                                    className="no-print"
+                                    onClick={() => {
+                                      setCotizacionModalData(cotVincSel);
+                                      setModalCotizacion(true);
+                                    }}
+                                    style={{
+                                      marginLeft: 8,
+                                      background: "#ffffff",
+                                      color: "#0071E3",
+                                      border: "1px solid #BFDBFE",
+                                      borderRadius: 999,
+                                      padding: "2px 9px",
+                                      fontSize: 9.5,
+                                      fontWeight: 600,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    Ver detalle
+                                  </button>
+                                )}
+                              </td>
+                            </>
+                          )}
+                          {coordinadorSel?.nombre && (
+                            <>
+                              <td style={{ fontWeight: 700, color: "#6e6e73", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderLeft: (sel.cotizacionNumero || cotVincSel?.numero) ? "1px solid #e2e8f0" : "none", borderTop: "1px solid #e2e8f0", fontSize: 9 }}>COORD. OBRA / SST:</td>
+                              <td colSpan={(sel.cotizacionNumero || cotVincSel?.numero) ? 1 : 3} style={{ padding: "4px 6px", borderTop: "1px solid #e2e8f0" }}>
+                                <span style={{ background: "#ECFDF5", color: "#047857", border: "1px solid #A7F3D0", fontSize: 9.5, fontWeight: 700, padding: "2px 9px", borderRadius: 999, display: "inline-block" }}>
+                                  {coordinadorSel.nombre}
+                                </span>
+                              </td>
+                            </>
+                          )}
                         </tr>
                       )}
                     </tbody>
@@ -1661,45 +1788,58 @@ export default function Informes({ctx}){
                 </div>
 
                 {/* Sección 1: Personal Técnico Asignado en Sitio */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: "#18181b" }}>1. Personal Técnico Asignado en Sitio</span>
-                  <span style={{ fontSize: 9, fontWeight: 500, color: "#71717a" }}>Personal certificado con trabajo seguro en alturas</span>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <span style={{ width: 20, height: 20, borderRadius: 6, background: "#0071E3", color: "#ffffff", fontSize: 9.5, fontWeight: 800, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>1</span>
+                    <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", color: "#1d1d1f" }}>Personal Técnico Asignado en Sitio</span>
+                  </div>
+                  <span style={{ fontSize: 9, fontWeight: 600, color: "#1D4ED8", background: "#EFF6FF", padding: "2px 8px", borderRadius: 999 }}>Personal certificado en alturas</span>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : `repeat(${Math.min(3, Math.max(1, personal.length))}, 1fr)`, gap: 8, marginBottom: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : `repeat(${Math.min(3, Math.max(1, personal.length))}, 1fr)`, gap: 8, marginBottom: 15 }}>
                   {personal.length > 0 ? (
-                    personal.map((p, idx) => (
-                      <div key={idx} style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 6, padding: "6px 9px", background: "#ffffff", display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 22, height: 22, background: "#f4f4f5", borderRadius: 4, color: "#18181b", fontVariantNumeric: "tabular-nums", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          {String(idx + 1).padStart(2, "0")}
+                    personal.map((p, idx) => {
+                      const esCoordCard = Boolean(
+                        p.esCoordinadorInforme ||
+                        esCargoCoordinador(p.cargo) ||
+                        (claveCoordSel && claveCoordinador(p.nombre) === claveCoordSel)
+                      );
+                      return (
+                        <div key={idx} style={{ border: `1px solid ${esCoordCard ? "#BFDBFE" : "#e2e8f0"}`, borderRadius: 9, padding: "6px 9px", background: esCoordCard ? "#EFF6FF" : "#ffffff", display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ width: 23, height: 23, background: esCoordCard ? "#0071E3" : "#f8fafc", border: `1px solid ${esCoordCard ? "#0071E3" : "#e2e8f0"}`, borderRadius: 6, color: esCoordCard ? "#ffffff" : "#1D4ED8", fontVariantNumeric: "tabular-nums", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            {String(idx + 1).padStart(2, "0")}
+                          </div>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontSize: 8, fontWeight: 700, color: esCoordCard ? "#1D4ED8" : "#6e6e73", textTransform: "uppercase", letterSpacing: "0.04em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{String(p.cargo || "TÉCNICO ESPECIALISTA").toUpperCase()}</div>
+                            <div style={{ fontSize: 10.5, fontWeight: 700, color: "#1d1d1f", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nombre || "Sin nombre registrado"}</div>
+                          </div>
                         </div>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ fontSize: 8, fontWeight: 700, color: "#71717a", textTransform: "uppercase", letterSpacing: "0.04em" }}>{String(p.cargo || "TÉCNICO ESPECIALISTA").toUpperCase()}</div>
-                          <div style={{ fontSize: 10.5, fontWeight: 600, color: "#18181b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nombre || "Sin nombre registrado"}</div>
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
-                    <div style={{ border: "1px dashed #d4d4d8", borderRadius: 6, padding: "8px 12px", color: "#71717a", fontSize: 9, fontStyle: "italic" }}>
+                    <div style={{ border: "1px dashed #cbd5e1", borderRadius: 8, padding: "8px 12px", color: "#6e6e73", fontSize: 9.5, fontStyle: "italic", background: "#f8fafc" }}>
                       Personal asignado conforme a programación de cuadrilla en obra.
                     </div>
                   )}
                 </div>
 
                 {/* Sección 2: Metodología y Registro de Actividades Ejecutadas */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, paddingTop: 2 }}>
-                  <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: "#18181b" }}>2. Metodología y Registro de Actividades Ejecutadas</span>
-                  <span style={{ fontSize: 9, fontWeight: 500, color: "#71717a" }}>Control y Trazabilidad Operativa</span>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7, paddingTop: 2 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <span style={{ width: 20, height: 20, borderRadius: 6, background: "#E0342A", color: "#ffffff", fontSize: 9.5, fontWeight: 800, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>2</span>
+                    <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", color: "#1d1d1f" }}>Metodología y Registro de Actividades Ejecutadas</span>
+                  </div>
+                  <span style={{ fontSize: 9, fontWeight: 600, color: "#6e6e73" }}>Control y Trazabilidad Operativa</span>
                 </div>
 
                 {rawActividades.map((act, ai) => (
-                  <div key={ai} style={{ marginBottom: 14 }}>
-                    <div style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, background: "#ffffff", padding: "10px 14px", marginBottom: 12, boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f4f4f5", paddingBottom: 5, marginBottom: 7 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ background: "#18181b", color: "#ffffff", fontVariantNumeric: "tabular-nums", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 4 }}>
+                  <div key={ai} style={{ marginBottom: 15 }}>
+                    <div style={{ border: "1px solid #e2e8f0", borderLeft: "4px solid #0071E3", borderRadius: 10, background: "#ffffff", padding: "11px 14px", marginBottom: 12, boxShadow: "0 1px 3px rgba(15,23,42,0.03)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #e2e8f0", paddingBottom: 6, marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <span style={{ background: "#0071E3", color: "#ffffff", fontVariantNumeric: "tabular-nums", fontSize: 9, fontWeight: 800, padding: "2px 8px", borderRadius: 6, letterSpacing: "0.02em" }}>
                             ACT-{String(ai + 1).padStart(2, "0")}
                           </span>
-                          <span style={{ fontSize: 11.5, fontWeight: 700, color: "#18181b" }}>
+                          <span style={{ fontSize: 11.5, fontWeight: 700, color: "#1d1d1f" }}>
                             {act.titulo || "Actividad Ejecutada"}
                           </span>
                           <button
@@ -1711,15 +1851,15 @@ export default function Informes({ctx}){
                               itemDesc: act.observaciones || act.titulo
                             })}
                             style={{
-                              background: "var(--fill, #f5f5f7)",
-                              border: "1px solid var(--border, rgba(0,0,0,0.08))",
-                              color: "var(--text-primary, #1d1d1f)",
-                              borderRadius: 6,
-                              padding: "2px 8px",
-                              fontSize: 10.5,
+                              background: "#EFF6FF",
+                              border: "1px solid #BFDBFE",
+                              color: "#1D4ED8",
+                              borderRadius: 999,
+                              padding: "2px 9px",
+                              fontSize: 10,
                               fontWeight: 600,
                               cursor: "pointer",
-                              marginLeft: 8,
+                              marginLeft: 4,
                             }}
                             title="Crear certificación para esta actividad específica"
                           >
@@ -1727,56 +1867,57 @@ export default function Informes({ctx}){
                           </button>
                         </div>
                         {act.fecha && (
-                          <span style={{ fontSize: 9, color: "#71717a", fontVariantNumeric: "tabular-nums" }}>
-                            Fecha: {fmtL(act.fecha)}
+                          <span style={{ fontSize: 9, color: "#6e6e73", background: "#f8fafc", border: "1px solid #e2e8f0", padding: "2px 8px", borderRadius: 999, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>
+                            {fmtL(act.fecha)}
                           </span>
                         )}
                       </div>
 
-                      <div style={{ fontSize: 10, color: "#27272a", lineHeight: 1.5, textAlign: "justify" }}>
+                      <div style={{ fontSize: 10.5, color: "#1d1d1f", lineHeight: 1.52, textAlign: "justify" }}>
                         {(act.actividadesRealizadas || "").trim() && (
                           <div style={{ marginBottom: 6 }}>
-                            <strong style={{ color: "#52525b", textTransform: "uppercase", fontSize: 8.5, letterSpacing: "0.05em", display: "block", marginBottom: 2 }}>Actividades Realizadas:</strong>
+                            <strong style={{ color: "#1D4ED8", textTransform: "uppercase", fontSize: 8.5, letterSpacing: "0.05em", display: "block", marginBottom: 2 }}>Actividades Realizadas:</strong>
                             <span style={{ whiteSpace: "pre-line" }}>{act.actividadesRealizadas}</span>
                           </div>
                         )}
                         {(act.descripcion || "").trim() && (
                           <div style={{ marginBottom: 4 }}>
-                            <strong style={{ color: "#52525b", textTransform: "uppercase", fontSize: 8.5, letterSpacing: "0.05em", display: "block", marginBottom: 2 }}>Descripción Técnica:</strong>
+                            <strong style={{ color: "#1D4ED8", textTransform: "uppercase", fontSize: 8.5, letterSpacing: "0.05em", display: "block", marginBottom: 2 }}>Descripción Técnica:</strong>
                             <span style={{ whiteSpace: "pre-line" }}>{act.descripcion}</span>
                           </div>
                         )}
                       </div>
 
-                      <div style={{ marginTop: 7, paddingTop: 5, borderTop: "1px solid #f4f4f5", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 9.5 }}>
-                        <span style={{ color: "#18181b" }}>
+                      <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", fontSize: 9.5 }}>
+                        <span style={{ color: "#1d1d1f", flex: 1, minWidth: 180 }}>
                           <strong style={{ color: "#059669" }}>✓ Conforme:</strong> {(act.observaciones || "").trim() ? act.observaciones : "Ejecutado a conformidad sin novedades reportadas."}
                         </span>
-                        <span style={{ color: "#52525b", fontWeight: 600 }}>Estado: Concluido 100%</span>
+                        <span style={{ background: "#ECFDF5", color: "#047857", border: "1px solid #A7F3D0", borderRadius: 999, padding: "2px 9px", fontSize: 8.5, fontWeight: 800, letterSpacing: "0.03em", whiteSpace: "nowrap" }}>
+                          ESTADO: CONCLUIDO · 100%
+                        </span>
                       </div>
                     </div>
 
                     {/* Fotos de la actividad */}
                     {(act.fotos || []).some(ft => ft.img || ft.url) && (
                       <div style={{ marginBottom: 16 }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                          <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: "#18181b" }}>
-                            3. Panel Técnico de Evidencias Fotográficas · {act.titulo || "Actividad"}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+                          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: "#1D4ED8", background: "#EFF6FF", border: "1px solid #BFDBFE", padding: "2px 9px", borderRadius: 999 }}>
+                            Evidencias fotográficas · ACT-{String(ai + 1).padStart(2, "0")}
                           </span>
-                          <span style={{ fontSize: 9, fontWeight: 500, color: "#71717a" }}>Registro Fotográfico en Sitio</span>
+                          <span style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
                           {(act.fotos || []).filter(ft => ft.img || ft.url).map((ft, fi) => (
-                            <div key={fi} style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, overflow: "hidden", background: "#ffffff", boxShadow: "0 1px 2px rgba(0,0,0,0.02)", display: "flex", flexDirection: "column" }}>
-                              <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "#fafafa", borderBottom: "1px solid #f4f4f5", overflow: "hidden", position: "relative" }}>
-                                <img src={ft.img || ft.url} alt={`Evidencia ${fi + 1}`} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#ffffff" }} onError={e => { e.target.style.display = "none"; }} />
-                                <span style={{ position: "absolute", top: 6, left: 6, background: "rgba(0,0,0,0.68)", color: "#ffffff", fontSize: 8.5, fontVariantNumeric: "tabular-nums", fontWeight: 700, padding: "2.5px 7px", borderRadius: 4 }}>
+                            <div key={fi} style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", background: "#ffffff", boxShadow: "0 1px 3px rgba(15,23,42,0.03)", display: "flex", flexDirection: "column" }}>
+                              <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", overflow: "hidden", position: "relative" }}>
+                                <img src={ft.img || ft.url} alt={`Evidencia ${fi + 1}`} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#f8fafc" }} onError={e => { e.target.style.display = "none"; }} />
+                                <span style={{ position: "absolute", top: 7, left: 7, background: "rgba(15,23,42,0.82)", color: "#ffffff", fontSize: 8.5, fontVariantNumeric: "tabular-nums", fontWeight: 700, padding: "2.5px 8px", borderRadius: 999, letterSpacing: "0.03em" }}>
                                   EVIDENCIA {ai + 1}.{fi + 1}
                                 </span>
                               </div>
-                              {/* Sin comentario, la foto sale sola (igual que en el impreso). */}
                               {String(ft.comentario || "").trim() && (
-                                <div style={{ padding: "7px 10px", fontSize: 9.5, color: "#27272a", lineHeight: 1.4, background: "#ffffff" }}>
+                                <div style={{ padding: "7px 10px", fontSize: 9.5, color: "#1d1d1f", lineHeight: 1.4, background: "#ffffff" }}>
                                   {ft.comentario}
                                 </div>
                               )}
@@ -1790,75 +1931,130 @@ export default function Informes({ctx}){
 
                 {/* Dictamen Técnico y Recomendaciones */}
                 {sel.recomendaciones && (
-                  <div style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, overflow: "hidden", marginBottom: 14, background: "#fafafa", padding: "10px 14px" }}>
-                    <div style={{ fontSize: 9.5, fontWeight: 800, color: "#52525b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
+                  <div style={{ border: "1px solid #FDE68A", borderLeft: "4px solid #D97706", borderRadius: 10, overflow: "hidden", marginBottom: 15, background: "#FFFBEB", padding: "10px 14px" }}>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: "#B45309", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
                       DICTAMEN TÉCNICO Y RECOMENDACIONES
                     </div>
-                    <div style={{ fontSize: 10, color: "#27272a", lineHeight: 1.5, textAlign: "justify", whiteSpace: "pre-line" }}>
+                    <div style={{ fontSize: 10, color: "#1d1d1f", lineHeight: 1.5, textAlign: "justify", whiteSpace: "pre-line" }}>
                       {sel.recomendaciones}
                     </div>
                   </div>
                 )}
 
-                {/* Bloque de Firmas sin código QR */}
-                <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 14, borderTop: "1px solid rgba(0,0,0,0.08)", paddingTop: 10 }}>
-                  <tbody>
-                    <tr>
-                      <td style={{ width: "50%", padding: "10px 14px 0 0", verticalAlign: "top", borderRight: "1px solid rgba(0,0,0,0.08)" }}>
-                        <div style={{ fontSize: 8.5, fontWeight: 700, color: "#71717a", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4 }}>
-                          Por el Contratista Especialista:
+                {/* Bloque de Firmas estilo Bento macOS (Contratista + Coordinador SST/Obra + Interventoría) */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isMobile
+                      ? "1fr"
+                      : coordinadorSel?.nombre
+                      ? "repeat(3, 1fr)"
+                      : "repeat(2, 1fr)",
+                    gap: 10,
+                    marginTop: 16,
+                  }}
+                >
+                  {/* 1. Contratista Especialista */}
+                  <div style={{ border: "1px solid #e2e8f0", borderTop: "3px solid #E0342A", borderRadius: 10, padding: "10px 12px", background: "#ffffff" }}>
+                    <div style={{ fontSize: 8.5, fontWeight: 800, color: "#B91C1C", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 5 }}>
+                      Por el Contratista Especialista
+                    </div>
+                    <div style={{ height: 48, display: "flex", alignItems: "flex-end", marginBottom: 5, borderBottom: "1px solid #e2e8f0", paddingBottom: 4 }}>
+                      {firmaImg ? (
+                        <img src={firmaImg} alt="Firma" style={{ maxHeight: 44, maxWidth: 175, objectFit: "contain" }} />
+                      ) : (
+                        <div style={{ fontFamily: "'Segoe Script', cursive, sans-serif", fontSize: 14.5, fontWeight: 700, color: "#1d1d1f" }}>
+                          Jhon Jaime Sepúlveda L.
                         </div>
-                        <div style={{ height: 48, display: "flex", alignItems: "flex-end", marginBottom: 4 }}>
-                          {firmaImg ? (
-                            <img src={firmaImg} alt="Firma" style={{ maxHeight: 44, maxWidth: 190, objectFit: "contain" }} />
-                          ) : (
-                            <div style={{ fontFamily: "'Segoe Script', cursive, sans-serif", fontSize: 15, fontWeight: 700, color: "#18181b" }}>
-                              Jhon Jaime Sepúlveda L.
-                            </div>
-                          )}
-                        </div>
-                        <div style={{ fontWeight: 800, fontSize: 11, color: "#18181b", letterSpacing: "0.01em" }}>
-                          ING. JHON JAIME SEPÚLVEDA LONDOÑO
-                        </div>
-                        <div style={{ fontSize: 9, color: "#52525b", marginTop: 1 }}>Gerente General · MP. 05256-409949</div>
-                        <div style={{ fontSize: 8.5, color: "#71717a", marginTop: 1 }}>Ingeanclajes S.A.S · NIT. 900.193.965-4</div>
-                      </td>
-                      <td style={{ width: "50%", padding: "10px 0 0 14px", verticalAlign: "top" }}>
-                        <div style={{ fontSize: 8.5, fontWeight: 700, color: "#71717a", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4 }}>
-                          Recibido por la Interventoría / Constructora:
-                        </div>
-                        {/* Lo mismo que sale impreso (lib/informePrint.js):
-                            con el acta de la obra firmada, aqui va la firma
-                            del cliente en vez de las rayas. */}
-                        <div style={{ height: 48, display: "flex", alignItems: "flex-end", marginBottom: 4, fontSize: 9, color: "#a1a1aa", fontStyle: "italic" }}>
-                          {firmaActa?.firmaImagen
-                            ? <img src={firmaActa.firmaImagen} alt="Firma del cliente" style={{ maxHeight: 46, maxWidth: 190, objectFit: "contain" }} />
-                            : "(Firma y sello de recepción a satisfacción)"}
-                        </div>
-                        <div style={{ fontWeight: 700, fontSize: 10, color: "#18181b" }}>
-                          NOMBRE: {firmaActa?.firmanteNombre || "____________________________________"}
-                        </div>
-                        <div style={{ fontSize: 9, color: "#52525b", marginTop: 3 }}>
-                          C.C.: {firmaActa?.firmanteDocumento || "______________________________"}
-                        </div>
-                        <div style={{ fontSize: 9, color: "#52525b", marginTop: 3 }}>
-                          CARGO: {firmaActa?.firmanteCargo || "____________________________"}
-                        </div>
-                        <div style={{ fontSize: 9, color: "#52525b", marginTop: 2 }}>EMPRESA: {cliente || "Constructora / Contratante"}</div>
-                        {firmaActa?.firmadoEn && (
-                          <div style={{ fontSize: 8, color: "#71717a", marginTop: 3 }}>
-                            Firmado electrónicamente · {fmtL(firmaActa.firmadoEn)}
-                          </div>
+                      )}
+                    </div>
+                    <div style={{ fontWeight: 800, fontSize: 10, color: "#1d1d1f", letterSpacing: "0.01em", lineHeight: 1.25 }}>
+                      ING. JHON JAIME SEPÚLVEDA LONDOÑO
+                    </div>
+                    <div style={{ fontSize: 8.5, color: "#6e6e73", marginTop: 2 }}>Gerente General · MP. 05256-409949</div>
+                    <div style={{ fontSize: 8.5, color: "#6e6e73", marginTop: 1 }}>Ingeanclajes S.A.S. · NIT. 900.193.965-4</div>
+                  </div>
+
+                  {/* 2. Coordinador de Obra / SST (Encargado del personal con auto-firma JPEG) */}
+                  {coordinadorSel?.nombre && (
+                    <div style={{ border: "1px solid #BFDBFE", borderTop: "3px solid #0071E3", borderRadius: 10, padding: "10px 12px", background: "#EFF6FF" }}>
+                      <div style={{ fontSize: 8.5, fontWeight: 800, color: "#1D4ED8", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 5 }}>
+                        Coordinador de Obra / SST
+                      </div>
+                      <div style={{ height: 48, display: "flex", alignItems: "flex-end", marginBottom: 5, borderBottom: "1px solid #BFDBFE", paddingBottom: 4, fontSize: 9, color: "#6e6e73", fontStyle: "italic" }}>
+                        {coordinadorSel.firmaImg ? (
+                          <img src={coordinadorSel.firmaImg} alt="Firma del coordinador" style={{ maxHeight: 44, maxWidth: 175, objectFit: "contain", fontStyle: "normal" }} />
+                        ) : (
+                          <button
+                            type="button"
+                            className="no-print"
+                            onClick={() => firmaCoordPreviewRef.current?.click()}
+                            style={{
+                              background: "#0071E3",
+                              color: "#ffffff",
+                              border: "none",
+                              borderRadius: 999,
+                              padding: "4px 10px",
+                              fontSize: 10,
+                              fontWeight: 600,
+                              fontStyle: "normal",
+                              cursor: "pointer",
+                              fontFamily: "inherit",
+                            }}
+                          >
+                            + Subir firma PDF / JPEG
+                          </button>
                         )}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                      </div>
+                      <div style={{ fontWeight: 800, fontSize: 10, color: "#1d1d1f", lineHeight: 1.25, textTransform: "uppercase" }}>
+                        {coordinadorSel.nombre}
+                      </div>
+                      {coordinadorSel.cedula && (
+                        <div style={{ fontSize: 8.5, color: "#1d1d1f", marginTop: 2, fontVariantNumeric: "tabular-nums" }}>
+                          C.C.: {coordinadorSel.cedula}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 8.5, color: "#1D4ED8", fontWeight: 600, marginTop: 1.5 }}>
+                        {coordinadorSel.cargo || "COORDINADOR SST"}
+                      </div>
+                      <div style={{ fontSize: 8, color: "#6e6e73", marginTop: 1 }}>
+                        Encargado del personal · Ingeanclajes S.A.S.
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. Recibido por Interventoría / Constructora */}
+                  <div style={{ border: `1px solid ${firmaClienteVista?.firmaImagen ? "#A7F3D0" : "#e2e8f0"}`, borderTop: `3px solid ${firmaClienteVista?.firmaImagen ? "#059669" : "#64748B"}`, borderRadius: 10, padding: "10px 12px", background: firmaClienteVista?.firmaImagen ? "#ECFDF5" : "#ffffff" }}>
+                    <div style={{ fontSize: 8.5, fontWeight: 800, color: firmaClienteVista?.firmaImagen ? "#047857" : "#6e6e73", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 5 }}>
+                      Recibido Interventoría / Constructora
+                    </div>
+                    <div style={{ height: 48, display: "flex", alignItems: "flex-end", marginBottom: 5, borderBottom: `1px solid ${firmaClienteVista?.firmaImagen ? "#A7F3D0" : "#e2e8f0"}`, paddingBottom: 4, fontSize: 9, color: "#94a3b8", fontStyle: "italic" }}>
+                      {firmaClienteVista?.firmaImagen
+                        ? <img src={firmaClienteVista.firmaImagen} alt="Firma del cliente" style={{ maxHeight: 44, maxWidth: 175, objectFit: "contain", fontStyle: "normal" }} />
+                        : "(Firma y sello de recepción a satisfacción)"}
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 9, color: "#1d1d1f" }}>
+                      NOMBRE: {firmaClienteVista?.firmanteNombre || (coordinadorSel?.nombre ? "_______________________" : "____________________________________")}
+                    </div>
+                    <div style={{ fontSize: 8.5, color: "#6e6e73", marginTop: 2.5 }}>
+                      C.C.: {firmaClienteVista?.firmanteDocumento || (coordinadorSel?.nombre ? "____________________" : "______________________________")}
+                    </div>
+                    <div style={{ fontSize: 8.5, color: "#6e6e73", marginTop: 2.5 }}>
+                      CARGO: {firmaClienteVista?.firmanteCargo || (coordinadorSel?.nombre ? "__________________" : "____________________________")}
+                    </div>
+                    <div style={{ fontSize: 8.5, color: "#6e6e73", marginTop: 2 }}>EMPRESA: {cliente || "Constructora / Contratante"}</div>
+                    {firmaClienteVista?.firmadoEn && (
+                      <div style={{ fontSize: 8, color: "#047857", fontWeight: 600, marginTop: 3 }}>
+                        Firmado electrónicamente · {fmtL(firmaClienteVista.firmadoEn)}
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* Footer Oficial */}
-                <div style={{ borderTop: "1px solid #e4e4e7", paddingTop: 8, marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 8.5, color: "#71717a" }}>
-                  <span>Ingeanclajes S.A.S · Documento Técnico Oficial SGC · {docCodigo} (V-{docVersion})</span>
-                  <span>Informe Técnico de Actividades</span>
+                <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 8, marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 8.5, color: "#6e6e73" }}>
+                  <span><strong style={{ color: "#1d1d1f" }}>Ingeanclajes S.A.S.</strong> · Documento Técnico Oficial SGC · {docCodigo} (V-{docVersion})</span>
+                  <span style={{ fontWeight: 700, color: "#1D4ED8" }}>Informe Técnico de Actividades</span>
                 </div>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildCotizacionPrintHtml } from "../../lib/cotizacionPrint";
 import { conFuenteInter } from "../../lib/fuenteInter";
+import { openPrintTab } from "../../lib/abrirImpresion";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 
 // Ancho real de una hoja carta a 96 ppp (8.5 x 96 = 816 px)
@@ -214,48 +215,82 @@ export default function DocumentoEnVivo({
           </div>
         </div>
 
-        {/* Controles de vista: Ajustar a pantalla o 100% Lectura */}
+        {/* Controles de vista estilo Apple: Ajustar a pantalla o 100% Lectura e Imprimir */}
         {!ocultarControles && (
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <div style={{ display: "inline-flex", background: "var(--fill, #f1f5f9)", borderRadius: 980, padding: 2, gap: 2 }}>
+              <button
+                type="button"
+                onClick={() => setModo("auto")}
+                title="Ajusta el documento al ancho de la pantalla"
+                style={{
+                  background: modo === "auto" ? "var(--surface, #ffffff)" : "transparent",
+                  color: modo === "auto" ? "var(--text-primary, #101828)" : "var(--text-secondary, #64748b)",
+                  border: "none",
+                  borderRadius: 980,
+                  padding: isMobile ? "4px 8px" : "3px 10px",
+                  fontSize: 11,
+                  fontWeight: modo === "auto" ? 600 : 500,
+                  boxShadow: modo === "auto" ? "var(--sombra-sm, 0 1px 2px rgba(0,0,0,0.05))" : "none",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <span>Ajustar ({Math.round(escala * 100)}%)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setModo("real")}
+                title="Muestra el documento al 100% de tamaño"
+                style={{
+                  background: modo === "real" ? "var(--surface, #ffffff)" : "transparent",
+                  color: modo === "real" ? "var(--text-primary, #101828)" : "var(--text-secondary, #64748b)",
+                  border: "none",
+                  borderRadius: 980,
+                  padding: isMobile ? "4px 8px" : "3px 10px",
+                  fontSize: 11,
+                  fontWeight: modo === "real" ? 600 : 500,
+                  boxShadow: modo === "real" ? "var(--sombra-sm, 0 1px 2px rgba(0,0,0,0.05))" : "none",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <span>100%</span>
+              </button>
+            </div>
+
             <button
               type="button"
-              onClick={() => setModo("auto")}
-              title="Ajusta el documento al ancho completo de tu pantalla para ver la página entera"
+              onClick={() => {
+                const printable = buildCotizacionPrintHtml(cotizacion, { firmaImg, sello });
+                openPrintTab(
+                  printable,
+                  `Cotización ${cotizacion?.numero || cotizacion?.id || "Documento"} ${cotizacion?.cliente || ""}`.trim()
+                );
+              }}
+              title="Abrir vista de impresión y guardado de PDF vectorial"
               style={{
-                background: modo === "auto" ? "var(--btn-guardar-bg, #cc0000)" : "var(--btn-cancelar-bg, #f1f5f9)",
-                color: modo === "auto" ? "#fff" : "var(--btn-cancelar-txt, #475569)",
-                border: `1px solid ${modo === "auto" ? "var(--btn-guardar-bg, #cc0000)" : "var(--border, #cbd5e1)"}`,
-                borderRadius: 6,
-                padding: isMobile ? "5px 9px" : "4px 10px",
+                background: "var(--fill, #f1f5f9)",
+                color: "var(--text-primary, #101828)",
+                border: "1px solid var(--border, #cbd5e1)",
+                borderRadius: 980,
+                padding: isMobile ? "4px 8px" : "3px 10px",
                 fontSize: 11,
-                fontWeight: 700,
+                fontWeight: 600,
                 cursor: "pointer",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 4,
+                transition: "all 0.15s ease",
               }}
             >
-              <span>Ajustar ({Math.round(escala * 100)}%)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setModo("real")}
-              title="Muestra el documento al 100% de tamaño para lectura cómoda deslizando con el dedo"
-              style={{
-                background: modo === "real" ? "var(--btn-guardar-bg, #cc0000)" : "var(--btn-cancelar-bg, #f1f5f9)",
-                color: modo === "real" ? "#fff" : "var(--btn-cancelar-txt, #475569)",
-                border: `1px solid ${modo === "real" ? "var(--btn-guardar-bg, #cc0000)" : "var(--border, #cbd5e1)"}`,
-                borderRadius: 6,
-                padding: isMobile ? "5px 9px" : "4px 10px",
-                fontSize: 11,
-                fontWeight: 700,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-              }}
-            >
-              <span>100% Lectura</span>
+              <span>🖨 Imprimir</span>
             </button>
           </div>
         )}

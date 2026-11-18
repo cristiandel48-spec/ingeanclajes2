@@ -61,7 +61,9 @@ export async function generarActaPdf(acta, { empresaConfig, firmaImg = "", onPro
   const html = prepararHtmlParaPdf(buildActaPrintHtml(acta, { empresaConfig, firmaImg, firmaCliente, qrVerificacion, rastro }));
   const blob = await pdfDeHojas(html, {
     onProgreso,
-    ...(liviano ? { escala: 2, calidad: 0.82 } : {}),
+    ...(liviano
+      ? { escala: 2.5, formato: "JPEG", calidad: 0.92 }
+      : { escala: 3.5, formato: "PNG" }),
     antesDeFotografiar: repartirConMedidasReales,
     mensajeError: "No se pudo preparar el acta de entrega.",
     mensajeVacio: "El acta no contiene páginas.",

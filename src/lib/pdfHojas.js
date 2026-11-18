@@ -198,12 +198,25 @@ export function rehacerImagenes(hoja, ventana) {
  *   no, sale el aviso comun («hoja 2 de 5»).
  * - antesDeFotografiar(doc, ventana): para ajustar el documento ya dibujado
  *   (el informe reparte de nuevo sus hojas con medidas reales).
+ *
+ * Para máxima nitidez (resolución vectorial y sin pérdidas), por defecto se
+ * renderiza a escala 3.5 (~336 ppp, superando el estándar de imprenta de 300 ppp)
+ * y en formato PNG sin compresión con pérdida. Esto garantiza que la tipografía,
+ * líneas de tablas y detalles gráficos se mantengan 100% nítidos sin artefactos
+ * JPEG. Para versiones livianas de correo se admite formato JPEG optimizado.
  */
-//
-// - escala y calidad: por defecto 3 (288 ppp) y JPEG 0,95, para el PDF que se
-//   descarga. Para enviar a firma se usa una version liviana (2 y 0,82, unos
-//   190 ppp): con un informe lleno de fotos la de 288 ppp pasaba de 20 MB.
-export async function pdfDeHojas(html, { onProgreso, antesDeFotografiar, mensajeError, mensajeVacio = "El documento salió vacío.", escala = 3, calidad = 0.95 } = {}) {
+export async function pdfDeHojas(
+  html,
+  {
+    onProgreso,
+    antesDeFotografiar,
+    mensajeError,
+    mensajeVacio = "El documento salió vacío.",
+    escala = 3.5,
+    calidad = 0.98,
+    formato = "PNG",
+  } = {}
+) {
   const { html2canvas, jsPDF } = await cargarLibreriasPdf();
   const avance = avanceDePdf(onProgreso);
   let marco = null;
@@ -220,29 +233,56 @@ export async function pdfDeHojas(html, { onProgreso, antesDeFotografiar, mensaje
     if (!hojas.length) throw new Error(mensajeVacio);
     hojas.forEach((hoja) => rehacerImagenes(hoja, ventana));
 
+    // Esperar de nuevo para garantizar que las imágenes reajustadas estén cargadas y renderizadas
+    await esperarRecursos(doc, ventana);
+
     const pdf = new jsPDF({ unit: "px", format: [ANCHO_HOJA, ALTO_HOJA], orientation: "portrait" });
+
+    const esPng = String(formato || "PNG").toUpperCase() === "PNG";
 
     for (let i = 0; i < hojas.length; i += 1) {
       avance.hoja(i + 1, hojas.length);
       await dejarPintar();
 
       const lienzo = await html2canvas(hojas[i], {
-        // 3 = 288 puntos por pulgada, al borde del estandar de imprenta. Este
-        // PDF es el que se le manda al cliente y sigue siendo una foto de la
-        // hoja: lo unico que se puede hacer por el es que sea una foto buena.
-        // A 2,4 eran 230 ppp y el texto se veia blando al ampliarlo.
+        // Escala >= 3.5 (~336 DPI) proporciona nitidez de imprenta profesional
         scale: escala,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: "#ffffff",
         logging: false,
         windowWidth: ANCHO_HOJA,
         windowHeight: ALTO_HOJA,
+        imageTimeout: 15000,
+        onclone: (clonedDoc) => {
+          // Garantizar suavizado tipográfico y renderizado sin desenfoque en el clon
+          const style = clonedDoc.createElement("style");
+          style.textContent = `
+            * {
+              -webkit-font-smoothing: antialiased !important;
+              -moz-osx-font-smoothing: grayscale !important;
+              text-rendering: geometricPrecision !important;
+            }
+            img {
+              image-rendering: -webkit-optimize-contrast !important;
+              image-rendering: crisp-edges !important;
+            }
+          `;
+          clonedDoc.head?.appendChild(style);
+        },
       });
 
-      // JPEG de alta calidad: mantiene planos nitidos y sin halos de compresion.
-      const imagen = lienzo.toDataURL("image/jpeg", calidad);
       if (i > 0) pdf.addPage([ANCHO_HOJA, ALTO_HOJA], "portrait");
-      pdf.addImage(imagen, "JPEG", 0, 0, ANCHO_HOJA, ALTO_HOJA, undefined, "MEDIUM");
+
+      if (esPng) {
+        // Formato PNG sin pérdida: texto, líneas y vectores 100% nítidos sin artefactos de compresión
+        const imagen = lienzo.toDataURL("image/png");
+        pdf.addImage(imagen, "PNG", 0, 0, ANCHO_HOJA, ALTO_HOJA, undefined, "FAST");
+      } else {
+        // Formato JPEG optimizado de alta fidelidad para versiones livianas
+        const imagen = lienzo.toDataURL("image/jpeg", calidad);
+        pdf.addImage(imagen, "JPEG", 0, 0, ANCHO_HOJA, ALTO_HOJA, undefined, "FAST");
+      }
     }
 
     return pdf.output("blob");

@@ -562,6 +562,131 @@ export const CSS_COTIZACION = `
       .contact-box { background:var(--fondo-suave); border:none; border-radius:12px; }
       .ficha-llamada-guia { background:var(--linea); opacity:1; }
 
+      /* Encabezado y pie de pagina estilo Apple con identidad Ingeanclajes
+         (rojo corporativo #E0342A, carbon Apple #1D1D1F y superficie perla #F8FAFC). */
+      .header {
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        border-bottom:none;
+        padding-bottom:3mm;
+        margin:0 0 5.5mm;
+        background:linear-gradient(90deg, #E0342A 0%, #B91C1C 26%, #E2E8F0 26%, #E2E8F0 100%) bottom / 100% 2px no-repeat;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+      }
+      .header-brand { display:flex; align-items:center; }
+      .header .logo { height:28px; width:auto; object-fit:contain; display:block; }
+      .header-right {
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        text-transform:none;
+        letter-spacing:0;
+        text-align:right;
+      }
+      .header-company {
+        font-size:10.5px;
+        font-weight:600;
+        color:#6E6E73;
+        letter-spacing:0.01em;
+      }
+      .header-pill {
+        display:inline-flex;
+        align-items:center;
+        background:#FEF2F2;
+        color:#B91C1C;
+        border:1px solid #FECACA;
+        border-radius:999px;
+        padding:2.5px 10px;
+        font-size:10.5px;
+        font-weight:700;
+        font-variant-numeric:tabular-nums;
+        letter-spacing:0.01em;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+      }
+
+      .cover-header {
+        border-bottom:none;
+        padding-bottom:5.5mm;
+        background:linear-gradient(90deg, transparent 0%, #E2E8F0 18%, #E0342A 50%, #E2E8F0 82%, transparent 100%) bottom / 100% 2px no-repeat;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+      }
+
+      .footer {
+        display:block;
+        margin-top:auto;
+        padding:0;
+        border:1px solid #E2E8F0;
+        border-top:none;
+        border-radius:10px;
+        overflow:hidden;
+        background:#F8FAFC;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+      }
+      .footer-accent {
+        height:2.5px;
+        width:100%;
+        background:linear-gradient(90deg, #E0342A 0%, #B91C1C 55%, #1D1D1F 100%);
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+      }
+      .footer-grid {
+        display:grid;
+        grid-template-columns:1fr 1fr 1fr;
+        gap:0;
+        padding:2.6mm 3.8mm;
+        line-height:1.35;
+        align-items:center;
+      }
+      .footer-col-left { text-align:left; padding-right:3mm; }
+      .footer-col-center {
+        text-align:center;
+        border-left:1px solid #E2E8F0;
+        border-right:1px solid #E2E8F0;
+        padding:0 3mm;
+      }
+      .footer-col-right { text-align:right; padding-left:3mm; }
+      .footer-label {
+        display:inline-flex;
+        align-items:center;
+        gap:4px;
+        font-size:8.5px;
+        font-weight:700;
+        text-transform:uppercase;
+        letter-spacing:0.07em;
+        color:#C42B22;
+        margin-bottom:2px;
+      }
+      .footer-ico {
+        width:10px;
+        height:10px;
+        color:#E0342A;
+        flex-shrink:0;
+        display:block;
+      }
+      .footer-main {
+        font-weight:600;
+        color:#1D1D1F;
+        font-size:10.5px;
+        font-variant-numeric:tabular-nums;
+      }
+      .footer-sub {
+        font-weight:500;
+        color:#6E6E73;
+        font-size:9.8px;
+        margin-top:1px;
+        font-variant-numeric:tabular-nums;
+      }
+      .footer-brand {
+        color:#B91C1C;
+        font-weight:700;
+        letter-spacing:0.01em;
+      }
+
       @media print {
         body { background:#fff; }
         .page { margin:0; }

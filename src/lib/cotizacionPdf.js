@@ -55,7 +55,12 @@ function prepararHtmlParaPdf(html) {
  */
 export async function generarCotizacionPdf(cotizacion, { firmaImg = "", sello = null, onProgreso, liviano = false } = {}) {
   const html = prepararHtmlParaPdf(buildCotizacionPrintHtml(cotizacion, { firmaImg, sello }));
-  const blob = await pdfDeHojas(html, { onProgreso, ...(liviano ? { escala: 2, calidad: 0.82 } : {}) });
+  const blob = await pdfDeHojas(html, {
+    onProgreso,
+    ...(liviano
+      ? { escala: 2.5, formato: "JPEG", calidad: 0.92 }
+      : { escala: 3.5, formato: "PNG" }),
+  });
   return { blob, nombre: nombreDeCotizacion(cotizacion) };
 }
 

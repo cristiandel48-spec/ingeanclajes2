@@ -491,12 +491,12 @@ function TarjetaInformeApple({ informe: inf, acciones, estadoFirma }) {
       onMouseLeave={() => setHover(false)}
       style={{
         background: "var(--surface, #ffffff)",
-        border: `1px solid ${hover ? "#0071e3" : "var(--border, rgba(0, 0, 0, 0.08))"}`,
+        border: `1px solid ${hover ? "var(--border-strong, rgba(0, 0, 0, 0.18))" : "var(--border, rgba(0, 0, 0, 0.08))"}`,
         borderRadius: 16,
         padding: "16px 18px",
         boxShadow: hover
-          ? "0 14px 30px -6px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04)"
-          : "0 2px 8px -2px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.02)",
+          ? "var(--sombra-md, 0 10px 24px -4px rgba(0, 0, 0, 0.08))"
+          : "var(--sombra-sm, 0 1px 3px rgba(0, 0, 0, 0.04))",
         transform: hover ? "translateY(-2px)" : "translateY(0)",
         transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
         cursor: "pointer",
@@ -726,11 +726,31 @@ function TarjetaInformeApple({ informe: inf, acciones, estadoFirma }) {
             Editar
           </button>
 
-          {(acciones.descargarPdf || acciones.imprimir) && (
+          {acciones.imprimir && (
             <button
               type="button"
-              title="Descargar PDF oficial de este informe"
-              onClick={() => (acciones.descargarPdf || acciones.imprimir)?.(inf)}
+              title="Imprimir informe o guardar como PDF vectorial"
+              onClick={() => acciones.imprimir(inf)}
+              style={{
+                background: "transparent",
+                color: "var(--text-main, #1d1d1f)",
+                border: "1px solid var(--border, rgba(0,0,0,0.14))",
+                borderRadius: 8,
+                padding: "6px 9px",
+                fontSize: 11.5,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Imprimir
+            </button>
+          )}
+
+          {acciones.descargarPdf && (
+            <button
+              type="button"
+              title="Descargar PDF en alta resolución"
+              onClick={() => acciones.descargarPdf(inf)}
               style={{
                 background: "transparent",
                 color: "#b91c1c",
@@ -881,11 +901,30 @@ function FilaTablaInforme({ informe: inf, acciones, estadoFirma, zebra }) {
         >
           Ver
         </button>
-        {(acciones.descargarPdf || acciones.imprimir) && (
+        {acciones.imprimir && (
+          <button
+            type="button"
+            title="Imprimir informe"
+            onClick={() => acciones.imprimir(inf)}
+            style={{
+              background: "transparent",
+              color: "var(--text-main, #1d1d1f)",
+              border: "1px solid var(--border, rgba(0,0,0,0.14))",
+              borderRadius: 6,
+              padding: "4px 8px",
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Imprimir
+          </button>
+        )}
+        {acciones.descargarPdf && (
           <button
             type="button"
             title="Descargar PDF"
-            onClick={() => (acciones.descargarPdf || acciones.imprimir)?.(inf)}
+            onClick={() => acciones.descargarPdf(inf)}
             style={{
               background: "transparent",
               color: "#b91c1c",

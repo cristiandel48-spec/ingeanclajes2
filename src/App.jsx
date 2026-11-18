@@ -5,6 +5,7 @@ import AppShell from "./components/layout/AppShell";
 import { AccionesPantallaProvider } from "./context/accionesPantalla";
 import { pantallaInicial, puedeVer } from "./lib/permisos";
 import AvisoInteligenteAgenda from "./components/agenda/AvisoInteligenteAgenda";
+import AvisoFirmaCoordinador from "./components/AvisoFirmaCoordinador";
 import { ToastProvider } from "./components/ui/Toast";
 import PantallaArranque from "./components/PantallaArranque";
 import { FUENTE } from "./styles/designTokens";
@@ -200,6 +201,7 @@ function AppRoot() {
         </Suspense>
       </div>
       <AvisoInteligenteAgenda onIrAAgenda={() => setScr("agenda")} />
+      <AvisoFirmaCoordinador />
     </AppShell>
   );
 }

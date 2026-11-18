@@ -8,7 +8,7 @@ import { ALTO_HOJA, ANCHO_HOJA, abrirEnMarco, cargarLibreriasPdf, esperarRecurso
 import { FUENTE } from "../styles/designTokens";
 
 const PX_A_PT = 72 / 96;
-const ESCALA_DIBUJO = 3;
+const ESCALA_DIBUJO = 3.5;
 
 const MARGEN = 40;
 const ANCHO_UTIL = ANCHO_HOJA - MARGEN * 2;
@@ -332,8 +332,8 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
     if (bleedLeft) {
       // Documento oficial a sangre: llena la hoja Carta completa de borde a borde (sin márgenes blancos arriba ni abajo)
       pdf.addImage(
-        lienzo.toDataURL("image/jpeg", 0.95),
-        "JPEG",
+        lienzo.toDataURL("image/png"),
+        "PNG",
         0,
         0,
         HOJA_PT[0],
@@ -380,8 +380,8 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
         primera = false;
 
         pdf.addImage(
-          recorte.toDataURL("image/jpeg", 0.92),
-          "JPEG",
+          recorte.toDataURL("image/png"),
+          "PNG",
           margenX,
           margenY,
           anchoDoc * PX_A_PT,

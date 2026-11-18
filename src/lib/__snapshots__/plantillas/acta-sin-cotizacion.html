@@ -50,6 +50,45 @@
     thead { display: table-header-group; }
     tfoot { display: table-footer-group; }
 
+    @media print {
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        color: #1d1d1f !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        -webkit-font-smoothing: antialiased !important;
+        text-rendering: geometricPrecision !important;
+      }
+      .page {
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        background: #ffffff !important;
+        width: 100% !important;
+      }
+      #print-toolbar, #print-toolbar + div, .no-print, button, nav {
+        display: none !important;
+      }
+      img {
+        max-width: 100% !important;
+        height: auto !important;
+        image-rendering: -webkit-optimize-contrast !important;
+        image-rendering: crisp-edges !important;
+      }
+      tr, thead, .no-partir, .foto-card, .bloque-firma, figure {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      h1, h2, h3, h4, .doc-h2, .doc-h3 {
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+      }
+    }
+
     
     /* Solo en pantalla: se dibuja la hoja para poder revisar antes de enviar.
        Al imprimir desaparece y manda @page, que es quien sabe cuanto cabe. */

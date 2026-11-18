@@ -39,7 +39,9 @@ export async function generarInformePdf(informe, { empresaConfig, firmaImg = "",
   const html = prepararHtmlParaPdf(buildInformePrintHtml(informe, { empresaConfig, firmaImg, firmaCliente }));
   const blob = await pdfDeHojas(html, {
     onProgreso,
-    ...(liviano ? { escala: 2, calidad: 0.82 } : {}),
+    ...(liviano
+      ? { escala: 2.5, formato: "JPEG", calidad: 0.92 }
+      : { escala: 3.5, formato: "PNG" }),
     antesDeFotografiar: repartirConMedidasReales,
     mensajeError: "No se pudo preparar el informe.",
     mensajeVacio: "El documento no contiene páginas.",

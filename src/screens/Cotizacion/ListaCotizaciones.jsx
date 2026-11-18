@@ -749,13 +749,13 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
       onMouseLeave={() => setHover(false)}
       style={{
         background: "var(--surface, #ffffff)",
-        border: `1px solid ${hover ? "#0071e3" : "var(--border, rgba(0, 0, 0, 0.08))"}`,
-        borderRadius: 18,
+        border: `1px solid ${hover ? "var(--border-strong, rgba(0, 0, 0, 0.16))" : "var(--border, rgba(0, 0, 0, 0.07))"}`,
+        borderRadius: 16,
         padding: "16px 18px",
         boxShadow: hover
-          ? "0 14px 30px -6px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04)"
-          : "0 2px 10px -2px rgba(0, 0, 0, 0.02), 0 1px 3px rgba(0, 0, 0, 0.02)",
-        transform: hover ? "translateY(-2px)" : "translateY(0)",
+          ? "var(--sombra-md, 0 4px 12px -2px rgba(16, 24, 40, 0.08))"
+          : "var(--sombra-sm, 0 1px 2px rgba(16, 24, 40, 0.04))",
+        transform: hover ? "translateY(-1px)" : "translateY(0)",
         transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
         cursor: "pointer",
         display: "flex",
@@ -925,6 +925,30 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
           >
             Ver
           </button>
+
+          {acciones?.imprimir && (
+            <button
+              type="button"
+              title="Imprimir documento vectorial o guardar como PDF"
+              onClick={alPulsar(acciones.imprimir)}
+              style={{
+                background: "transparent",
+                color: "var(--text-secondary, #475467)",
+                border: "1px solid var(--border, rgba(0,0,0,0.12))",
+                borderRadius: 8,
+                padding: "5px 9px",
+                fontSize: 11.5,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                transition: "all 0.15s ease",
+              }}
+            >
+              Imprimir
+            </button>
+          )}
 
           <button
             type="button"
@@ -1137,6 +1161,24 @@ function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar })
         >
           Ver
         </button>
+        {acciones?.imprimir && (
+          <button
+            type="button"
+            onClick={alPulsar(acciones.imprimir)}
+            title="Imprimir documento vectorial o guardar como PDF"
+            style={{
+              background: "transparent",
+              border: "1px solid var(--border, rgba(0,0,0,0.1))",
+              borderRadius: 6,
+              padding: "4px 6px",
+              fontSize: 11,
+              cursor: "pointer",
+              color: "var(--text-secondary)",
+            }}
+          >
+            🖨️
+          </button>
+        )}
         <button
           type="button"
           onClick={alPulsar(acciones.editar)}

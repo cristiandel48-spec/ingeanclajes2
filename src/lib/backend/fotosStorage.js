@@ -25,8 +25,8 @@ const RECORDAR = 400;
 
 const EXTENSIONES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
 
-export const esFotoIncrustada = (valor) =>
-  typeof valor === "string" && valor.length >= TAMANO_MINIMO && /^data:image\/[a-z+]+;base64,/i.test(valor);
+export const esFotoIncrustada = (valor, minBytes = TAMANO_MINIMO) =>
+  typeof valor === "string" && valor.length >= minBytes && /^data:image\/[a-z+]+;base64,/i.test(valor);
 
 export const esReferenciaFoto = (valor) => typeof valor === "string" && valor.startsWith(PREFIJO_FOTO);
 
@@ -158,7 +158,8 @@ export function crearAlmacenFotos({ supabase, tenantId }) {
 
   return {
     /** Copia del valor con las fotos subidas y cambiadas por su referencia. */
-    paraGuardar: (valor) => reemplazarEn(valor, esFotoIncrustada, subir),
+    paraGuardar: (valor, { minBytes = TAMANO_MINIMO } = {}) =>
+      reemplazarEn(valor, (v) => esFotoIncrustada(v, minBytes), subir),
     /** Copia del valor con las referencias cambiadas por la foto. */
     paraMostrar: (valor) => reemplazarEn(valor, esReferenciaFoto, bajar),
   };

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import Button from "./Button";
 
 // Hoja / dialogo del sistema.
@@ -81,7 +82,15 @@ export default function Sheet({
 
   if (!abierta) return null;
 
-  return (
+  // Se pinta en la raiz del armazon (.app-shell, de donde cuelga el tema
+  // oscuro) y no donde se declara. Si la hoja se abre desde dentro de algo con
+  // backdrop-filter o transform (la barra superior, por ejemplo), el
+  // `position: fixed` del fondo queda atado a ese contenedor y no a la
+  // pantalla: el dialogo de "Cerrar sesion" quedaba encerrado en la barra,
+  // cortado arriba, con el resto de la app sin oscurecer.
+  if (typeof document === "undefined") return null;
+  const destino = document.querySelector(".app-shell") || document.body;
+  return createPortal(
     <div
       className="ui-overlay"
       onMouseDown={(e) => {
@@ -119,7 +128,8 @@ export default function Sheet({
         <div className="ui-sheet__body">{children}</div>
         {pie && <div className="ui-sheet__pie">{pie}</div>}
       </div>
-    </div>
+    </div>,
+    destino
   );
 }
 

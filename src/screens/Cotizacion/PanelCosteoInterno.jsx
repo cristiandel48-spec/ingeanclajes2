@@ -78,6 +78,14 @@ export default function PanelCosteoInterno({
   const [estimandoIa, setEstimandoIa] = useState(false);
   const [errorIa, setErrorIa] = useState("");
   const [mostrandoAgregar, setMostrandoAgregar] = useState(false);
+  const [mostrandoPolizas, setMostrandoPolizas] = useState(false);
+  const [notasInternasLocal, setNotasInternasLocal] = useState(
+    () => String(propuesta?.costeoInterno?.notasInternas || "")
+  );
+  const [seguroPersonalizado, setSeguroPersonalizado] = useState({
+    nombre: "Seguro solicitado por el cliente",
+    valor: 0,
+  });
   const [nuevoInsumoId, setNuevoInsumoId] = useState("");
   const [nuevoItem, setNuevoItem] = useState({
     nombre: "",
@@ -92,6 +100,10 @@ export default function PanelCosteoInterno({
 
   const itemsPropuesta = Array.isArray(propuesta?.items) ? propuesta.items : [];
   const estado = ESTILOS_ESTADO[costeo.estadoMargen] || ESTILOS_ESTADO.sin_venta;
+  const notasInternas =
+    propuesta?.costeoInterno?.notasInternas !== undefined
+      ? String(propuesta.costeoInterno.notasInternas || "")
+      : notasInternasLocal;
 
   const guardarLineasPersonalizadas = (nuevasLineas, extras = {}) => {
     const limpias = nuevasLineas.map((l, idx) => ({
@@ -112,9 +124,61 @@ export default function PanelCosteoInterno({
         huellaItems: huellaItemsPropuesta(itemsPropuesta),
         resumenIa: extras.resumenIa !== undefined ? extras.resumenIa : costeo.resumenIa,
         avisosIa: extras.avisosIa !== undefined ? extras.avisosIa : costeo.avisosIa,
+        esRespaldoLocal: extras.esRespaldoLocal !== undefined ? Boolean(extras.esRespaldoLocal) : false,
+        notasInternas: extras.notasInternas !== undefined ? extras.notasInternas : notasInternas,
         actualizadoEn: new Date().toISOString(),
       },
     });
+  };
+
+  const cambiarNotasInternas = (valor) => {
+    setNotasInternasLocal(valor);
+    if (propuesta?.costeoInterno && typeof propuesta.costeoInterno === "object") {
+      onChangePropuesta({
+        costeoInterno: {
+          ...propuesta.costeoInterno,
+          notasInternas: valor,
+        },
+      });
+    }
+  };
+
+  const polizasSugeridas = [
+    {
+      id: "pol-cumplimiento",
+      nombre: "Póliza de Cumplimiento + Anticipo + Salarios + Estabilidad",
+      nota: "Estimado ~1.8% del contrato + IVA 19%",
+      valor: Math.max(950000, Math.round((costeo.ventaTotal || 0) * 0.018 * 1.19)),
+    },
+    {
+      id: "pol-rce",
+      nombre: "Póliza RCE (Responsabilidad Civil Extracontractual)",
+      nota: "Estimado ~0.8% del contrato + IVA 19%",
+      valor: Math.max(850000, Math.round((costeo.ventaTotal || 0) * 0.008 * 1.19)),
+    },
+    {
+      id: "pol-todo-riesgo",
+      nombre: "Seguro Todo Riesgo Construcción / Montaje",
+      nota: "Estimado ~1.2% del contrato + IVA 19%",
+      valor: Math.max(1200000, Math.round((costeo.ventaTotal || 0) * 0.012 * 1.19)),
+    },
+  ];
+
+  const agregarPolizaRapida = (nombre, valor, nota = "Seguro solicitado por el cliente") => {
+    const monto = Math.max(0, Math.round(Number(valor) || 0));
+    if (!String(nombre || "").trim() || monto <= 0) return;
+    const nueva = {
+      id: `pol-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      insumoId: null,
+      nombre: String(nombre).trim(),
+      categoria: "logistica",
+      unidad: "Global",
+      cant: 1,
+      costoUnitario: monto,
+      origen: "manual",
+      nota,
+    };
+    guardarLineasPersonalizadas([...costeo.lineas, nueva], { modo: costeo.modo === "ia" ? "ia" : "personalizado" });
   };
 
   const editarLinea = (idLinea, campo, valor) => {
@@ -189,7 +253,9 @@ export default function PanelCosteoInterno({
         titulo: tituloCotizacion || propuesta?.nombre || "",
         saludo: saludoCotizacion || "",
         incluyeTexto: propuesta?.incluyeTexto || "",
+        tiempoEjec: propuesta?.tiempoEjec || "",
         observaciones: observacionesCot || "",
+        notasInternas,
         obra: cl?.obra || "",
         ciudad: cl?.ciudad || "",
         alcance: propuesta?.alcance || "",
@@ -219,9 +285,10 @@ export default function PanelCosteoInterno({
       }
 
       guardarLineasPersonalizadas(lineasFinales, {
-        modo: "ia",
+        modo: resultado.esRespaldoLocal ? "personalizado" : "ia",
         resumenIa: resultado.resumen || "",
         avisosIa: resultado.avisos || [],
+        esRespaldoLocal: Boolean(resultado.esRespaldoLocal),
       });
     } catch (err) {
       setErrorIa(err?.message || "No se pudo completar la estimación con IA.");
@@ -496,29 +563,35 @@ export default function PanelCosteoInterno({
           )}
 
           {/* Resumen y avisos de la IA */}
-          {(costeo.resumenIa || costeo.avisosIa.length > 0) && (
-            <div
-              style={{
-                background: "var(--surface-subtle, #f8fafc)",
-                border: "1px solid var(--border, #e2e8f0)",
-                borderRadius: 9,
-                padding: "8px 12px",
-                marginBottom: 12,
-                fontSize: 11.5,
-                color: "var(--text-muted, #475467)",
-                lineHeight: 1.5,
-              }}
-            >
-              {costeo.resumenIa && (
-                <div>
-                  <strong style={{ color: "var(--text-main, #101828)" }}>Nota técnica IA:</strong> {costeo.resumenIa}
-                </div>
-              )}
-              {costeo.avisosIa.map((av, idx) => (
-                <div key={idx} style={{ marginTop: 2 }}>• {av}</div>
-              ))}
-            </div>
-          )}
+          {(costeo.resumenIa || costeo.avisosIa.length > 0) && (() => {
+            const esRespaldo = Boolean(propuesta?.costeoInterno?.esRespaldoLocal);
+            return (
+              <div
+                style={{
+                  background: esRespaldo ? "#FFFAEB" : "var(--surface-subtle, #f8fafc)",
+                  border: `1px solid ${esRespaldo ? "#FEDF89" : "var(--border, #e2e8f0)"}`,
+                  borderRadius: 9,
+                  padding: "8px 12px",
+                  marginBottom: 12,
+                  fontSize: 11.5,
+                  color: esRespaldo ? "#9A3412" : "var(--text-muted, #475467)",
+                  lineHeight: 1.5,
+                }}
+              >
+                {costeo.resumenIa && (
+                  <div>
+                    <strong style={{ color: esRespaldo ? "#B54708" : "var(--text-main, #101828)" }}>
+                      {esRespaldo ? "Aviso · Estimación local (la IA no respondió):" : "Nota técnica IA:"}
+                    </strong>{" "}
+                    {costeo.resumenIa}
+                  </div>
+                )}
+                {costeo.avisosIa.map((av, idx) => (
+                  <div key={idx} style={{ marginTop: 2 }}>• {av}</div>
+                ))}
+              </div>
+            );
+          })()}
 
           {errorIa && (
             <div
@@ -536,6 +609,19 @@ export default function PanelCosteoInterno({
             </div>
           )}
 
+          {/* Instrucción interna opcional para la IA (pólizas, seguros, horario nocturno, exigencias del cliente) */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--text-muted, #475467)", marginBottom: 4 }}>
+              Requisitos extra para la IA (solo interno · no sale en PDF)
+            </div>
+            <input
+              value={notasInternas}
+              onChange={(e) => cambiarNotasInternas(e.target.value)}
+              placeholder="Ej: El cliente exige póliza de cumplimiento + RCE + seguro todo riesgo; trabajo nocturno/dominical; alquiler de andamio…"
+              style={{ ...SI, fontSize: 11.5, padding: "6px 10px" }}
+            />
+          </div>
+
           {/* Barra de herramientas */}
           <div
             style={{
@@ -552,7 +638,7 @@ export default function PanelCosteoInterno({
                 type="button"
                 disabled={!puedeEstimarIa || estimandoIa}
                 onClick={() => ejecutarIa({ soloFaltantes: false })}
-                title="Analiza todos los ítems y el alcance con IA para sugerir materiales, mano de obra y costos de compra"
+                title="Analiza todos los ítems, especificaciones y tus requisitos extra con IA para calcular materiales, mano de obra y costos reales"
                 style={{
                   background: !puedeEstimarIa ? "#f2f4f7" : "#101828",
                   color: !puedeEstimarIa ? "#98a2b3" : "#ffffff",
@@ -569,7 +655,30 @@ export default function PanelCosteoInterno({
 
               <button
                 type="button"
-                onClick={() => setMostrandoAgregar((v) => !v)}
+                onClick={() => {
+                  setMostrandoPolizas((v) => !v);
+                  setMostrandoAgregar(false);
+                }}
+                style={{
+                  background: mostrandoPolizas ? "#EEF4FF" : "var(--surface, #ffffff)",
+                  color: mostrandoPolizas ? "#1D4ED8" : "var(--text-main, #101828)",
+                  border: `1px solid ${mostrandoPolizas ? "#93C5FD" : "var(--border, #d0d5dd)"}`,
+                  borderRadius: 8,
+                  padding: "6px 11px",
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                {mostrandoPolizas ? "Cerrar pólizas" : "+ Pólizas / Seguro"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMostrandoAgregar((v) => !v);
+                  setMostrandoPolizas(false);
+                }}
                 style={{
                   background: "var(--surface, #ffffff)",
                   color: "var(--text-main, #101828)",
@@ -623,6 +732,121 @@ export default function PanelCosteoInterno({
               </button>
             )}
           </div>
+
+          {/* Calculadora rápida de pólizas y seguros exigidos por el cliente */}
+          {mostrandoPolizas && (
+            <div
+              style={{
+                background: "var(--surface, #ffffff)",
+                border: "1px solid #93C5FD",
+                borderRadius: 10,
+                padding: 12,
+                marginBottom: 12,
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #101828)" }}>
+                  Pólizas y seguros solicitados por el cliente
+                </div>
+                <div style={{ fontSize: 11, color: "var(--text-muted, #667085)", fontVariantNumeric: "tabular-nums" }}>
+                  Base contrato: <strong>{fmt(costeo.ventaTotal)}</strong> (1 clic para sumar a costos)
+                </div>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+                {polizasSugeridas.map((pol) => (
+                  <div
+                    key={pol.id}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "7px 10px",
+                      borderRadius: 8,
+                      background: "var(--surface-subtle, #f8fafc)",
+                      border: "1px solid var(--border, #e2e8f0)",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 210 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-main, #101828)" }}>{pol.nombre}</div>
+                      <div style={{ fontSize: 10.5, color: "var(--text-muted, #667085)" }}>{pol.nota}</div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-main, #101828)", fontVariantNumeric: "tabular-nums" }}>
+                        {fmt(pol.valor)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => agregarPolizaRapida(pol.nombre, pol.valor, pol.nota)}
+                        style={{
+                          background: "#1D4ED8",
+                          color: "#ffffff",
+                          border: "none",
+                          borderRadius: 7,
+                          padding: "5px 11px",
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        + Agregar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "2.2fr 1.2fr auto", gap: 8, alignItems: "end" }}>
+                <div>
+                  <div style={{ fontSize: 10.5, color: "var(--text-muted, #667085)", marginBottom: 3 }}>
+                    O agrega el valor exacto cotizado por tu aseguradora
+                  </div>
+                  <input
+                    value={seguroPersonalizado.nombre}
+                    onChange={(e) => setSeguroPersonalizado((p) => ({ ...p, nombre: e.target.value }))}
+                    placeholder="Ej. Póliza Sura Cumplimiento + RCE"
+                    style={{ ...SI, fontSize: 12, padding: "5px 8px" }}
+                  />
+                </div>
+                <div>
+                  <div style={{ fontSize: 10.5, color: "var(--text-muted, #667085)", marginBottom: 3 }}>Prima total (COP)</div>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={Number(seguroPersonalizado.valor) ? Number(seguroPersonalizado.valor).toLocaleString("es-CO") : ""}
+                    onChange={(e) => {
+                      const dig = e.target.value.replace(/\D/g, "");
+                      setSeguroPersonalizado((p) => ({ ...p, valor: dig ? parseInt(dig, 10) : 0 }));
+                    }}
+                    placeholder="Ej. 4.500.000"
+                    style={{ ...SI, fontSize: 12, padding: "5px 8px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!seguroPersonalizado.nombre.trim() || !seguroPersonalizado.valor) return;
+                    agregarPolizaRapida(seguroPersonalizado.nombre, seguroPersonalizado.valor, "Seguro cotizado por aseguradora");
+                    setSeguroPersonalizado({ nombre: "Seguro solicitado por el cliente", valor: 0 });
+                  }}
+                  style={{
+                    background: "#101828",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: 7,
+                    padding: "7px 13px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Sumar
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Formulario rápido para añadir un insumo o gasto */}
           {mostrandoAgregar && (

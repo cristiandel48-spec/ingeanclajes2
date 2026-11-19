@@ -11,6 +11,44 @@ import { estimarCostosHeuristico, obtenerConfigCostos } from "./costosCotizacion
 
 const FUNCION = "armar-cotizacion";
 
+// Si el token JWT expiró tras 1 hora con la pestaña abierta, renueva la sesión
+// automáticamente y reintenta una vez antes de rendirse.
+async function invocarFuncionConRefresco(supabase, body) {
+  let tokenFresco = null;
+  try {
+    const { data: sesionActual } = await supabase.auth.getSession();
+    const expiraEn = Number(sesionActual?.session?.expires_at || 0);
+    const ahoraSeg = Math.floor(Date.now() / 1000);
+    if (expiraEn && expiraEn - ahoraSeg < 60) {
+      const { data: renovada } = await supabase.auth.refreshSession();
+      tokenFresco = renovada?.session?.access_token || null;
+    }
+  } catch {
+    // Si falla la comprobación previa, seguimos con el invoke normal.
+  }
+
+  const opcionesBase = tokenFresco
+    ? { body, headers: { Authorization: `Bearer ${tokenFresco}` } }
+    : { body };
+  const res = await supabase.functions.invoke(FUNCION, opcionesBase);
+  const status = res?.error?.context?.status;
+  if (status === 401) {
+    try {
+      const { data: renovada } = await supabase.auth.refreshSession();
+      const nuevoToken = renovada?.session?.access_token;
+      if (nuevoToken) {
+        return await supabase.functions.invoke(FUNCION, {
+          body,
+          headers: { Authorization: `Bearer ${nuevoToken}` },
+        });
+      }
+    } catch {
+      // Devuelve el error 401 original si la sesión realmente venció.
+    }
+  }
+  return res;
+}
+
 async function motivoDelError(error) {
   const respuesta = error?.context;
   if (respuesta && typeof respuesta.clone === "function") {
@@ -251,7 +289,9 @@ export async function estimarCostosConIa({
   titulo = "",
   saludo = "",
   incluyeTexto = "",
+  tiempoEjec = "",
   observaciones = "",
+  notasInternas = "",
   obra = "",
   ciudad = "",
   alcance = "",
@@ -286,29 +326,29 @@ export async function estimarCostosConIa({
   let error = null;
   try {
     const supabase = getSupabaseClient();
-    const res = await supabase.functions.invoke(FUNCION, {
-      body: {
-        modo: "estimar_costos",
-        soloSinReceta: Boolean(soloSinReceta),
-        proyecto: {
-          titulo: String(titulo || "").slice(0, 400),
-          saludo: String(saludo || "").slice(0, 2500),
-          incluyeTexto: String(incluyeTexto || "").slice(0, 1500),
-          observaciones: String(observaciones || "").slice(0, 1000),
-          obra: String(obra || "").slice(0, 200),
-          ciudad: String(ciudad || "").slice(0, 120),
-          alcance: String(alcance || "").slice(0, 1500),
-          requerimientoCliente: String(requerimientoCliente || "").slice(0, 1500),
-        },
-        items: listaItems,
-        insumosCatalogo: (cfg.insumos || []).map((ins) => ({
-          id: ins.id,
-          nombre: ins.nombre,
-          categoria: ins.categoria,
-          unidad: ins.unidad,
-          costoUnitario: ins.costoUnitario,
-        })),
+    const res = await invocarFuncionConRefresco(supabase, {
+      modo: "estimar_costos",
+      soloSinReceta: Boolean(soloSinReceta),
+      proyecto: {
+        titulo: String(titulo || "").slice(0, 400),
+        saludo: String(saludo || "").slice(0, 2500),
+        incluyeTexto: String(incluyeTexto || "").slice(0, 1500),
+        tiempoEjec: String(tiempoEjec || "").slice(0, 200),
+        observaciones: String(observaciones || "").slice(0, 1000),
+        notasInternas: String(notasInternas || "").slice(0, 1000),
+        obra: String(obra || "").slice(0, 200),
+        ciudad: String(ciudad || "").slice(0, 120),
+        alcance: String(alcance || "").slice(0, 1500),
+        requerimientoCliente: String(requerimientoCliente || "").slice(0, 1500),
       },
+      items: listaItems,
+      insumosCatalogo: (cfg.insumos || []).map((ins) => ({
+        id: ins.id,
+        nombre: ins.nombre,
+        categoria: ins.categoria,
+        unidad: ins.unidad,
+        costoUnitario: ins.costoUnitario,
+      })),
     });
     data = res.data;
     error = res.error;

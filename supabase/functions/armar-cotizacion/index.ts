@@ -127,45 +127,67 @@ function construirInstruccionCostos(catalogoInsumos: string) {
     "     manguito y estribo + absorbedor Constant Force (1-2 por tramo), anillas en D (2 por tramo),",
     "     carros Man Safe / Transfastener y piezas intermedias de proximidad, guayas moviles retractiles,",
     "     sellos de membrana TPO + modulos de fijacion/mordaza (1 por cada poste instalado).",
-    "3. PRECIOS REALES DE SISTEMAS IMPORTADOS / ESPECIALIZADOS (NO USAR IDs BASICOS):",
-    "   - Usa el `insumoId` del CATALOGO DE INSUMOS solo cuando el componente sea nacional/estandar.",
+    "3. PRECIOS REALES DE ACERO INOXIDABLE / SISTEMAS IMPORTADOS / OBRA PESADA (NO USAR IDs BASICOS):",
+    "   - Usa `insumoId` del CATALOGO DE INSUMOS solo cuando el componente sea exactamente ese estandar.",
     "   - PROHIBIDO asignar `insumoId` de ferreteria basica (`cable_acero_516`, `poste_terminal`,",
-    "     `soporte_intermedio`, `tensor_forjado`, `memoria_calculo`) cuando la cotizacion pida",
-    "     sistemas importados o especializados como Latchways Constant Force, ManSafe, acero inox 316",
-    "     o cubierta membrana TPO: en esos casos pon SIEMPRE `insumoId: null` y estima el COSTO REAL",
-    "     DE COMPRA/IMPORTACION en Colombia en COP (ej. cable inox 316 ~32.000-45.000/ML, postes",
-    "     Constant Force ~650.000-950.000/Und, soportes intermedios inox/proximidad ~280.000-450.000/Und,",
-    "     carros ManSafe ~550.000-850.000/Und, conjuntos torniquete/tensor inox ~450.000-700.000/Kit,",
-    "     sellos TPO + modulos fijacion ~120.000-180.000/Und, ingenieria/pruebas mega-obra ~3M-6M).",
+    "     `soporte_intermedio`, `tensor_forjado`, `poste_cuello_cisne`, `dado_concreto`, `autorretractil`,",
+    "     `memoria_calculo`) cuando la cotizacion pida ACERO INOXIDABLE 304/316, Latchways Constant Force,",
+    "     ManSafe, membrana TPO, columnas/soportes en T en tubo 6\" u 8\", o pedestales industriales:",
+    "     en esos casos pon SIEMPRE `insumoId: null` y estima el COSTO REAL DE COMPRA/FABRICACION en COP:",
+    "     * Cable inox 316 (5/16\"-3/8\"): ~35.000-55.000/ML.",
+    "     * Postes Constant Force (Latchways): ~650.000-950.000/Und; carros ManSafe: ~550.000-850.000/Und.",
+    "     * Soporte en T / columna camionera 6\"-8\" (altura 6-7m, platinas, brazos, soldadura):",
+    "       acero al carbono ~4.500.000-6.500.000/Und; ACERO INOXIDABLE ~7.000.000-12.000.000/Und.",
+    "       (No dupliques: si el proyecto lleva 2 soportes en T, NO agregues ademas 2 postes cuello de cisne).",
+    "     * Pedestal / cimentacion en concreto 3500-4000 PSI para linea camionera (excavacion, acero,",
+    "       formaleta, concreto, pernos J, demolicion/resane): ~2.500.000-4.500.000/Und.",
+    "     * Retractil certificado 12-15m con polea/carro en acero inoxidable: ~2.400.000-3.800.000/Und.",
+    "     * Absorbedor de energia inox: ~650.000-950.000/Und; tensor inox pesado: ~450.000-800.000/Und.",
     "4. SISTEMAS INTEGRALES Y ESTRUCTURAS METALICAS:",
     "   - Fijate en la cantidad, unidad y Precio venta unitario: si un item como 'Linea de vida",
-    "     camionera' viene como 1 ML o 1 Global por varios millones ($15M-$50M COP) sin postes/dados",
-    "     aparte, estima el sistema completo (postes cuello de cisne, dados, cable, carro, SRL, montaje).",
-    "   - Si son ESTRUCTURAS METALICAS / PLATAFORMAS (ej. 7 plataformas para aires acondicionados a",
-    "     $8M c/u, aunque la unidad diga ML o Und): desglosa CADA material de metalmecanica nombrado",
-    "     en 'Esta cotizacion incluye' o en la frase de apertura (platinas de anclaje/mensula, perfiles",
-    "     PTS, lamina alfajor, lamina microperforada, barra roscada, tuercas, epoxico, pintura 3 en 1,",
-    "     soldadura/corte/doblez) multiplicado por el numero real de estructuras, MAS mano de obra de",
-    "     FABRICACION EN TALLER + MONTAJE EN ALTURAS + coordinador SST + transporte/izajes.",
-    "5. MANO DE OBRA, INGENIERIA Y LOGISTICA OBLIGATORIAS (NUNCA DEJAR EN $0):",
+    "     camionera' viene como 1 Und / 1 ML por $40M-$80M COP sin postes/dados aparte, estima el",
+    "     sistema completo llave en mano (soportes/columnas, obra civil pedestales, cable, tensores,",
+    "     absorbedores, retractiles con polea, izaje con grua, manlift, fabricacion, obra civil, montaje).",
+    "   - Si son ESTRUCTURAS METALICAS / PLATAFORMAS (ej. 7 plataformas a $8M c/u): desglosa CADA",
+    "     material nombrado en 'Esta cotizacion incluye' o frase de apertura (platinas, PTS, lamina",
+    "     alfajor, microperforada, barra roscada, epoxico, pintura) x numero real de estructuras.",
+    "   - Si son CUBIERTAS / TECHOS TERMOACUSTICOS (teja UPVC / panel sandwich / cambio de cubierta):",
+    "     desglosa teja termoacustica (m2 + 10% traslapo/desperdicio), correas/estructura de soporte,",
+    "     flanches, caballetes, canales/bajantes, tornilleria autoperforante + arandelas EPDM, selladores,",
+    "     desmonte/disposicion de cubierta vieja si aplica, andamios/izaje/red anticaidas, cuadrilla y SST.",
+    "5. MANO DE OBRA, EQUIPOS DE IZAJE, INGENIERIA Y LOGISTICA (CERO OMISIONES Y ARITMETICA EXACTA):",
     "   - OBLIGATORIO incluir las 3 categorias en `lineas`: `material`, `mano_obra` y `logistica`.",
-    "   - En `mano_obra` incluye jornadas realistas de tecnicos, auxiliares y coordinador SST",
-    "     proporcionales al metraje/unidades y complejidad. Si es FABRICACION DE ESTRUCTURA METALICA",
-    "     o PLATAFORMAS, incluye SIEMPRE mano de obra de FABRICACION EN TALLER (soldador/armador +",
-    "     ayudante, ej. 2-3 dias por plataforma) MAS mano de obra de MONTAJE EN ALTURAS en obra +",
-    "     coordinador SST tiempo completo + memoria de calculo/diseno si aplica.",
-    "   - En cubierta con membrana TPO el rendimiento es ~25-30 ML/dia de cuadrilla (2 tecnicos +",
-    "     2 auxiliares + 1 SST).",
-    "   - En `logistica` incluye SIEMPRE transporte/fletes realistas (movilizacion de cuadrilla y",
-    "     flete de estructuras/materiales) y consumibles (soldadura 7018/MIG, discos corte/grata,",
-    "     brocas SDS, equipo de sellado TPO o izajes).",
-    "6. VERIFICACION DE SENTIDO ECONOMICO:",
-    "   - En suministro e instalacion anticaidas en Colombia (especialmente marcas importadas como",
-    "     Latchways/MSA en membrana TPO), el costo directo real suele estar entre 45% y 70% del",
-    "     valor de venta (margen neto ~30%-55%). Si tu suma da menos del 35% de la venta, revisa",
-    "     precios de componentes importados, sellos TPO, ManSafe, torniquetes y jornadas de cuadrilla.",
-    "7. Incluye SIEMPRE un `resumen` claro de 2-3 frases (numero de tramos, tipo de sistema y",
-    "   duracion/cuadrilla) y 2-3 `avisos` practicos. Responde solo el JSON, sin explicaciones ni ```.",
+    "   - ARITMETICA EXACTA DE JORNADAS: `cant` en mano de obra SIEMPRE es PERSONAS x DIAS.",
+    "     Ejemplo: si trabajan 2 tecnicos durante 8 dias, pon `cant: 16` (NUNCA `cant: 8`!).",
+    "   - Alinea las jornadas con el TIEMPO DE EJECUCION COTIZADO (separando FABRICACION EN TALLER +",
+    "     OBRA CIVIL DE PEDESTALES/EXCAVACION si aplica + MONTAJE EN ALTURAS + COORDINADOR SST tiempo",
+    "     completo). Considera tambien el recargo real de prestaciones/ARL riesgo V (~35%-50% sobre jornal",
+    "     o reflejado en tarifa/linea aparte si el proyecto es grande >$20M).",
+    "   - EQUIPOS DE IZAJE Y ALTURAS (`logistica`): si hay columnas/postes pesados (6\"-8\"), estructuras",
+    "     metalicas o trabajo elevado >4m, incluye SIEMPRE alquiler de CAMION GRUA para izaje y/o",
+    "     MANLIFT / plataforma elevadora o andamio certificado (~1.500.000-2.500.000/dia), SALVO que",
+    "     la cotizacion diga explicitamente 'No incluye andamios/grua'.",
+    "   - INGENIERIA, POLIZAS Y SEGUROS CONTRACTUALES: en obras industriales (>$20M) incluye memoria",
+    "     de calculo estructural y planos (~2M-4.5M), pruebas de carga, certificacion Res. 4272 y",
+    "     POLIZAS / SEGUROS PROPORCIONALES AL VALOR DEL CONTRATO (NO usar el `insumoId: polizas_certificacion`",
+    "     fijo de $1.8M en contratos >$30M: pon `insumoId: null` y calcula ~1.8%-3.0% del valor vendido",
+    "     segun amparos de Cumplimiento, Buen Manejo del Anticipo, RCE, Salarios/Prestaciones, Estabilidad",
+    "     y/o Todo Riesgo Construccion, mas IVA 19% de prima). Si existen REQUISITOS INTERNOS ADICIONALES",
+    "     DEL ADMINISTRADOR (ej. un seguro especifico, trabajo nocturno o andamios), OBLIGATORIAMENTE",
+    "     incluye cada rubro indicado con su costo real.",
+    "   - TRANSPORTE REAL SEGUN CIUDAD (sede: Envigado/Medellin): si la obra es en Rionegro, Oriente",
+    "     antioqueno o fuera de Medellin, incluye flete de camion de carga para estructuras largas +",
+    "     movilizacion diaria de cuadrilla y peajes durante todos los dias de obra + consumibles reales",
+    "     de soldadura (TIG/inox o 7018), discos, brocas y sellados.",
+    "6. VERIFICACION DE SENTIDO ECONOMICO (AUTOCORRECCION ANTES DE RESPONDER):",
+    "   - Suma mentalmente tu costo total vs. SUBTOTAL VENTA DIRECTA: en proyectos llave en mano en",
+    "     Colombia (suministro + fabricacion + obra civil + instalacion), el costo directo real esta",
+    "     tipicamente entre el 48% y el 72% de la venta (margen neto real 28%-52%).",
+    "   - Si tu suma de costos da menos del 40% del valor vendido en una obra grande (>$20M), DETENTE",
+    "     y corrige precios de acero inoxidable, obra civil, alquiler de grua/manlift, fabricacion en",
+    "     taller, jornadas reales (personas x dias), polizas y fletes antes de responder.",
+    "7. Incluye SIEMPRE un `resumen` claro de 2-3 frases (sistema, fabricacion/obra civil, cuadrilla",
+    "   y dias) y 2-3 `avisos` practicos. Responde solo el JSON, sin explicaciones ni ```.",
     "",
     "CATALOGO DE INSUMOS DE LA EMPRESA (id | categoria | unidad | costo COP | nombre):",
     catalogoInsumos,
@@ -300,12 +322,14 @@ Deno.serve(conOrigenPermitido(async (peticion) => {
       userPrompt = [
         proyecto.titulo ? `TÍTULO DEL PROYECTO: ${String(proyecto.titulo).slice(0, 400)}` : "",
         proyecto.obra ? `OBRA / SITIO: ${String(proyecto.obra).slice(0, 200)}` : "",
-        proyecto.ciudad ? `CIUDAD: ${String(proyecto.ciudad).slice(0, 120)}` : "",
+        proyecto.ciudad ? `CIUDAD DE LA OBRA (sede empresa: Envigado/Medellín): ${String(proyecto.ciudad).slice(0, 120)}` : "",
+        proyecto.tiempoEjec ? `TIEMPO DE EJECUCIÓN COTIZADO: ${String(proyecto.tiempoEjec).slice(0, 200)}` : "",
         proyecto.saludo ? `FRASE DE APERTURA / ESPECIFICACIÓN TÉCNICA: ${String(proyecto.saludo).slice(0, 2500)}` : "",
         proyecto.alcance ? `ALCANCE: ${String(proyecto.alcance).slice(0, 1500)}` : "",
         proyecto.requerimientoCliente ? `ESPECIFICACIONES / REQUERIMIENTO: ${String(proyecto.requerimientoCliente).slice(0, 1500)}` : "",
         proyecto.incluyeTexto ? `ESTA COTIZACIÓN INCLUYE:\n${String(proyecto.incluyeTexto).slice(0, 1500)}` : "",
         proyecto.observaciones ? `OBSERVACIONES: ${String(proyecto.observaciones).slice(0, 1000)}` : "",
+        proyecto.notasInternas ? `REQUISITOS INTERNOS ADICIONALES INDICADOS POR EL ADMINISTRADOR (PRIORIDAD MÁXIMA — INCLUIR OBLIGATORIAMENTE):\n${String(proyecto.notasInternas).slice(0, 1000)}` : "",
         subtotalVenta > 0 ? `SUBTOTAL VENTA DIRECTA DE LOS ÍTEMS: ${subtotalVenta} COP` : "",
         cuerpo?.soloSinReceta
           ? "NOTA: Estima ÚNICAMENTE los materiales, mano de obra y consumibles para los ítems a medida listados abajo (los del catálogo ya tienen receta propia)."
@@ -356,27 +380,31 @@ Deno.serve(conOrigenPermitido(async (peticion) => {
       { model: IA_MODELO, jsonFormat: true },
       { model: IA_MODELO, jsonFormat: false },
       { model: "openai/gpt-oss-120b", jsonFormat: false },
+      { model: "openai/gpt-oss-20b", jsonFormat: true },
       { model: "openai/gpt-oss-20b", jsonFormat: false },
       { model: "meta-llama/llama-4-scout-17b-16e-instruct", jsonFormat: false },
+      { model: "qwen/qwen3-32b", jsonFormat: false },
     ].filter((it, idx, arr) =>
       arr.findIndex((o) => o.model === it.model && o.jsonFormat === it.jsonFormat) === idx
     );
 
     let propuesta: Record<string, unknown> | null = null;
     const errores: string[] = [];
+    let hubo429 = false;
 
     for (const intento of intentos) {
       try {
         const payload: Record<string, unknown> = {
           model: intento.model,
           temperature: 0.2,
-          max_completion_tokens: 6144,
+          max_completion_tokens: 4096,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
           ],
         };
         if (intento.model.startsWith("openai/gpt-oss")) {
+          // "low" ahorra ~70% de tokens de razonamiento y evita agotar el límite por minuto de Groq
           payload.reasoning_effort = "low";
         }
         if (intento.jsonFormat) {
@@ -408,7 +436,10 @@ Deno.serve(conOrigenPermitido(async (peticion) => {
           errores.push(`${intento.model} (${resp.status}): ${txt.slice(0, 140)}`);
           console.warn(`Modelo ${intento.model} (jsonFormat=${intento.jsonFormat}) falló ${resp.status}:`, txt);
           if (resp.status === 429) {
-            return responder({ error: "Se alcanzó el límite de uso gratuito por ahora. Espera unos minutos y vuelve a intentar." }, 429);
+            // En Groq cada modelo tiene su propio cupo por minuto: si uno da 429,
+            // probamos automáticamente el siguiente modelo de la lista.
+            hubo429 = true;
+            continue;
           }
           if (resp.status === 401 || resp.status === 403) {
             return responder({ error: "La clave de la IA no es válida o venció. Hay que actualizarla en Supabase." }, 500);
@@ -422,6 +453,9 @@ Deno.serve(conOrigenPermitido(async (peticion) => {
 
     if (!propuesta) {
       console.error("Fallo la IA en todos los intentos:", errores.join(" | "));
+      if (hubo429) {
+        return responder({ error: "Se alcanzó el límite de uso gratuito por minuto en todos los modelos. Espera un minuto y vuelve a intentar." }, 429);
+      }
       const motivo = errores[0] ? errores[0].slice(0, 200) : "";
       return responder({
         error: `El servicio de IA respondió con error. ` +

@@ -37,14 +37,14 @@ export const INSUMOS_DEFAULT = [
   { id: "platina_base", nombre: "Platina estructural empotrada + tornillería", categoria: "material", unidad: "Und", costoUnitario: 68000 },
   { id: "poste_terminal", nombre: "Poste terminal / anclaje de extremo certificado", categoria: "material", unidad: "Und", costoUnitario: 195000 },
   { id: "soporte_intermedio", nombre: "Soporte / pasador intermedio de cable", categoria: "material", unidad: "Und", costoUnitario: 85000 },
-  { id: "poste_cuello_cisne", nombre: "Poste cuello de cisne con pedestal (camionera)", categoria: "material", unidad: "Und", costoUnitario: 2400000 },
-  { id: "dado_concreto", nombre: "Concreto 3000 PSI + acero refuerzo dado cimentación", categoria: "material", unidad: "Und", costoUnitario: 680000 },
+  { id: "poste_cuello_cisne", nombre: "Poste cuello de cisne / soporte en T con pedestal (camionera)", categoria: "material", unidad: "Und", costoUnitario: 4200000 },
+  { id: "dado_concreto", nombre: "Pedestal / dado cimentación en concreto 3500 PSI + acero + excavación", categoria: "material", unidad: "Und", costoUnitario: 2200000 },
   { id: "tensor_forjado", nombre: "Tensor ojo-ojo forjado + guardacables", categoria: "material", unidad: "Und", costoUnitario: 75000 },
   { id: "absorbedor_energia", nombre: "Absorbedor de energía en línea (shock absorber)", categoria: "material", unidad: "Und", costoUnitario: 320000 },
   { id: "prensacables_kit", nombre: "Kit prensacables / terminales de compresión", categoria: "material", unidad: "Kit", costoUnitario: 45000 },
   { id: "arrestador_vertical", nombre: "Arrestador / freno de caídas vertical certificado", categoria: "material", unidad: "Und", costoUnitario: 380000 },
-  { id: "carro_camionera", nombre: "Carro deslizante para línea de vida camionera", categoria: "material", unidad: "Und", costoUnitario: 420000 },
-  { id: "autorretractil", nombre: "Línea autorretráctil certificada", categoria: "material", unidad: "Und", costoUnitario: 1350000 },
+  { id: "carro_camionera", nombre: "Carro deslizante / polea para línea de vida camionera", categoria: "material", unidad: "Und", costoUnitario: 520000 },
+  { id: "autorretractil", nombre: "Línea autorretráctil certificada (12-15 m)", categoria: "material", unidad: "Und", costoUnitario: 2100000 },
   { id: "cartucho_epoxico", nombre: "Cartucho adhesivo epóxico estructural (Hilti / Sikadur)", categoria: "material", unidad: "Und", costoUnitario: 92000 },
   { id: "varilla_roscada", nombre: "Varilla roscada B7 / Inox + tuercas y arandelas", categoria: "material", unidad: "Und", costoUnitario: 18000 },
   { id: "placa_identificacion", nombre: "Placa identificación acero inox (Res. 4272)", categoria: "material", unidad: "Und", costoUnitario: 35000 },
@@ -58,10 +58,13 @@ export const INSUMOS_DEFAULT = [
   { id: "tecnico_alturas", nombre: "Jornada técnico instalador certificado en alturas", categoria: "mano_obra", unidad: "Día", costoUnitario: 180000 },
   { id: "auxiliar_alturas", nombre: "Jornada auxiliar técnico en alturas", categoria: "mano_obra", unidad: "Día", costoUnitario: 130000 },
   { id: "coordinador_sst", nombre: "Jornada coordinador trabajo seguro en alturas (SST)", categoria: "mano_obra", unidad: "Día", costoUnitario: 200000 },
+  { id: "fabricacion_taller", nombre: "Fabricación en taller (soldadura calificada, corte y pintura)", categoria: "mano_obra", unidad: "Día", costoUnitario: 420000 },
   { id: "memoria_calculo", nombre: "Diseño, memoria de cálculo y firma de ingeniería", categoria: "mano_obra", unidad: "Global", costoUnitario: 450000 },
 
   // --- Transporte y consumibles ---
   { id: "transporte_obra", nombre: "Transporte de personal, equipos y materiales", categoria: "logistica", unidad: "Viaje", costoUnitario: 140000 },
+  { id: "alquiler_grua_manlift", nombre: "Alquiler camión grúa / izajes / plataforma elevadora (manlift)", categoria: "logistica", unidad: "Día", costoUnitario: 1800000 },
+  { id: "polizas_certificacion", nombre: "Pólizas, pruebas de carga, certificación Res. 4272 y reserva recertificación", categoria: "logistica", unidad: "Global", costoUnitario: 1800000 },
   { id: "consumibles_instalacion", nombre: "Consumibles (brocas SDS, discos, soldadura, tornillería menor)", categoria: "logistica", unidad: "Kit", costoUnitario: 85000 },
 ];
 
@@ -268,12 +271,15 @@ export const RECETAS_DEFAULT = {
     { insumoId: "varilla_roscada", modo: "fijo", valor: 16 },
     { insumoId: "pintura_anticorrosiva", modo: "fijo", valor: 2 },
     { insumoId: "placa_identificacion", modo: "fijo", valor: 1 },
+    { insumoId: "fabricacion_taller", modo: "fijo", valor: 5 },
     { insumoId: "memoria_calculo", modo: "fijo", valor: 1 },
-    { insumoId: "tecnico_alturas", modo: "fijo", valor: 5 },
-    { insumoId: "auxiliar_alturas", modo: "fijo", valor: 5 },
-    { insumoId: "coordinador_sst", modo: "fijo", valor: 4 },
-    { insumoId: "transporte_obra", modo: "fijo", valor: 3 },
-    { insumoId: "consumibles_instalacion", modo: "fijo", valor: 3 },
+    { insumoId: "tecnico_alturas", modo: "fijo", valor: 10 },
+    { insumoId: "auxiliar_alturas", modo: "fijo", valor: 10 },
+    { insumoId: "coordinador_sst", modo: "fijo", valor: 6 },
+    { insumoId: "alquiler_grua_manlift", modo: "fijo", valor: 2 },
+    { insumoId: "polizas_certificacion", modo: "fijo", valor: 1 },
+    { insumoId: "transporte_obra", modo: "fijo", valor: 6 },
+    { insumoId: "consumibles_instalacion", modo: "fijo", valor: 5 },
   ],
   [claveServicio("CARRO DESLIZANTE PARA LINEA DE VIDA CAMIONERA")]: [
     { insumoId: "carro_camionera", modo: "por_unidad", valor: 1 },
@@ -1096,8 +1102,22 @@ export function estimarCostosHeuristico({
       diasCuadrilla += Math.max(1, Math.ceil(kg / 90));
       requiereAlturas = true;
     } else if (/TEJA|CUBIERT|TECHO|IMPERMEABILIZ|CANOA|CANAL/.test(k)) {
-      agregar(null, { nombre: "Material de cubierta / tejas / selladores y tornillería", categoria: "material", unidad: it?.unit || "M2", costoUnitario: 65000 }, c, tag);
-      diasCuadrilla += Math.max(1, Math.ceil(c / 15));
+      const vu = Number(it?.vu) || 0;
+      const subtotalItem = c * vu;
+      const esGlobalOAlto = /^(GLOBAL|GLB|UND|UN)$/i.test(String(it?.unit || "").trim()) || vu >= 500000;
+      if (esGlobalOAlto && subtotalItem >= 2000000) {
+        // Estima m² aproximados si el techo viene en Global/Und a partir del valor comercial (~$180k-$220k/m² en Colombia)
+        const m2Est = Math.max(20, Math.round(subtotalItem / 220000));
+        agregar(null, { nombre: "Teja termoacústica / cubierta + tornillería, caballetes y sellos", categoria: "material", unidad: "M2", costoUnitario: 95000 }, m2Est, tag);
+        agregar(null, { nombre: "Correas, estructura de apoyo, canales, flanches y remates metálicos", categoria: "material", unidad: "Global", costoUnitario: Math.round(subtotalItem * 0.14) }, 1, tag);
+        agregar("alquiler_grua_manlift", null, Math.max(2, Math.ceil(m2Est / 250)), "Izaje de tejas / andamios certificados");
+        agregar("polizas_certificacion", null, 1, "Pólizas y documentación SST");
+        diasCuadrilla += Math.max(2, Math.ceil(m2Est / 35));
+        if (m2Est >= 200) cuadrillaDoble = true;
+      } else {
+        agregar(null, { nombre: "Teja termoacústica / material de cubierta, flanches, selladores y tornillería", categoria: "material", unidad: it?.unit || "M2", costoUnitario: 95000 }, c, tag);
+        diasCuadrilla += Math.max(1, Math.ceil(c / 20));
+      }
       requiereAlturas = true;
     } else if (/PINTUR|FACHAD|RESAN|OBRA BLANCA|ESTUCO|DRYWALL|REFORM|ADECUAC|MANTENIM/.test(k)) {
       agregar("kit_resane_civil", null, Math.max(1, Math.ceil(c / 3)), tag);

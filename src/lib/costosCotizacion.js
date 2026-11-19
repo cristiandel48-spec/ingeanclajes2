@@ -400,10 +400,10 @@ export const RECETAS_DEFAULT = {
     { insumoId: "transporte_obra", modo: "fijo", valor: 1 },
   ],
   [claveServicio("RECERTIFICACION ANUAL")]: [
-    { insumoId: "placa_identificacion", modo: "fijo", valor: 1 },
-    { insumoId: "tecnico_alturas", modo: "fijo", valor: 1 },
-    { insumoId: "coordinador_sst", modo: "fijo", valor: 1 },
-    { insumoId: "transporte_obra", modo: "fijo", valor: 1 },
+    { insumoId: "placa_identificacion", modo: "por_unidad", valor: 1 },
+    { insumoId: "tecnico_alturas", modo: "cada_n", valor: 2 },
+    { insumoId: "coordinador_sst", modo: "cada_n", valor: 2 },
+    { insumoId: "transporte_obra", modo: "cada_n", valor: 2 },
   ],
   [claveServicio("INSPECCION Y DIAGNOSTICO")]: [
     { insumoId: "tecnico_alturas", modo: "fijo", valor: 1 },
@@ -549,6 +549,32 @@ export function guardarConfigCostos(empresaConfig, nuevaConfig = {}) {
     : [...lista, filaNueva];
 }
 
+const CLAVE_RECERT_ANUAL = claveServicio("RECERTIFICACION ANUAL");
+
+// Servicios genéricos cobrados como "1 Global" con receta base fija. Si el ítem
+// trae detalles adicionales (ej. "RECERTIFICACIÓN ANUAL L.V.H-L.V.V") o un valor
+// muy superior a la tarifa base de 1 sistema, se marca para análisis automático
+// con IA en lugar de repetir siempre el mismo costo fijo ($555.000).
+const RECETAS_GLOBALES_GENERICAS = {
+  [CLAVE_RECERT_ANUAL]: 1200000,
+  [claveServicio("CERTIFICACION SISTEMA ANTICAIDA")]: 2500000,
+  [claveServicio("INSPECCION Y DIAGNOSTICO")]: 900000,
+};
+
+const RECETAS_LINEALES = new Set([
+  claveServicio("LINEA DE VIDA HORIZONTAL"),
+  claveServicio("LINEA DE VIDA CONEXION / TRANSVERSAL"),
+  claveServicio("LINEA DE VIDA VERTICAL"),
+  claveServicio("RECERTIFICACION LINEA DE VIDA"),
+  claveServicio("ESCALERA FIJA CON LINEA DE VIDA VERTICAL"),
+  claveServicio("ESCALERA TIPO GATO CON LINEA DE VIDA VERTICAL"),
+  claveServicio("ESCALERA TIPO GATO"),
+  claveServicio("ESCALERA MARINERA"),
+  claveServicio("BARANDILLA DE PROTECCION EN CABLE"),
+  claveServicio("PASARELA DE SEGURIDAD EN CUBIERTA"),
+  claveServicio("FABRICACION Y MONTAJE DE ESTRUCTURA METALICA"),
+]);
+
 /**
  * Busca la receta APU que mejor corresponde a la descripción de un ítem cotizado.
  * Devuelve `{ clave, reglas }` o `null` si es un trabajo a medida / reforma sin receta.
@@ -562,12 +588,18 @@ export function buscarRecetaDeServicio(descripcion = "", recetas = {}) {
     return { clave, reglas: recetas[clave] };
   }
 
+  // Si la descripción corresponde a una obra/suministro/instalación/reforma nueva,
+  // no debe caer accidentalmente en la receta genérica de "RECERTIFICACION ANUAL"
+  // solo porque mencione la palabra "recertificación" dentro del texto.
+  const esObraNueva = /\b(?:SUMINISTRO|INSTALACION|FABRICACION|MONTAJE|ESTRUCTURA|CUBIERTA|TEJA|PANEL|REFORMA)\b/.test(clave);
+
   // 2. Coincidencia por inclusión (prefiriendo la clave más específica / larga)
   const clavesOrdenadas = Object.keys(recetas)
     .filter((k) => Array.isArray(recetas[k]) && recetas[k].length > 0)
     .sort((a, b) => b.length - a.length);
 
   for (const k of clavesOrdenadas) {
+    if (k === CLAVE_RECERT_ANUAL && esObraNueva) continue;
     if (clave.includes(k)) {
       return { clave: k, reglas: recetas[k] };
     }
@@ -575,10 +607,10 @@ export function buscarRecetaDeServicio(descripcion = "", recetas = {}) {
 
   // 3. Sinónimos frecuentes del día a día de Ingeanclajes
   const alias = [
-    { test: /\bLINEA\s+DE\s+VIDA\s+HORIZONTAL\b|\bLVH\b/, target: claveServicio("LINEA DE VIDA HORIZONTAL") },
-    { test: /\bLINEA\s+DE\s+VIDA\s+VERTICAL\b|\bLVV\b/, target: claveServicio("LINEA DE VIDA VERTICAL") },
-    { test: /\bLINEA\s+DE\s+VIDA\s+CAMIONER/, target: claveServicio("LINEA DE VIDA CAMIONERA EN CABLE DE ACERO GALVANIZADO") },
-    { test: /\bRECERTIFICACION\b.*\bLINEA\b/, target: claveServicio("RECERTIFICACION LINEA DE VIDA") },
+    { test: /\bLINEA(?:S)?\s+DE\s+VIDA\s+HORIZONTAL(?:ES)?\b|\bLVH\b/, target: claveServicio("LINEA DE VIDA HORIZONTAL"), soloSinRecert: true },
+    { test: /\bLINEA(?:S)?\s+DE\s+VIDA\s+VERTICAL(?:ES)?\b|\bLVV\b/, target: claveServicio("LINEA DE VIDA VERTICAL"), soloSinRecert: true },
+    { test: /\bLINEA(?:S)?\s+DE\s+VIDA\s+CAMIONER/, target: claveServicio("LINEA DE VIDA CAMIONERA EN CABLE DE ACERO GALVANIZADO") },
+    { test: /\bRECERTIFICACION(?:ES)?\b.*\bLINEA(?:S)?\b/, target: claveServicio("RECERTIFICACION LINEA DE VIDA") },
     { test: /\bANCLAJE\s+ARTICO\b.*\bINOX/, target: claveServicio("ANCLAJE ARTICO ACERO INOXIDABLE") },
     { test: /\bANCLAJE\s+ARTICO\b/, target: claveServicio("ANCLAJE ARTICO ACERO GALVANIZADO") },
     { test: /\bPUNTO(?:S)?\s+DE\s+ANCLAJE\b.*\bSOLDAD/, target: claveServicio("PUNTO DE ANCLAJE SOLDADO") },
@@ -590,11 +622,14 @@ export function buscarRecetaDeServicio(descripcion = "", recetas = {}) {
     { test: /\bCAMINADER|\bPASAREL/, target: claveServicio("PASARELA DE SEGURIDAD EN CUBIERTA") },
     { test: /\bBARANDILL|\bBARANDA\b.*\bCABLE\b/, target: claveServicio("BARANDILLA DE PROTECCION EN CABLE") },
     { test: /\bCOORDINADOR\s+(?:SST|DE\s+ALTURAS)\b/, target: claveServicio("COORDINADOR SST EN OBRA") },
-    { test: /\bRECERTIFICACION\b/, target: claveServicio("RECERTIFICACION ANUAL") },
+    { test: /\bRECERTIFICACION(?:ES)?\b/, target: CLAVE_RECERT_ANUAL, soloSinObraNueva: true },
     { test: /\bCERTIFICACION\b.*\bANTICAIDA/, target: claveServicio("CERTIFICACION SISTEMA ANTICAIDA") },
   ];
 
-  for (const { test, target } of alias) {
+  const mencionaRecert = /\bRECERTIFICACION(?:ES)?\b/.test(clave);
+  for (const { test, target, soloSinRecert, soloSinObraNueva } of alias) {
+    if (soloSinRecert && mencionaRecert) continue;
+    if (soloSinObraNueva && esObraNueva) continue;
     if (test.test(clave) && Array.isArray(recetas[target]) && recetas[target].length > 0) {
       return { clave: target, reglas: recetas[target] };
     }
@@ -642,6 +677,7 @@ export function calcularLineasDesdeRecetas(items = [], configCostos = null) {
   const acumulados = new Map();
   const itemsConReceta = [];
   const itemsSinReceta = [];
+  const itemsGenericosGlobales = [];
 
   const listaItems = Array.isArray(items) ? items : [];
   // Detecta si la propuesta ya desglosa postes / dados de cimentación camioneros aparte.
@@ -659,11 +695,15 @@ export function calcularLineasDesdeRecetas(items = [], configCostos = null) {
     if (!desc || cant <= 0) continue;
 
     const claveItem = claveServicio(desc);
+    const vu = Math.max(0, Number(item?.vu) || 0);
+    const subtotalItem = cant * vu;
+    const unitNorm = String(item?.unit || "").trim();
+    const esUnitGlobal = /^(GLOBAL|GLB)$/i.test(unitNorm);
     const esCamioneraIntegral =
       !hayPosteCamioneraAparte &&
       /\bLINEA\s+DE\s+VIDA\s+CAMIONER/.test(claveItem) &&
-      (Number(item?.vu || 0) >= 5000000 ||
-        (cant <= 2 && /^(GLOBAL|GLB|UND|UN|SISTEMA)$/i.test(String(item?.unit || "").trim())));
+      (vu >= 5000000 ||
+        (cant <= 2 && /^(GLOBAL|GLB|UND|UN|SISTEMA)$/i.test(unitNorm)));
 
     let match = null;
     if (esCamioneraIntegral) {
@@ -682,9 +722,40 @@ export function calcularLineasDesdeRecetas(items = [], configCostos = null) {
         desc,
         cant,
         unit: item.unit || "Und",
-        vu: Number(item.vu) || 0,
+        vu,
       });
       continue;
+    }
+
+    // Detecta cuando un ítem cayó en una receta genérica/global (ej. "RECERTIFICACION ANUAL"
+    // de $555.000 fijos) pero en realidad trae alcance extra ("L.V.H-L.V.V", varios sistemas,
+    // valor alto > $1.2M), o es una receta por ML cotizada como "1 Global", o un sistema
+    // especial (TPO / Latchways / ManSafe / Inox 316). Estos requieren análisis automático IA.
+    const umbralGlobal = RECETAS_GLOBALES_GENERICAS[match.clave];
+    const esGlobalGenericoConAlcanceExtra = Boolean(
+      umbralGlobal &&
+      (
+        (claveItem !== match.clave && claveItem.length > match.clave.length + 2) ||
+        (cant <= 2 && subtotalItem >= umbralGlobal)
+      )
+    );
+    const esLinealCotizadoComoGlobal = Boolean(
+      RECETAS_LINEALES.has(match.clave) &&
+      esUnitGlobal &&
+      cant <= 2 &&
+      subtotalItem >= 1500000
+    );
+    const esSistemaEspecialEnDesc = /\bTPO\b|LATCHWAYS|CONSTANT\s+FORCE|MAN\s*SAFE|ACERO\s+INOXIDABLE\s+316/.test(claveItem);
+
+    if (esGlobalGenericoConAlcanceExtra || esLinealCotizadoComoGlobal || esSistemaEspecialEnDesc) {
+      itemsGenericosGlobales.push({
+        id: item.id,
+        desc,
+        cant,
+        unit: item.unit || "Und",
+        vu,
+        recetaClave: match.clave,
+      });
     }
 
     itemsConReceta.push({
@@ -744,7 +815,7 @@ export function calcularLineasDesdeRecetas(items = [], configCostos = null) {
     .filter((l) => l.cant > 0)
     .sort((a, b) => (ordenCat[a.categoria] || 9) - (ordenCat[b.categoria] || 9));
 
-  return { lineas, itemsConReceta, itemsSinReceta };
+  return { lineas, itemsConReceta, itemsSinReceta, itemsGenericosGlobales };
 }
 
 /**
@@ -870,11 +941,18 @@ export function calcularCosteoPropuesta(propuesta = {}, configCostos = null) {
     guardado.huellaItems !== huellaActual
   );
 
+  const itemsGenericosGlobales = Array.isArray(auto.itemsGenericosGlobales) ? auto.itemsGenericosGlobales : [];
+  const requiereIaAuto = Boolean(
+    auto.itemsSinReceta.length > 0 || itemsGenericosGlobales.length > 0
+  );
+
   return {
     modo: usaPersonalizado ? guardado.modo : "auto",
     lineas,
     itemsConReceta: auto.itemsConReceta,
     itemsSinReceta: auto.itemsSinReceta,
+    itemsGenericosGlobales,
+    requiereIaAuto,
     itemsCambiaron,
     huellaActual,
     resumenIa: usaPersonalizado ? String(guardado?.resumenIa || "") : "",
@@ -952,24 +1030,73 @@ export function estimarCostosHeuristico({
     ? [{ desc: titulo || saludo || alcance || requerimientoCliente, cant: 1, unit: "Global", vu: 0 }]
     : [];
 
-  // 1. Conservar primero las recetas APU exactas de los ítems del catálogo
-  const baseRecetas = calcularLineasDesdeRecetas(listaItems, cfg);
+  // 1. Conservar primero las recetas APU exactas (excluyendo ítems globales genéricos
+  //    que traen alcance extra y deben estimarse según el contexto real de la propuesta)
+  const analisisRecetas = calcularLineasDesdeRecetas(listaItems, cfg);
+  const clavesGlobales = new Set(
+    (analisisRecetas.itemsGenericosGlobales || []).map((g) => `${g.id ?? ""}|${claveServicio(g.desc)}|${g.cant}`)
+  );
+  const itemsSoloRecetaExacta = listaItems.filter((it) => {
+    const desc = String(it?.desc || "").trim();
+    const cant = Math.max(0, Number(it?.cant) || 0);
+    if (!desc || cant <= 0) return false;
+    const key = `${it?.id ?? ""}|${claveServicio(desc)}|${cant}`;
+    return !clavesGlobales.has(key);
+  });
+  const baseRecetas = calcularLineasDesdeRecetas(itemsSoloRecetaExacta, cfg);
   for (const rl of baseRecetas.lineas) {
     lineas.push({ ...rl });
   }
 
-  // 2. Aplicar reglas heurísticas ÚNICAMENTE a los ítems a medida / reformas sin receta
+  // 2. Aplicar reglas heurísticas a los ítems sin receta y a los globales genéricos
+  const itemsAEstimar = [
+    ...baseRecetas.itemsSinReceta,
+    ...(analisisRecetas.itemsGenericosGlobales || []),
+  ];
   let diasCuadrilla = 0;
   let cuadrillaDoble = false;
   let requiereAlturas = false;
 
-  for (const it of baseRecetas.itemsSinReceta) {
+  for (const it of itemsAEstimar) {
     const desc = String(it?.desc || "").trim();
     const c = Math.max(1, Number(it?.cant) || 1);
     const k = claveServicio(`${desc} ${it?.unit || ""} ${saludo} ${alcance} ${requerimientoCliente}`);
     const tag = desc.length > 72 ? `${desc.slice(0, 72)}…` : (desc || "Trabajo a medida");
 
-    if (/CAMIONER/.test(k)) {
+    if (/\bRECERTIFICACION(?:ES)?\b/.test(claveServicio(desc)) && !/\b(?:SUMINISTRO|FABRICACION|CONSTRUCCION)\b/.test(claveServicio(desc))) {
+      const textoItem = `${desc} ${saludo} ${alcance} ${requerimientoCliente}`;
+      const kRec = claveServicio(textoItem);
+      const tieneLvh = /\bL\s*V\s*H\b|\bHORIZONTAL/.test(kRec);
+      const tieneLvv = /\bL\s*V\s*V\b|\bVERTICAL/.test(kRec);
+      const tieneAnclajes = /\bANCLAJ/.test(kRec);
+      const tieneEscaleras = /\bESCALER/.test(kRec);
+      const tiposDistintos = [tieneLvh, tieneLvv, tieneAnclajes, tieneEscaleras].filter(Boolean).length;
+      const matchMetros = textoItem.match(/(\d+(?:[.,]\d+)?)\s*(?:ml|m\.l\.|metros?\s*lineales?|metros?)\b/i);
+      const metrosMencionados = matchMetros ? Number(String(matchMetros[1]).replace(",", ".")) || 0 : 0;
+      const matchSistemas = textoItem.match(/(\d+)\s*(?:l[ií]neas?|sistemas?|tramos?|puntos?)\b/i);
+      const sistemasMencionados = matchSistemas ? Number(matchSistemas[1]) || 0 : 0;
+      const vuItem = Number(it?.vu) || 0;
+      const subItem = c * vuItem;
+
+      const numPlacas = Math.max(
+        c > 1 ? c : 1,
+        tiposDistintos || 1,
+        sistemasMencionados > 0 ? Math.min(30, sistemasMencionados) : 0,
+        subItem >= 2000000 ? Math.min(12, Math.max(2, Math.round(subItem / 900000))) : 1
+      );
+      agregar("placa_identificacion", null, numPlacas, `Placas inox Res. 4272 (${numPlacas} sistema(s)/punto(s))`);
+
+      const galPintura = Math.max(1, metrosMencionados >= 60 ? Math.ceil(metrosMencionados / 50) : (subItem >= 4000000 ? 2 : 1));
+      agregar("pintura_anticorrosiva", null, galPintura, "Limpieza y retoque anticorrosivo en soportes y anclajes");
+
+      const diasRecert = Math.max(
+        1,
+        metrosMencionados >= 50 ? Math.ceil(metrosMencionados / 45) : 0,
+        subItem >= 3500000 ? Math.min(6, Math.ceil(subItem / 2200000)) : 1
+      );
+      diasCuadrilla += diasRecert;
+      requiereAlturas = true;
+    } else if (/CAMIONER/.test(k)) {
       agregar("poste_cuello_cisne", null, 2, tag);
       agregar("dado_concreto", null, 2, tag);
       agregar("cable_acero_38", null, Math.max(20, c * 1.15), tag);
@@ -1111,7 +1238,9 @@ export function estimarCostosHeuristico({
         agregar(null, { nombre: "Teja termoacústica / cubierta + tornillería, caballetes y sellos", categoria: "material", unidad: "M2", costoUnitario: 95000 }, m2Est, tag);
         agregar(null, { nombre: "Correas, estructura de apoyo, canales, flanches y remates metálicos", categoria: "material", unidad: "Global", costoUnitario: Math.round(subtotalItem * 0.14) }, 1, tag);
         agregar("alquiler_grua_manlift", null, Math.max(2, Math.ceil(m2Est / 250)), "Izaje de tejas / andamios certificados");
-        agregar("polizas_certificacion", null, 1, "Pólizas y documentación SST");
+        if (subtotalItem >= 20000000 || /\bPOLIZ|\bSEGURO|\bRCE\b/.test(contextoGeneral)) {
+          agregar("polizas_certificacion", null, 1, "Pólizas y documentación SST");
+        }
         diasCuadrilla += Math.max(2, Math.ceil(m2Est / 35));
         if (m2Est >= 200) cuadrillaDoble = true;
       } else {
@@ -1134,7 +1263,7 @@ export function estimarCostosHeuristico({
     }
   }
 
-  if (baseRecetas.itemsSinReceta.length > 0) {
+  if (itemsAEstimar.length > 0) {
     const diasFinal = Math.max(1, Math.min(365, diasCuadrilla));
     const multiplicadorPersonal = cuadrillaDoble ? 2 : 1;
     agregar(
@@ -1163,8 +1292,8 @@ export function estimarCostosHeuristico({
   if (baseRecetas.itemsConReceta.length > 0) {
     resumenPartes.push(`${baseRecetas.itemsConReceta.length} ítem(s) con receta APU`);
   }
-  if (baseRecetas.itemsSinReceta.length > 0) {
-    resumenPartes.push(`${baseRecetas.itemsSinReceta.length} ítem(s) a medida estimados localmente`);
+  if (itemsAEstimar.length > 0) {
+    resumenPartes.push(`${itemsAEstimar.length} ítem(s) estimados por alcance`);
   }
 
   return {

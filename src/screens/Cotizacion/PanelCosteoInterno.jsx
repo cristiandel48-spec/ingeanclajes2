@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppData } from "../../context/AppDataContext";
 import { puedeVerCostosInternos } from "../../lib/permisos";
 import {
@@ -76,6 +76,7 @@ export default function PanelCosteoInterno({
 
   const [abierto, setAbierto] = useState(true);
   const [estimandoIa, setEstimandoIa] = useState(false);
+  const [estimandoAuto, setEstimandoAuto] = useState(false);
   const [errorIa, setErrorIa] = useState("");
   const [mostrandoAgregar, setMostrandoAgregar] = useState(false);
   const [mostrandoPolizas, setMostrandoPolizas] = useState(false);
@@ -95,15 +96,171 @@ export default function PanelCosteoInterno({
     costoUnitario: 0,
   });
 
-  // Seguridad estricta: si no es administrador, no renderizar absolutamente nada.
-  if (!autorizado) return null;
-
-  const itemsPropuesta = Array.isArray(propuesta?.items) ? propuesta.items : [];
-  const estado = ESTILOS_ESTADO[costeo.estadoMargen] || ESTILOS_ESTADO.sin_venta;
+  const itemsPropuesta = useMemo(
+    () => (Array.isArray(propuesta?.items) ? propuesta.items : []),
+    [propuesta?.items]
+  );
   const notasInternas =
     propuesta?.costeoInterno?.notasInternas !== undefined
       ? String(propuesta.costeoInterno.notasInternas || "")
       : notasInternasLocal;
+
+  const hayItemsValidos = useMemo(
+    () => itemsPropuesta.some((it) => String(it?.desc || "").trim() && Number(it?.cant || 0) > 0),
+    [itemsPropuesta]
+  );
+
+  // Huella del contexto de la propuesta para disparar la estimación automática con IA
+  // exactamente una vez cuando los ítems son a medida o globales genéricos (p. ej.
+  // "RECERTIFICACIÓN ANUAL L.V.H-L.V.V (1 Global)") en lugar de mostrar un valor fijo.
+  const claveAutoIa = useMemo(() => {
+    if (!hayItemsValidos) return "";
+    return [
+      propuesta?.id || "",
+      costeo.huellaActual,
+      String(costeo.ventaSubtotal || 0),
+      String(tituloCotizacion || "").trim().slice(0, 120),
+      String(propuesta?.alcance || "").trim().slice(0, 120),
+      String(propuesta?.requerimientoCliente || "").trim().slice(0, 120),
+    ].join("|");
+  }, [
+    hayItemsValidos,
+    propuesta?.id,
+    costeo.huellaActual,
+    costeo.ventaSubtotal,
+    tituloCotizacion,
+    propuesta?.alcance,
+    propuesta?.requerimientoCliente,
+  ]);
+
+  const debeAutoEstimar = Boolean(
+    autorizado &&
+    hayItemsValidos &&
+    costeo.requiereIaAuto &&
+    claveAutoIa &&
+    (
+      costeo.modo === "auto" ||
+      (costeo.itemsCambiaron && propuesta?.costeoInterno?.origenAuto === true)
+    )
+  );
+
+  const intentosAutoRef = useRef(new Set());
+  const contextoAutoRef = useRef(null);
+  useEffect(() => {
+    contextoAutoRef.current = {
+      propuesta,
+      onChangePropuesta,
+      cl,
+      tituloCotizacion,
+      saludoCotizacion,
+      observacionesCot,
+      notasInternas,
+      itemsPropuesta,
+      configCostos,
+      costeo,
+    };
+  });
+
+  useEffect(() => {
+    if (!debeAutoEstimar || !claveAutoIa) return;
+    if (intentosAutoRef.current.has(claveAutoIa)) return;
+
+    let cancelado = false;
+    const timer = setTimeout(async () => {
+      if (cancelado || intentosAutoRef.current.has(claveAutoIa)) return;
+      const snap = contextoAutoRef.current;
+      if (!snap) return;
+
+      intentosAutoRef.current.add(claveAutoIa);
+      setEstimandoAuto(true);
+      setErrorIa("");
+      try {
+        const hayGlobales = (snap.costeo.itemsGenericosGlobales || []).length > 0;
+        const soloFaltantes =
+          !hayGlobales &&
+          snap.costeo.itemsSinReceta.length > 0 &&
+          snap.costeo.itemsConReceta.length > 0;
+        const itemsAEstimar = soloFaltantes ? snap.costeo.itemsSinReceta : snap.itemsPropuesta;
+
+        const resultado = await estimarCostosConIa({
+          titulo: snap.tituloCotizacion || snap.propuesta?.nombre || "",
+          saludo: snap.saludoCotizacion || "",
+          incluyeTexto: snap.propuesta?.incluyeTexto || "",
+          tiempoEjec: snap.propuesta?.tiempoEjec || "",
+          observaciones: snap.observacionesCot || "",
+          notasInternas: snap.notasInternas,
+          obra: snap.cl?.obra || "",
+          ciudad: snap.cl?.ciudad || "",
+          alcance: snap.propuesta?.alcance || "",
+          requerimientoCliente: snap.propuesta?.requerimientoCliente || "",
+          items: itemsAEstimar,
+          configCostos: snap.configCostos,
+          soloSinReceta: soloFaltantes,
+        });
+        if (cancelado) return;
+
+        let lineasFinales = resultado.lineas || [];
+        if (soloFaltantes) {
+          const baseRecetas = calcularLineasDesdeRecetas(snap.itemsPropuesta, snap.configCostos).lineas;
+          const combinadas = baseRecetas.map((l) => ({ ...l }));
+          for (const iaLinea of lineasFinales) {
+            const existente = iaLinea.insumoId
+              ? combinadas.find((c) => c.insumoId && c.insumoId === iaLinea.insumoId)
+              : null;
+            if (existente) {
+              existente.cant = Math.round((Number(existente.cant || 0) + Number(iaLinea.cant || 0)) * 10) / 10;
+              existente.nota = [existente.nota, `IA: ${iaLinea.nota || "reforma"}`].filter(Boolean).join(" · ");
+            } else {
+              combinadas.push(iaLinea);
+            }
+          }
+          lineasFinales = combinadas;
+        }
+
+        const limpias = lineasFinales.map((l, idx) => ({
+          id: l.id || `cos-${Date.now()}-${idx + 1}`,
+          insumoId: l.insumoId || null,
+          nombre: String(l.nombre || "").trim() || "Insumo",
+          categoria: l.categoria || "material",
+          unidad: String(l.unidad || "Und").trim() || "Und",
+          cant: Math.max(0, Number(l.cant) || 0),
+          costoUnitario: Math.max(0, Math.round(Number(l.costoUnitario) || 0)),
+          origen: l.origen || "ia",
+          nota: String(l.nota || "").trim(),
+        }));
+
+        snap.onChangePropuesta({
+          costeoInterno: {
+            modo: resultado.esRespaldoLocal ? "personalizado" : "ia",
+            origenAuto: true,
+            lineas: limpias,
+            huellaItems: huellaItemsPropuesta(snap.itemsPropuesta),
+            resumenIa: resultado.resumen || "",
+            avisosIa: resultado.avisos || [],
+            esRespaldoLocal: Boolean(resultado.esRespaldoLocal),
+            notasInternas: snap.notasInternas,
+            actualizadoEn: new Date().toISOString(),
+          },
+        });
+      } catch (err) {
+        if (!cancelado) {
+          console.warn("No se pudo completar la estimación automática con IA:", err);
+        }
+      } finally {
+        if (!cancelado) setEstimandoAuto(false);
+      }
+    }, 900);
+
+    return () => {
+      cancelado = true;
+      clearTimeout(timer);
+    };
+  }, [debeAutoEstimar, claveAutoIa]);
+
+  // Seguridad estricta: si no es administrador, no renderizar absolutamente nada.
+  if (!autorizado) return null;
+
+  const estado = ESTILOS_ESTADO[costeo.estadoMargen] || ESTILOS_ESTADO.sin_venta;
 
   const guardarLineasPersonalizadas = (nuevasLineas, extras = {}) => {
     const limpias = nuevasLineas.map((l, idx) => ({
@@ -120,6 +277,7 @@ export default function PanelCosteoInterno({
     onChangePropuesta({
       costeoInterno: {
         modo: extras.modo || "personalizado",
+        origenAuto: Boolean(extras.origenAuto),
         lineas: limpias,
         huellaItems: huellaItemsPropuesta(itemsPropuesta),
         resumenIa: extras.resumenIa !== undefined ? extras.resumenIa : costeo.resumenIa,
@@ -203,6 +361,7 @@ export default function PanelCosteoInterno({
 
   const recalcularDesdeRecetas = () => {
     setErrorIa("");
+    if (claveAutoIa) intentosAutoRef.current.add(claveAutoIa);
     onChangePropuesta({ costeoInterno: null });
   };
 
@@ -241,11 +400,15 @@ export default function PanelCosteoInterno({
   };
 
   const ejecutarIa = async ({ soloFaltantes = false } = {}) => {
-    if (estimandoIa) return;
+    if (estimandoIa || estimandoAuto) return;
+    if (claveAutoIa) intentosAutoRef.current.add(claveAutoIa);
     setErrorIa("");
     setEstimandoIa(true);
     try {
-      const itemsAEstimar = soloFaltantes && costeo.itemsSinReceta.length > 0
+      const hayGlobales = (costeo.itemsGenericosGlobales || []).length > 0;
+      const usarSoloFaltantes =
+        Boolean(soloFaltantes) && !hayGlobales && costeo.itemsSinReceta.length > 0;
+      const itemsAEstimar = usarSoloFaltantes
         ? costeo.itemsSinReceta
         : itemsPropuesta;
 
@@ -262,11 +425,11 @@ export default function PanelCosteoInterno({
         requerimientoCliente: propuesta?.requerimientoCliente || "",
         items: itemsAEstimar,
         configCostos,
-        soloSinReceta: Boolean(soloFaltantes && costeo.itemsSinReceta.length > 0),
+        soloSinReceta: usarSoloFaltantes,
       });
 
       let lineasFinales = resultado.lineas;
-      if (soloFaltantes && costeo.itemsSinReceta.length > 0 && costeo.itemsConReceta.length > 0) {
+      if (usarSoloFaltantes && costeo.itemsConReceta.length > 0) {
         // Conservamos los ítems con receta fija y sumamos lo estimado por la IA para las reformas
         const baseRecetas = calcularLineasDesdeRecetas(itemsPropuesta, configCostos).lineas;
         const combinadas = baseRecetas.map((l) => ({ ...l }));
@@ -286,6 +449,7 @@ export default function PanelCosteoInterno({
 
       guardarLineasPersonalizadas(lineasFinales, {
         modo: resultado.esRespaldoLocal ? "personalizado" : "ia",
+        origenAuto: false,
         resumenIa: resultado.resumen || "",
         avisosIa: resultado.avisos || [],
         esRespaldoLocal: Boolean(resultado.esRespaldoLocal),
@@ -297,12 +461,13 @@ export default function PanelCosteoInterno({
     }
   };
 
-  const hayItemsValidos = itemsPropuesta.some((it) => String(it?.desc || "").trim() && Number(it?.cant || 0) > 0);
   const puedeEstimarIa =
     hayItemsValidos ||
     Boolean(String(propuesta?.requerimientoCliente || "").trim()) ||
     Boolean(String(saludoCotizacion || "").trim()) ||
     Boolean(String(tituloCotizacion || "").trim());
+
+  const ocupadaIa = estimandoIa || estimandoAuto;
 
   return (
     <div
@@ -356,18 +521,18 @@ export default function PanelCosteoInterno({
               fontWeight: 600,
               padding: "2px 7px",
               borderRadius: 6,
-              background: costeo.modo === "ia" ? "#EEF4FF" : "var(--surface, #ffffff)",
-              color: costeo.modo === "ia" ? "#1D4ED8" : "var(--text-muted, #475467)",
+              background: estimandoAuto || costeo.modo === "ia" ? "#EEF4FF" : "var(--surface, #ffffff)",
+              color: estimandoAuto || costeo.modo === "ia" ? "#1D4ED8" : "var(--text-muted, #475467)",
               border: "1px solid var(--border, #d0d5dd)",
             }}
           >
-            {etiquetaModo(costeo.modo)}
+            {estimandoAuto ? "✨ Estimando automáticamente…" : etiquetaModo(costeo.modo)}
           </span>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <span style={{ fontSize: 12, color: "var(--text-muted, #475467)", fontVariantNumeric: "tabular-nums" }}>
-            Tu costo: <strong style={{ color: "var(--text-main, #101828)" }}>{fmt(costeo.costoTotal)}</strong>
+            Tu costo: <strong style={{ color: "var(--text-main, #101828)" }}>{estimandoAuto ? "Calculando…" : fmt(costeo.costoTotal)}</strong>
           </span>
           <span
             style={{
@@ -381,7 +546,9 @@ export default function PanelCosteoInterno({
               fontVariantNumeric: "tabular-nums",
             }}
           >
-            {costeo.ingresoNeto > 0
+            {estimandoAuto
+              ? "Analizando alcance…"
+              : costeo.ingresoNeto > 0
               ? `${costeo.gananciaNeta >= 0 ? "+" : ""}${fmt(costeo.gananciaNeta)} (${costeo.margenPct}%)`
               : estado.label}
           </span>
@@ -393,6 +560,26 @@ export default function PanelCosteoInterno({
 
       {abierto && (
         <div style={{ padding: "14px 16px 16px" }}>
+          {estimandoAuto && (
+            <div
+              style={{
+                background: "#EEF4FF",
+                border: "1px solid #B2DDFF",
+                color: "#1849A9",
+                borderRadius: 10,
+                padding: "9px 12px",
+                marginBottom: 12,
+                fontSize: 12,
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <span>✨</span>
+              <span>Estimando automáticamente los materiales, mano de obra y costos reales de esta cotización…</span>
+            </div>
+          )}
           {/* Tarjetas KPI financieras */}
           <div
             style={{
@@ -636,7 +823,7 @@ export default function PanelCosteoInterno({
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <button
                 type="button"
-                disabled={!puedeEstimarIa || estimandoIa}
+                disabled={!puedeEstimarIa || ocupadaIa}
                 onClick={() => ejecutarIa({ soloFaltantes: false })}
                 title="Analiza todos los ítems, especificaciones y tus requisitos extra con IA para calcular materiales, mano de obra y costos reales"
                 style={{
@@ -647,10 +834,10 @@ export default function PanelCosteoInterno({
                   padding: "6px 12px",
                   fontSize: 11.5,
                   fontWeight: 700,
-                  cursor: !puedeEstimarIa || estimandoIa ? "default" : "pointer",
+                  cursor: !puedeEstimarIa || ocupadaIa ? "default" : "pointer",
                 }}
               >
-                {estimandoIa ? "Analizando con IA…" : "✨ Analizar con IA"}
+                {ocupadaIa ? "Analizando con IA…" : "✨ Analizar con IA"}
               </button>
 
               <button

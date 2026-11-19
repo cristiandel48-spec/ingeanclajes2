@@ -127,7 +127,20 @@ export default function Cotizacion({ctx}){
   // La huella se toma en el primer render despues de cargar o guardar (no en
   // `hydrate`: al montar, las propuestas todavia se acomodan y saldria
   // «cambiada» sin que nadie toque nada).
-  const huellaFormulario = () => JSON.stringify({ cot, fecha, val, cl, textoInicial, observacionesCot, textosDocumento, propuestas });
+  const huellaFormulario = () => JSON.stringify({
+    cot,
+    fecha,
+    val,
+    cl,
+    textoInicial,
+    observacionesCot,
+    textosDocumento,
+    // El costeo calculado en segundo plano al abrir la cotizacion no debe
+    // disparar «Salir sin guardar» si la persona solo entro a consultarla.
+    propuestas: propuestas.map((p) =>
+      p?.costeoInterno?.origenAuto ? { ...p, costeoInterno: null } : p
+    ),
+  });
   const huellaLimpiaRef = useRef(null);
   useEffect(() => {
     if (tab === "form" && huellaLimpiaRef.current === null) huellaLimpiaRef.current = huellaFormulario();

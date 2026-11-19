@@ -304,4 +304,42 @@ describe("Motor de costos internos, insumos y recetas (APU)", () => {
     expect(res.margenPct).toBeLessThan(70);
     expect(res.margenPct).toBeGreaterThan(25);
   });
+
+  it("no encierra 'RECERTIFICACIÓN ANUAL L.V.H-L.V.V (1 Global)' en el costo fijo de $555.000 y marca análisis automático con IA", () => {
+    const propuesta = {
+      sinAiu: false,
+      util: 10,
+      items: [
+        { id: 1, desc: "RECERTIFICACIÓN ANUAL L.V.H-L.V.V", cant: 1, unit: "Global", vu: 2800000 },
+      ],
+    };
+
+    const res = calcularCosteoPropuesta(propuesta);
+    expect(res.requiereIaAuto).toBe(true);
+    expect(res.itemsGenericosGlobales).toHaveLength(1);
+
+    // Incluso en el respaldo heurístico local, debe estimar múltiples placas, pintura,
+    // consumibles y cuadrilla realista en vez de quedarse pegado en $555.000
+    const heur = estimarCostosHeuristico({
+      titulo: "RECERTIFICACIÓN ANUAL L.V.H-L.V.V",
+      items: propuesta.items,
+    });
+    const costoHeur = heur.lineas.reduce((s, l) => s + l.subtotal, 0);
+    expect(costoHeur).toBeGreaterThan(600000);
+    expect(heur.lineas.find((l) => l.insumoId === "placa_identificacion")?.cant).toBeGreaterThanOrEqual(2);
+    expect(heur.lineas.some((l) => l.insumoId === "pintura_anticorrosiva")).toBe(true);
+    expect(heur.lineas.some((l) => l.insumoId === "consumibles_instalacion")).toBe(true);
+  });
+
+  it("no desvía a RECERTIFICACION ANUAL un trabajo nuevo que mencione recertificación en su texto", () => {
+    const res = calcularCosteoPropuesta({
+      sinAiu: true,
+      items: [
+        { id: 1, desc: "INSTALACION DE PANELES EN POSTES CON RECERTIFICACION ANUAL", cant: 1, unit: "Global", vu: 2750000 },
+      ],
+    });
+    expect(res.itemsConReceta).toHaveLength(0);
+    expect(res.itemsSinReceta).toHaveLength(1);
+    expect(res.requiereIaAuto).toBe(true);
+  });
 });

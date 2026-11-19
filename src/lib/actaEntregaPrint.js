@@ -14,6 +14,7 @@ import { normalizarMayusculas } from "./normalizarEntrada";
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getControlDocumental } from "./controlDocumental";
 import { cssHojaImpresion } from "./hojaImpresion";
+import { nombreDocumento } from "./nombreArchivo";
 import { FUENTE } from "../styles/designTokens";
 
 const TINTA = "#1d1d1f";
@@ -277,7 +278,7 @@ export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "", firmaCl
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Acta de entrega ${escapeHtml(numero)} ${escapeHtml(contratante)}</title>
+    <title>${escapeHtml(nombreDocumento("Acta de entrega", [numero, acta?.direccionObra, contratante]))}</title>
     <style>
       ${cssHojaImpresion()}
 
@@ -295,6 +296,7 @@ export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "", firmaCl
         width: 100%;
         display: flex;
         flex-direction: column;
+        flex: 1 1 auto;
         min-height: 232mm;
         height: 100%;
         box-sizing: border-box;

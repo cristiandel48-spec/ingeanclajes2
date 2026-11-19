@@ -573,7 +573,8 @@ export default function Certificaciones({ctx}){
 
   const imprimir = (c) => {
     setSel(c);
-    setTimeout(() => printCurrentPz("Certificación " + (c?.numero || c?.id || "")), 250);
+    const titulo = nombreDocumento(c?.tipo || "Certificación", [c?.numero || c?.id, c?.lugar, c?.cliente]);
+    setTimeout(() => printCurrentPz(titulo), 250);
   };
 
   // En la barra superior: botones de acción fija para detalle (Volver, Editar, Descargar, Imprimir)

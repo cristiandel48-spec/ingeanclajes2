@@ -11,6 +11,7 @@ import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getControlDocumental } from "./controlDocumental";
 import { conActividadSeparada } from "./informeTextos";
 import { cssHojaImpresion } from "./hojaImpresion";
+import { nombreDocumento } from "./nombreArchivo";
 import { FUENTE } from "../styles/designTokens";
 import {
   claveCoordinador,
@@ -546,7 +547,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Informe ${escapeHtml(numDoc)} ${escapeHtml(proyecto)}</title>
+    <title>${escapeHtml(nombreDocumento("Informe de actividades", [numDoc, proyecto, cliente]))}</title>
     <style>
       ${cssHojaImpresion()}
 
@@ -564,6 +565,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
         width: 100%;
         display: flex;
         flex-direction: column;
+        flex: 1 1 auto;
         min-height: 232mm;
         height: 100%;
         box-sizing: border-box;

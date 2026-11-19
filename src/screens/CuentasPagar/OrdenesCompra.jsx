@@ -8,6 +8,8 @@ import BarraFija from "../../components/ui/BarraFija";
 import { useAppData } from "../../context/AppDataContext";
 import PrintHeader from "../../components/print/PrintHeader";
 import { descargarDocumentoPdf } from "../../lib/documentoPdf";
+import { printCurrentPz } from "../../lib/print";
+import { nombreDocumento } from "../../lib/nombreArchivo";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { confirmar } from "../../lib/dialogos";
 import { FUENTE } from "../../styles/designTokens";
@@ -48,8 +50,11 @@ export default function OrdenesCompra({
   const esAprobador = puedeAprobarOrdenCompra(membresia);
   const [generandoPdf, setGenerandoPdf] = useState(false);
 
+  const nombreOrdenArchivo = (orden) =>
+    nombreDocumento("Orden de Compra", [orden?.id, orden?.proveedorNombre]);
+
   const imprimirOrden = () => {
-    window.print();
+    printCurrentPz(nombreOrdenArchivo(ordenDetalle));
   };
 
   const descargarPdfOrden = async () => {
@@ -865,7 +870,7 @@ export default function OrdenesCompra({
                             type="button"
                             onClick={() => {
                               setOrdenDetalle(orden);
-                              setTimeout(() => window.print(), 150);
+                              setTimeout(() => printCurrentPz(nombreOrdenArchivo(orden)), 200);
                             }}
                             style={{
                               ...B("var(--surface-subtle, #f8fafc)", "var(--text-main, #334155)"),

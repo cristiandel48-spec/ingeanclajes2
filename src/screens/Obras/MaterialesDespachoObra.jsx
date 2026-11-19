@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { generarDesgloseMateriales, generarRemisionDespachoHtml } from "../../lib/materialesObra";
-import { conFuenteInter } from "../../lib/fuenteInter";
+import { openPrintTab } from "../../lib/abrirImpresion";
+import { nombreDocumento } from "../../lib/nombreArchivo";
 import { CD, ST, SI } from "../../styles/tokens";
 import Icono from "../../components/ui/Icono";
 
@@ -124,18 +125,14 @@ export default function MaterialesDespachoObra({
       cotizacion,
       materialesDespacho: datos,
     });
-    const ventana = window.open("", "_blank");
-    if (ventana) {
-      ventana.document.write(conFuenteInter(html));
-      ventana.document.close();
-      ventana.focus();
-      // Se imprime cuando Inter ya llego; si no, el cuadro de impresion
-      // salia con la letra de respaldo.
-      const listo = ventana.document.fonts?.ready || Promise.resolve();
-      listo.catch(() => {}).then(() => setTimeout(() => {
-        ventana.print();
-      }, 300));
-    }
+    openPrintTab(
+      html,
+      nombreDocumento("Remisión de Materiales", [
+        obra?.id,
+        obra?.proyecto,
+        obra?.cliente || cotizacion?.cliente,
+      ])
+    );
   };
 
   const totalInsumos = datos.insumos.length;

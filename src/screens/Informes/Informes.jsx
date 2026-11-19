@@ -12,6 +12,7 @@ import { fmtD, fmtL, scrollAppToTop, today } from "../../lib/format";
 import { openPrintTab } from "../../lib/abrirImpresion";
 import { buildInformePrintHtml, fmtPeriodo } from "../../lib/informePrint";
 import { descargarInformePdf, generarInformePdf } from "../../lib/informePdf";
+import { nombreDocumento } from "../../lib/nombreArchivo";
 import { getControlDocumental } from "../../lib/controlDocumental";
 import { LOGO_INGEANCLAJES } from "../../assets/embeddedImages";
 import { bitacoraAActividades, normalizarBitacora, registrosDelPeriodo } from "../../lib/bitacoraObra";
@@ -813,7 +814,11 @@ export default function Informes({ctx}){
     const html = buildInformePrintHtml(listo, { empresaConfig, firmaImg, firmaCliente });
     openPrintTab(
       html,
-      `Informe ${listo?.id || listo?.numero || ""} ${listo?.proyecto || listo?.cliente || ""}`.trim()
+      nombreDocumento("Informe de actividades", [
+        listo?.id || listo?.numero,
+        listo?.proyecto,
+        listo?.cliente,
+      ])
     );
   };
 

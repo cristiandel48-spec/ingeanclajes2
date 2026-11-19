@@ -40,3 +40,24 @@ export function nombreDocumento(tipo, partes = []) {
     .trim()
     .slice(0, 120) || "Documento";
 }
+
+/**
+ * Nombre oficial de archivo para una cotización (sin la extensión .pdf).
+ * Se usa tanto al descargar el PDF como al abrir la pestaña de impresión,
+ * para que ambos propongan exactamente el mismo nombre (número, cliente y obra).
+ */
+export function nombreCotizacion(cotizacion) {
+  const numero = String(cotizacion?.numero || cotizacion?.id || "cotizacion");
+  const partes = [numero, cotizacion?.cliente, cotizacion?.obra]
+    .map((t) => String(t || "").trim())
+    .filter(Boolean);
+  const vistas = [];
+  for (const parte of partes) {
+    if (!vistas.some((v) => v.toLowerCase() === parte.toLowerCase())) vistas.push(parte);
+  }
+  return ("Cotizacion " + vistas.join(" "))
+    .replace(/[\\/:*?"<>|]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
+}

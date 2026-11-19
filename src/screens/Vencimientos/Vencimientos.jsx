@@ -9,6 +9,7 @@ import { useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
 import { printCurrentPz } from "../../lib/print";
+import { nombreDocumento } from "../../lib/nombreArchivo";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 export default function Vencimientos({ctx}){
@@ -144,7 +145,7 @@ export default function Vencimientos({ctx}){
         <CertificacionDetalle
           cert={certParaImpresion}
           onVolver={()=>setImprimiendo(null)}
-          onImprimir={(cert)=>printCurrentPz("Certificación " + (cert?.numero || cert?.id || ""))}
+          onImprimir={(cert)=>printCurrentPz(nombreDocumento(cert?.tipo || "Certificación", [cert?.numero || cert?.id, cert?.lugar, cert?.cliente]))}
           mostrarBotones={true}
           subtitle="Vista previa completa del certificado o recertificación."
         />

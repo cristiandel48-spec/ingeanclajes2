@@ -3,6 +3,7 @@ import { Button, Callout, Card, EmptyState, Input, StatusPill, useToast } from "
 import { ESPACIO, RADIO, TIPO } from "../../styles/designTokens";
 import { fmtD } from "../../lib/format";
 import { openPrintTab } from "../../lib/abrirImpresion";
+import { nombreDocumento } from "../../lib/nombreArchivo";
 import { confirmar } from "../../lib/dialogos";
 import { getFirmaImg, setFirmaImg } from "../../lib/firmaEmpresa";
 import { leerImagenComprimida } from "../../lib/imagenes";
@@ -318,9 +319,11 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada: obraBl
   const imprimir = async () => {
     const qrVerificacion = envioFirmado ? await qrVerificacionFirma(envioFirmado.codigoVerificacion) : "";
     const rastro = envioFirmado ? rastroDelEnvio(envioFirmado) : null;
+    const baseNombre = nombreDocumento("Acta de entrega", [acta?.id, acta?.direccionObra, acta?.contratante]);
+    const titulo = envioFirmado ? `${baseNombre} - firmada` : baseNombre;
     openPrintTab(
       buildActaPrintHtml(acta, { empresaConfig, firmaImg: firmaEmpresa, firmaCliente: envioFirmado, qrVerificacion, rastro }),
-      `Acta de entrega ${acta.id}`
+      titulo
     );
   };
 

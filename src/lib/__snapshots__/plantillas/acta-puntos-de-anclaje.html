@@ -2,18 +2,25 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Acta de entrega ACT-001 CONSTRUCTORA DE PRUEBA S.A.S.</title>
+    <title>Acta de entrega ACT-001 EDIFICIO TORRE NORTE, CRA 1 # 2-3, MEDELLÍN CONSTRUCTORA DE PRUEBA S.A.S.</title>
     <style>
       
-    @page { size: Letter; margin: 14mm 13mm 15mm; }
+    @page {
+      size: Letter;
+      margin: 0;
+      @top-left { content: ""; }
+      @top-center { content: ""; }
+      @top-right { content: ""; }
+      @bottom-left { content: ""; }
+      @bottom-center { content: ""; }
+      @bottom-right { content: ""; }
+    }
 
     html, body { margin: 0; padding: 0; background: #ffffff; }
 
     * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-    /* Una «hoja» es un bloque que empieza en pagina nueva y que fluye. No
-       lleva ni alto fijo ni recorte: eso es lo que hacia desaparecer el
-       contenido que no cabia. */
+    /* Una «hoja» es un bloque que empieza en pagina nueva. */
     .page {
       position: relative;
       width: 100%;
@@ -23,7 +30,7 @@
       break-after: page;
       page-break-after: always;
     }
-    .page:last-child { break-after: auto; page-break-after: auto; }
+    .page:last-child, .page:last-of-type { break-after: auto; page-break-after: auto; }
 
     /* El pie se va al fondo del bloque sin necesidad de posicionarlo contra
        una hoja de alto fijo. */
@@ -42,7 +49,8 @@
     }
     p, li { orphans: 3; widows: 3; }
 
-    /* Que ninguna imagen se salga del ancho util, venga del tamaño que venga. */
+    /* Que ninguna imagen se salga del ancho util, venga del tamaño que venga.
+       Sin !important para que logos, fotos y diagramas conserven su altura. */
     img { max-width: 100%; height: auto; }
 
     table { width: 100%; border-collapse: collapse; }
@@ -55,7 +63,7 @@
         margin: 0 !important;
         padding: 0 !important;
         background: #ffffff !important;
-        color: #1d1d1f !important;
+        width: 8.5in !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         -webkit-font-smoothing: antialiased !important;
@@ -64,20 +72,27 @@
       .page {
         box-shadow: none !important;
         margin: 0 !important;
-        padding: 0 !important;
         border: none !important;
         border-radius: 0 !important;
         background: #ffffff !important;
-        width: 100% !important;
+        width: 8.5in !important;
+        height: 11in !important;
+        min-height: 11in !important;
+        max-height: 11in !important;
+        padding: 14mm 13mm 15mm !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+        break-after: page !important;
+        page-break-after: always !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      .page:last-child, .page:last-of-type {
+        break-after: auto !important;
+        page-break-after: auto !important;
       }
       #print-toolbar, #print-toolbar + div, .no-print, button, nav {
         display: none !important;
-      }
-      img {
-        max-width: 100% !important;
-        height: auto !important;
-        image-rendering: -webkit-optimize-contrast !important;
-        image-rendering: crisp-edges !important;
       }
       tr, thead, .no-partir, .foto-card, .bloque-firma, figure {
         break-inside: avoid !important;
@@ -90,12 +105,13 @@
     }
 
     
-    /* Solo en pantalla: se dibuja la hoja para poder revisar antes de enviar.
-       Al imprimir desaparece y manda @page, que es quien sabe cuanto cabe. */
+    /* En pantalla se dibuja la hoja Carta exacta (8.5in x 11in) con sus
+       margenes internos, identica a como sale impresa y en Descargar PDF. */
     @media screen {
       body { background: #f1f5f9; padding: 24px 0; }
       .page {
         width: 8.5in;
+        min-height: 11in;
         margin: 0 auto 20px;
         padding: 14mm 13mm 15mm;
         background: #ffffff;
@@ -118,6 +134,7 @@
         width: 100%;
         display: flex;
         flex-direction: column;
+        flex: 1 1 auto;
         min-height: 232mm;
         height: 100%;
         box-sizing: border-box;

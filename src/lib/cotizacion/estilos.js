@@ -30,6 +30,22 @@ export const CSS_COTIZACION = `
       .page-inner { position:relative; width:100%; display:flex; flex-direction:column; flex:1 1 auto; }
       .page-content { display:block; flex:1 1 auto; }
 
+      /* Bloques fluidos de las hojas interiores: evitan hojas casi vacias
+         juntando saludo, tabla y cierre cuando caben, manteniendo un aire
+         uniforme entre secciones sin sumar margenes arriba de la hoja. */
+      .flow-block { display:block; }
+      .flow-block + .flow-block { margin-top:6mm; }
+      .flow-block:first-child > .doc-h3.con-espacio { margin-top:0; }
+      .flow-block:first-child > .sst-block,
+      .flow-block:first-child > .signature { border-top:none; padding-top:0; }
+      .flow-block > .conditions-block,
+      .flow-block > .incluye-block,
+      .flow-block > .sst-block { margin-top:0; margin-bottom:0; }
+      .flow-block > .price-table { margin-top:0; margin-bottom:0; }
+      .flow-block > .content-block:last-child { margin-bottom:0; }
+      .flow-block > p:last-child,
+      .flow-block > .doc-copy:last-child { margin-bottom:0; }
+
       h1, h2, h3 { margin:0; font-family:var(--letra); font-weight:700; color:var(--tinta); text-wrap:balance; }
       p { margin:0 0 3mm; font-size: var(--texto); line-height:1.6;
           text-align: justify; text-justify: inter-word; hyphens: auto; color:var(--tinta); }
@@ -590,6 +606,7 @@ export const CSS_COTIZACION = `
         font-weight:600;
         color:#6E6E73;
         letter-spacing:0.01em;
+        white-space:nowrap;
       }
       .header-pill {
         display:inline-flex;
@@ -603,6 +620,7 @@ export const CSS_COTIZACION = `
         font-weight:700;
         font-variant-numeric:tabular-nums;
         letter-spacing:0.01em;
+        white-space:nowrap;
         -webkit-print-color-adjust:exact;
         print-color-adjust:exact;
       }
@@ -624,6 +642,8 @@ export const CSS_COTIZACION = `
         border-radius:10px;
         overflow:hidden;
         background:#F8FAFC;
+        break-inside:avoid;
+        page-break-inside:avoid;
         -webkit-print-color-adjust:exact;
         print-color-adjust:exact;
       }

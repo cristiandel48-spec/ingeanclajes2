@@ -36,16 +36,47 @@
 // Entonces en la hoja se deja lo que quepa y el resto sigue en la siguiente,
 // sin el titulo, como un texto que continua.
 
+// Hoja Carta a 96 ppp = 11in = 1056px.
+export const ALTO_HOJA_PX = 1056;
+
 /**
- * @param {Document} doc  Documento ya dibujado (el del iframe oculto).
- * @param {object} opciones
- * @param {number} opciones.altoUtil  Alto disponible para el contenido de
- *   una hoja, en pixeles de pantalla. Es el alto de la hoja menos los
- *   margenes de arriba y abajo y menos el pie.
- * @returns {{hojas:number, movidos:number}|null}
+ * Calcula el alto util disponible para `.page-content` dentro de una `.page`,
+ * descontando los margenes internos (padding de `.page`), el encabezado
+ * externo (si lo hay, como `.header` en cotizaciones) y el pie (`.footer` o
+ * `.page-footer`) mas un respiro minimo para que nada pegue contra el pie.
  */
-export function repaginarHojas(doc, { altoUtil }) {
-  const secciones = [...doc.querySelectorAll(".page")];
+export function calcularAltoUtil(seccion, ventana) {
+  if (!seccion || !ventana) return 0;
+  const estilo = ventana.getComputedStyle(seccion);
+  const relleno = (parseFloat(estilo.paddingTop) || 0) + (parseFloat(estilo.paddingBottom) || 0);
+  const contenedor = seccion.querySelector(".page-content");
+  const inner = seccion.querySelector(".page-inner") || seccion;
+
+  let altoFijos = 0;
+  if (contenedor && inner !== contenedor) {
+    for (const hijo of inner.children) {
+      if (hijo === contenedor) continue;
+      const r = hijo.getBoundingClientRect();
+      const st = ventana.getComputedStyle(hijo);
+      const esPie = hijo.classList.contains("footer") || hijo.classList.contains("page-footer");
+      if (esPie) {
+        // El pie lleva margin-top: auto; solo descontamos su altura real + respiro.
+        altoFijos += r.height + 10;
+      } else {
+        const mt = parseFloat(st.marginTop) || 0;
+        const mb = parseFloat(st.marginBottom) || 0;
+        altoFijos += r.height + mt + mb;
+      }
+    }
+  } else {
+    const pie = seccion.querySelector(".page-footer, .footer");
+    if (pie) altoFijos += pie.getBoundingClientRect().height + 10;
+  }
+
+  return ALTO_HOJA_PX - relleno - altoFijos - 2;
+}
+
+function repaginarSecciones(secciones, { altoUtil, ventana }) {
   if (!secciones.length) return null;
 
   const contenedorDe = (seccion) => seccion.querySelector(".page-content") || seccion;
@@ -102,9 +133,25 @@ export function repaginarHojas(doc, { altoUtil }) {
   let movidos = 0;
 
   const altoDe = (caja) => {
-    // El alto que de verdad ocupa lo que lleva puesto la hoja.
+    // El alto real que ocupa lo puesto en la hoja, incluyendo los margenes
+    // verticales entre bloques consecutivos (.flow-block + .flow-block, etc.).
+    const hijos = [...caja.children];
+    if (!hijos.length) return 0;
+    const primero = hijos[0];
+    const ultimo = hijos[hijos.length - 1];
+    const rPrimero = primero.getBoundingClientRect();
+    const rUltimo = ultimo.getBoundingClientRect();
+    const medido = rUltimo.bottom - rPrimero.top;
+    if (medido > 0) {
+      let extra = 0;
+      if (ventana?.getComputedStyle) {
+        extra += Math.max(0, parseFloat(ventana.getComputedStyle(primero).marginTop) || 0);
+        extra += Math.max(0, parseFloat(ventana.getComputedStyle(ultimo).marginBottom) || 0);
+      }
+      return medido + extra;
+    }
     let total = 0;
-    for (const hijo of caja.children) {
+    for (const hijo of hijos) {
       const r = hijo.getBoundingClientRect();
       total += r.height;
     }
@@ -194,6 +241,28 @@ export function repaginarHojas(doc, { altoUtil }) {
     movidos += 1;
   }
 
+  // Evita dejar un bloque marcado `data-no-solo="1"` (ej. firma) huerfano en
+  // la ultima hoja cuando puede acompañarse del ultimo bloque de la hoja previa.
+  if (nuevas.length >= 2) {
+    const ultimaCaja = contenedorDe(nuevas[nuevas.length - 1]);
+    const penultimaCaja = contenedorDe(nuevas[nuevas.length - 2]);
+    const contenidosUltima = [...ultimaCaja.children].filter((h) => h.getAttribute?.("data-rol") === "contenido");
+    const contenidosPenultima = [...penultimaCaja.children].filter((h) => h.getAttribute?.("data-rol") === "contenido");
+    if (
+      contenidosUltima.length === 1 &&
+      contenidosUltima[0].dataset?.noSolo === "1" &&
+      contenidosPenultima.length >= 2
+    ) {
+      const acompanante = contenidosPenultima[contenidosPenultima.length - 1];
+      ultimaCaja.insertBefore(acompanante, contenidosUltima[0]);
+      if (altoDe(ultimaCaja) > altoUtil) {
+        penultimaCaja.appendChild(acompanante);
+      } else {
+        movidos += 1;
+      }
+    }
+  }
+
   // 3. Se tiran las hojas que quedaron sin usar y se renumera el pie.
   for (const seccion of secciones) {
     if (!nuevas.includes(seccion)) seccion.remove();
@@ -204,4 +273,57 @@ export function repaginarHojas(doc, { altoUtil }) {
   });
 
   return { hojas: nuevas.length, movidos };
+}
+
+/**
+ * @param {Document} doc  Documento ya dibujado (iframe oculto o pestaña de impresion).
+ * @param {object} [opciones]
+ * @param {number} [opciones.altoUtil]  Alto disponible para el contenido de una
+ *   hoja en pixeles. Si se omite se mide con `calcularAltoUtil`.
+ * @param {Window} [opciones.ventana]  Ventana duena de `doc` (por defecto `doc.defaultView`).
+ * @returns {{hojas:number, movidos:number}|null}
+ */
+export function repaginarHojas(doc, { altoUtil, ventana } = {}) {
+  const todas = [...doc.querySelectorAll(".page")];
+  if (!todas.length) return null;
+  const win = ventana || doc.defaultView;
+
+  // Documentos con hojas fijas (portada, fichas tecnicas) y tramos fluidos
+  // marcados con `data-flujo` (ej. cotizaciones): cada tramo contiguo se
+  // repagina sin mover ni alterar las hojas fijas.
+  const conFlujo = todas.filter((s) => s.hasAttribute("data-flujo"));
+  if (conFlujo.length) {
+    const grupos = [];
+    let actual = null;
+    for (const seccion of todas) {
+      const id = seccion.getAttribute("data-flujo");
+      if (!id) {
+        actual = null;
+        continue;
+      }
+      if (actual && actual.id === id) {
+        actual.secciones.push(seccion);
+      } else {
+        actual = { id, secciones: [seccion] };
+        grupos.push(actual);
+      }
+    }
+    let hojas = 0;
+    let movidos = 0;
+    for (const grupo of grupos) {
+      const utilGrupo = altoUtil || calcularAltoUtil(grupo.secciones[0], win);
+      if (!(utilGrupo > 200)) continue;
+      const res = repaginarSecciones(grupo.secciones, { altoUtil: utilGrupo, ventana: win });
+      if (res) {
+        hojas += res.hojas;
+        movidos += res.movidos;
+      }
+    }
+    return { hojas, movidos };
+  }
+
+  // Documentos de un solo flujo continuo (informes y actas).
+  const util = altoUtil || calcularAltoUtil(todas[0], win);
+  if (!(util > 200)) return null;
+  return repaginarSecciones(todas, { altoUtil: util, ventana: win });
 }

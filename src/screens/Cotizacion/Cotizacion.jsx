@@ -31,6 +31,7 @@ import { asuntoAprobacion, mensajeAprobacion } from "../../lib/correoAprobacion"
 import { blobABase64, generarCotizacionPdf } from "../../lib/cotizacionPdf";
 import { openPrintTab } from "../../lib/abrirImpresion";
 import { buildCotizacionPrintHtml } from "../../lib/cotizacionPrint";
+import { nombreCotizacion } from "../../lib/nombreArchivo";
 import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
@@ -825,10 +826,7 @@ export default function Cotizacion({ctx}){
       descargar: () => descargarPdf(previewCot),
       imprimir: () => {
         const html = buildCotizacionPrintHtml(previewCot, { firmaImg, sello: selloCotizacion });
-        openPrintTab(
-          html,
-          `Cotización ${previewCot.numero || previewCot.id} ${previewCot.cliente || ""}`.trim()
-        );
+        openPrintTab(html, nombreCotizacion(previewCot));
       },
     };
   });
@@ -1557,10 +1555,7 @@ export default function Cotizacion({ctx}){
             imprimir: async (c) => {
               const completa = (await asegurarDetalle("cotizaciones", c.id)) || c;
               const html = buildCotizacionPrintHtml(completa, { firmaImg, sello: selloCotizacion });
-              openPrintTab(
-                html,
-                `Cotización ${completa.numero || completa.id} ${completa.cliente || ""}`.trim()
-              );
+              openPrintTab(html, nombreCotizacion(completa));
             },
             pdf: async (c)=>descargarPdf((await asegurarDetalle("cotizaciones", c.id)) || c),
             enviar: async (c)=>setEnviarCot((await asegurarDetalle("cotizaciones", c.id)) || c),
@@ -1700,10 +1695,7 @@ export default function Cotizacion({ctx}){
               const guardada = persistCotizacion({ volverALista: false });
               const cotParaImprimir = guardada || cotizacionEnVivo;
               const html = buildCotizacionPrintHtml(cotParaImprimir, { firmaImg, sello: selloCotizacion });
-              openPrintTab(
-                html,
-                `Cotización ${cotParaImprimir.numero || cotParaImprimir.id || "Borrador"} ${cotParaImprimir.cliente || ""}`.trim()
-              );
+              openPrintTab(html, nombreCotizacion(cotParaImprimir));
             }}
             title="Imprimir documento o guardar como PDF vectorial"
           >

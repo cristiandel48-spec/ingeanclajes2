@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { buildCotizacionPrintHtml } from "../../lib/cotizacionPrint";
 import { conFuenteInter } from "../../lib/fuenteInter";
 import { openPrintTab } from "../../lib/abrirImpresion";
+import { nombreCotizacion } from "../../lib/nombreArchivo";
+import { repaginarHojas } from "../../lib/repaginarHojas";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 
 // Ancho real de una hoja carta a 96 ppp (8.5 x 96 = 816 px)
@@ -269,10 +271,7 @@ export default function DocumentoEnVivo({
               type="button"
               onClick={() => {
                 const printable = buildCotizacionPrintHtml(cotizacion, { firmaImg, sello });
-                openPrintTab(
-                  printable,
-                  `Cotización ${cotizacion?.numero || cotizacion?.id || "Documento"} ${cotizacion?.cliente || ""}`.trim()
-                );
+                openPrintTab(printable, nombreCotizacion(cotizacion));
               }}
               title="Abrir vista de impresión y guardado de PDF vectorial"
               style={{
@@ -305,6 +304,50 @@ export default function DocumentoEnVivo({
           key={`${cotizacion?.id || cotizacion?.numero || "prev"}-${modo}-${Math.round(escalaEfectiva * 100)}`}
           title="Vista previa de la cotización"
           srcDoc={htmlAjustado}
+          onLoad={(ev) => {
+            const iframe = ev.currentTarget;
+            const win = iframe?.contentWindow;
+            const doc = iframe?.contentDocument;
+            if (!win || !doc || !doc.querySelector('[data-rol="contenido"]')) return;
+            const repaginarPreview = async () => {
+              try {
+                await Promise.race([
+                  (async () => {
+                    if (doc.fonts?.load) {
+                      await Promise.all(
+                        ["400", "600", "700", "800"].map((g) => doc.fonts.load(`${g} 16px Inter`).catch(() => {}))
+                      );
+                    }
+                    await doc.fonts?.ready;
+                  })(),
+                  new Promise((r) => setTimeout(r, 1200)),
+                ]);
+                const imgs = [...doc.images];
+                await Promise.all(
+                  imgs.map((img) =>
+                    img.complete
+                      ? Promise.resolve()
+                      : new Promise((res) => {
+                          img.addEventListener("load", res, { once: true });
+                          img.addEventListener("error", res, { once: true });
+                          setTimeout(res, 1500);
+                        })
+                  )
+                );
+                const pages = [...doc.querySelectorAll(".page")];
+                const zoomsPrevios = pages.map((p) => p.style.zoom);
+                pages.forEach((p) => { p.style.zoom = "1"; });
+                repaginarHojas(doc, { ventana: win });
+                const factorActual = modo === "real"
+                  ? "1"
+                  : String(Math.min(1.2, Math.max(0.2, ((doc.documentElement.clientWidth || win.innerWidth || ANCHO_HOJA) - 16) / ANCHO_HOJA)));
+                [...doc.querySelectorAll(".page")].forEach((p, idx) => {
+                  p.style.zoom = zoomsPrevios[idx] || factorActual;
+                });
+              } catch { /* conservar reparto inicial */ }
+            };
+            repaginarPreview();
+          }}
           style={{
             display: "block",
             width: "100%",

@@ -10,6 +10,7 @@ import { TIPO_CAMIONERA, TIPO_MANUAL, TIPO_VERTICAL, hasVerticalLifeLineService,
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import { corregirOrtografiaLocal } from "./correctorTexto";
 import { cssHojaImpresion } from "./hojaImpresion";
+import { nombreCotizacion } from "./nombreArchivo";
 import { CSS_COTIZACION } from "./cotizacion/estilos";
 import { FICHA_ESCALERA_GATO, FICHA_LINEA_CAMIONERA, FICHA_LINEA_VIDA_VERTICAL, FICHA_LINEA_VIDA_VERTICAL_SOLA, FICHA_PLACA_IDENTIFICACION, crearFichaSistema, fichaPuntoAnclaje, paginasComponentes } from "./cotizacion/fichasTecnicas";
 
@@ -362,22 +363,6 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     `;
   };
 
-  const renderResumenPropuestas = () => {
-    if (!mostrarResumenFinal) return "";
-
-    return `
-      <section class="page summary-page">
-        <div class="page-inner">
-          ${headerHtml}
-          <div class="page-content">
-            ${renderResumenBlock()}
-          </div>
-          ${footerHtml}
-        </div>
-      </section>
-    `;
-  };
-
   const footerHtml = `
     <div class="footer">
       <div class="footer-accent"></div>
@@ -722,37 +707,18 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     `;
   };
 
-  // Hojas dedicadas a la tabla, cuando los items no caben junto al texto.
-  const renderItemsPages = (propuesta, idx, plan) => {
-    if (plan.juntoAlTexto) return "";
-    const totalHojas = plan.hojas.length;
-    // Las hojas no tienen el mismo numero de filas, asi que el indice de
-    // arranque se acumula en vez de multiplicarse.
-    let desde = 0;
-    const esNombreGenerico = !propuesta.nombre || /^propuesta(\s+[a-z0-9]+)?$/i.test(String(propuesta.nombre).trim());
-    return plan.hojas.map((itemsHoja, i) => {
-      const esUltima = i === totalHojas - 1;
-      const arranque = desde;
-      desde += itemsHoja.length;
-      const titulo = !esNombreGenerico
-        ? escapeHtml(propuesta.nombre)
-        : "Detalle de la cotización";
-      return `
-        <section class="page">
-          <div class="page-inner">
-            ${headerHtml}
-            <div class="page-content">
-              <h2 class="doc-h2">${titulo}${totalHojas > 1 ? ` &middot; Parte ${i + 1} de ${totalHojas}` : ""}</h2>
-              ${renderItemsTable(propuesta, itemsHoja, { conTotales: esUltima, desde: arranque })}
-            </div>
-            ${footerHtml}
-          </div>
-        </section>
-      `;
-    }).join("");
+  // Estima la altura en milimetros de una tabla de items para el empaquetado
+  // inicial (en el navegador `repaginarHojas` afina el reparto con medidas reales).
+  const altoTablaItems = (lista, { conTotales = true, conTitulo = false } = {}) => {
+    const peso = pesoDe(lista || []);
+    return (conTitulo ? 11 : 0) + (conTotales ? 36 : 16) + peso * 7.5;
   };
 
-  const renderProposalPage = (propuesta, idx) => {
+  // Devuelve la secuencia ordenada de piezas de una propuesta:
+  //   - { tipo: "bloque", alto, html } -> fluye y se junta con bloques vecinos si cabe
+  //   - { tipo: "paginaFija", html }   -> hoja dedicada (partes intermedias de tablas largas)
+  const construirPiezasPropuesta = (propuesta, idx) => {
+    const piezas = [];
     const hasScope = String(propuesta.alcancePropuesta || "").trim().length > 0;
     const hasNarrative = String(propuesta.narrative || "").trim().length > 0;
     const hasClientReq = propuesta.esObraBlanca && String(propuesta.requerimientoCliente || "").trim().length > 0;
@@ -761,10 +727,6 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     const fotos = Array.isArray(propuesta.fotos) ? propuesta.fotos : [];
     const numFotos = Math.min(2, fotos.length);
 
-    // Cálculo dinámico de altura para aprovechar al máximo el espacio de la hoja:
-    // Permite que planos, fotos e isométricos se expandan entre 100mm y 144mm
-    // (o hasta 84mm en cuadrícula doble) llenando armónicamente la página
-    // sin dejar huecos en blanco y asegurando que las cotas y textos se lean nítidos.
     let customPhotoHeight = null;
     if (numFotos > 0 && idx !== 2) {
       const esNombreGenerico = !propuesta.nombre || /^propuesta(\s+[a-z0-9]+)?$/i.test(String(propuesta.nombre).trim());
@@ -774,11 +736,8 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
       const narrH = hasNarrative ? Math.max(14, Math.min(40, Math.ceil(String(propuesta.narrative).length / 75) * 5.5 + 8)) : 0;
       const mapH = hasMap ? 64 : 0;
       const tableRows = plan.juntoAlTexto && plan.hojas.length ? plan.hojas[0].length : 0;
-      const tableH = plan.juntoAlTexto
-        ? (38 + tableRows * 7.5)
-        : 8;
+      const tableH = plan.juntoAlTexto ? (38 + tableRows * 7.5) : 8;
       const photoOverhead = 10;
-
       const espacioDisponible = 194 - (tituloH + reqH + scopeH + narrH + mapH + tableH + photoOverhead);
 
       if (numFotos === 1) {
@@ -790,64 +749,122 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
 
     const fotosHtml = renderPhotoGrid(propuesta.fotos, idx, customPhotoHeight);
     const mapaHtml = renderMapBlock(propuesta, idx);
-
-    // Si la propuesta no trae texto, fotos ni mapa, y la tabla se fue a hojas
-    // propias, esta hoja solo tendria el titulo y un aviso: una pagina en
-    // blanco con dos lineas arriba. En ese caso no se imprime, y el detalle
-    // arranca directo en su hoja.
     const tieneContenidoPropio = Boolean(
-      hasClientReq || hasScope || hasNarrative ||
-      fotosHtml.trim() || mapaHtml.trim()
+      hasClientReq || hasScope || hasNarrative || fotosHtml.trim() || mapaHtml.trim()
     );
-    if (!tieneContenidoPropio && !plan.juntoAlTexto) {
-      return renderItemsPages(propuesta, idx, plan);
-    }
-
     const esNombreGenerico = !propuesta.nombre || /^propuesta(\s+[a-z0-9]+)?$/i.test(String(propuesta.nombre).trim());
     const tituloPropuestaHtml = !esNombreGenerico ? `<h2 class="doc-h2">${escapeHtml(propuesta.nombre)}</h2>` : "";
 
-    return `
-      <section class="page">
-        <div class="page-inner">
-          ${headerHtml}
-          <div class="page-content">
-            ${tituloPropuestaHtml}
+    const agregarPaginasTablaLarga = () => {
+      if (plan.juntoAlTexto) return;
+      const totalHojas = plan.hojas.length;
+      let desde = 0;
+      const tituloBase = !esNombreGenerico ? escapeHtml(propuesta.nombre) : "Detalle de la cotización";
+      plan.hojas.forEach((itemsHoja, i) => {
+        const esUltima = i === totalHojas - 1;
+        const arranque = desde;
+        desde += itemsHoja.length;
+        const encabezadoTabla = `<h2 class="doc-h2">${tituloBase}${totalHojas > 1 ? ` &middot; Parte ${i + 1} de ${totalHojas}` : ""}</h2>`;
+        const contenidoTabla = `${encabezadoTabla}${renderItemsTable(propuesta, itemsHoja, { conTotales: esUltima, desde: arranque })}`;
+        if (!esUltima) {
+          piezas.push({
+            tipo: "paginaFija",
+            html: `
+              <section class="page" data-fija="1">
+                <div class="page-inner">
+                  ${headerHtml}
+                  <div class="page-content">
+                    ${contenidoTabla}
+                  </div>
+                  ${footerHtml}
+                </div>
+              </section>
+            `,
+          });
+        } else {
+          // La ultima parte de una tabla larga entra como bloque fluido: si trae
+          // pocas filas, las condiciones comerciales pueden subir debajo.
+          piezas.push({
+            tipo: "bloque",
+            alto: altoTablaItems(itemsHoja, { conTotales: true, conTitulo: true }),
+            html: contenidoTabla,
+          });
+        }
+      });
+    };
 
-            ${hasClientReq ? `
-              <div class="content-block">
-                <div class="card-label block-label">Necesidad del cliente</div>
-                <p class="doc-copy">${escapeHtml(propuesta.requerimientoCliente)}</p>
-              </div>
-            ` : ""}
+    if (!tieneContenidoPropio) {
+      if (plan.juntoAlTexto) {
+        if (plan.hojas.length) {
+          piezas.push({
+            tipo: "bloque",
+            alto: altoTablaItems(plan.hojas[0], { conTotales: true, conTitulo: !esNombreGenerico }),
+            html: `${tituloPropuestaHtml}${renderItemsTable(propuesta, plan.hojas[0], { conTotales: true })}`,
+          });
+        }
+      } else {
+        agregarPaginasTablaLarga();
+      }
+      return piezas;
+    }
 
-            ${hasScope ? `
-              <div class="content-block">
-                <div class="card-label block-label">Alcance de esta propuesta</div>
-                <p class="doc-copy">${escapeHtml(propuesta.alcancePropuesta)}</p>
-              </div>
-            ` : ""}
+    // Tiene texto, fotos o mapa propio.
+    const reqH = hasClientReq ? Math.max(16, Math.ceil(String(propuesta.requerimientoCliente).length / 80) * 5.2 + 10) : 0;
+    const scopeH = hasScope ? Math.max(16, Math.ceil(String(propuesta.alcancePropuesta).length / 80) * 5.2 + 10) : 0;
+    const narrH = hasNarrative ? Math.max(12, Math.ceil(String(propuesta.narrative).length / 80) * 5.2 + 6) : 0;
+    const photoH = numFotos > 0
+      ? ((idx === 2 ? 52 : (customPhotoHeight || (numFotos === 1 ? 140 : 76))) + 14)
+      : 0;
+    const mapH = hasMap ? (idx === 2 ? 142 : 68) : 0;
+    const altoCabeceraProp = (!esNombreGenerico ? 11 : 0) + reqH + scopeH + narrH + photoH + mapH;
 
-            ${hasNarrative ? `
-              <div class="content-block">
-                <p class="doc-copy">${escapeHtml(propuesta.narrative)}</p>
-              </div>
-            ` : ""}
-
-            ${fotosHtml}
-            ${mapaHtml}
-            ${plan.juntoAlTexto
-              ? (plan.hojas.length ? renderItemsTable(propuesta, plan.hojas[0], { conTotales: true }) : "")
-              : `<p class="doc-copy"><em>El detalle de precios continúa en la página siguiente.</em></p>`}
-          </div>
-          ${footerHtml}
+    const bloqueCabeceraHtml = `
+      ${tituloPropuestaHtml}
+      ${hasClientReq ? `
+        <div class="content-block">
+          <div class="card-label block-label">Necesidad del cliente</div>
+          <p class="doc-copy">${escapeHtml(propuesta.requerimientoCliente)}</p>
         </div>
-      </section>
-      ${renderItemsPages(propuesta, idx, plan)}
+      ` : ""}
+      ${hasScope ? `
+        <div class="content-block">
+          <div class="card-label block-label">Alcance de esta propuesta</div>
+          <p class="doc-copy">${escapeHtml(propuesta.alcancePropuesta)}</p>
+        </div>
+      ` : ""}
+      ${hasNarrative ? `
+        <div class="content-block">
+          <p class="doc-copy">${escapeHtml(propuesta.narrative)}</p>
+        </div>
+      ` : ""}
+      ${fotosHtml}
+      ${mapaHtml}
+      ${!plan.juntoAlTexto ? `<p class="doc-copy"><em>El detalle de precios continúa en la página siguiente.</em></p>` : ""}
     `;
+
+    piezas.push({
+      tipo: "bloque",
+      alto: altoCabeceraProp + (plan.juntoAlTexto ? 0 : 10),
+      html: bloqueCabeceraHtml,
+    });
+
+    if (plan.juntoAlTexto) {
+      if (plan.hojas.length) {
+        piezas.push({
+          tipo: "bloque",
+          alto: altoTablaItems(plan.hojas[0], { conTotales: true, conTitulo: false }),
+          html: renderItemsTable(propuesta, plan.hojas[0], { conTotales: true }),
+        });
+      }
+    } else {
+      agregarPaginasTablaLarga();
+    }
+
+    return piezas;
   };
 
   const coverPage = `
-    <section class="page">
+    <section class="page" data-fija="1">
       <div class="page-inner">
         <div class="page-content cover">
           <header class="cover-header">
@@ -907,181 +924,177 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     </section>
   `;
 
-  const introPage = `
-    <section class="page">
-      <div class="page-inner">
-        ${headerHtml}
-        <div class="page-content">
-          <h2 class="doc-h2">Cordial saludo${c?.cliente ? `, ${escapeHtml(normalizarMayusculas(c.cliente))}` : ""}</h2>
-          ${(()=>{
-            // La obra y el alcance se destacan en negrita negra pura
-            let apertura = String(textos.saludo || "").trim().replace(/\.$/, "");
-            apertura = escapeHtml(apertura).replace(/\b([A-ZÁÉÍÓÚÜÑ0-9()-]{2,}(?:\s+[A-ZÁÉÍÓÚÜÑ0-9()-]+){2,})\b/g, '<strong style="color:var(--tinta);font-weight:600;">$1</strong>');
-            const conObra = c?.obra
-              ? `${apertura} en la obra <strong style="color:var(--tinta);font-weight:600;">${escapeHtml(normalizarMayusculas(c.obra))}</strong>.`
-              : `${apertura}.`;
-            return `<p class="doc-copy" style="color:var(--tinta);">${conObra}</p>`;
-          })()}
-          <!-- Los renglones de la presentacion van seguidos, sin hueco entre
-               ellos: son un mismo texto partido en lineas, no parrafos
-               distintos, y separados dejaban tres huecos en mitad de la hoja. -->
-          ${lineasDeTexto(textos.presentacion).map((parrafo)=>`<p class="doc-copy junto" style="color:var(--tinta);">${escapeHtml(parrafo)}</p>`).join("")}
-          ${textoInicial ? `<p class="doc-copy" style="color:var(--tinta);">${escapeHtml(textoInicial)}</p>` : ""}
+  const construirBloquesIntro = () => {
+    const bloques = [];
 
-          ${(()=>{
-            // Sin definiciones (propuesta en «Ninguno») tampoco sale el titulo.
-            const cuerpo = (()=>{
-            // Si la cotizacion trae un marco tecnico propio, reemplaza a las
-            // definiciones automaticas por tipo.
-            const propio = String(textos.marcoTecnico || "").trim();
-            if (propio) {
-              // Dentro de un parrafo las lineas se unen con un espacio, no con
-              // un <br/>. Quien escribe el texto corta los renglones donde le
-              // cabe en su pantalla, y al convertir cada corte en un salto de
-              // verdad el parrafo salia dentado -renglones a media hoja, sin
-              // justificar-. Los parrafos de verdad ya vienen separados por una
-              // linea en blanco, que es lo que parte el split de arriba.
-              return `<div class="def-list-libre">${
-                propio.split(/\n{2,}/).map((parrafo)=>
-                  `<p class="doc-copy">${lineasDeTexto(parrafo).map((l)=>escapeHtml(l)).join(" ")}</p>`
-                ).join("")
-              }</div>`;
-            }
-            const tipo = (propuestas[0] && tipoDe(propuestas[0])) || tipoCotizacionCanonico(c?.tipoCotizacion || "linea_vida");
-            // «Ninguno» o una categoria propia del catalogo (una linea de vida
-            // camionera, un trabajo especial): sin definiciones automaticas.
-            // Si hacen falta, se escriben en el marco tecnico de la cotizacion.
-            const TIPOS_CON_DEFINICIONES = ["linea_vida", "linea_vida_camionera", TIPO_VERTICAL, "puntos_anclaje", "obra_blanca", "estructuras_metalicas", "escaleras", "caminaderos", "sistemas_completos", "servicios"];
-            if (!TIPOS_CON_DEFINICIONES.includes(tipo)) return "";
-            // La camionera tiene su propia definicion: la de la linea de vida
-            // de cubierta (cable sobre la losa, soportes laterales) no aplica.
-            if(tipo === "linea_vida_camionera") return `
-              <div class="def-list">
-                <div class="def-row">
-                  <div class="def-term">Trabajo en altura</div>
-                  <div class="def-body">Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a <strong>2 metros desde el piso</strong>, como la que se hace sobre el techo o la carga de un vehículo.</div>
-                </div>
-                <div class="def-row">
-                  <div class="def-term">Línea de vida camionera</div>
-                  <div class="def-body">
-                    <p>Sistema aéreo de protección contra caídas para el personal que trabaja sobre carrotanques, volquetas y vehículos de carga. Un cable de acero tensionado entre postes tipo cuello de cisne, por encima del vehículo, permite que el trabajador se desplace a lo largo de él conectado en todo momento.</p>
-                    <ul class="def-bullets">
-                      <li>El trabajador se conecta con arnés de cuerpo completo y una línea autorretráctil a un carro que se desliza por el cable.</li>
-                      <li>La altura del cable y la luz entre postes se definen en la memoria de cálculo, según el vehículo y la distancia de detención de la caída.</li>
-                      <li>Los postes y sus dados de cimentación se diseñan para la carga de detención de la caída; el sistema lo diseña y certifica una persona calificada, conforme a la Resolución 4272 de 2021.</li>
-                      <li>Se respetan las distancias de seguridad a redes eléctricas (RETIE) en el diseño y el montaje.</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            `;
-            if(tipo === TIPO_VERTICAL) return `
-              <div class="def-list">
-                <div class="def-row">
-                  <div class="def-term">Trabajo en altura</div>
-                  <div class="def-body">Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a <strong>2 metros desde el piso</strong>.</div>
-                </div>
-                <div class="def-row">
-                  <div class="def-term">Línea de vida vertical</div>
-                  <div class="def-body">
-                    <p>Sistema de protección contra caídas para el ascenso y descenso en alturas. Un cable de acero tensionado entre un soporte superior y uno inferior, fijados a la estructura, guía el arrestador de caídas al que va conectado el trabajador.</p>
-                    <ul class="def-bullets">
-                      <li>El trabajador se conecta con arnés de cuerpo completo a un arrestador de caídas que se desliza por el cable y se bloquea ante una caída.</li>
-                      <li>El soporte superior lleva un absorbedor de energía que limita la fuerza que llega al trabajador y a la estructura.</li>
-                      <li>La línea de vida está constituida por un solo cable continuo, con su tensor en el extremo inferior.</li>
-                      <li>Los anclajes a los cuales se fija la línea de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            `;
-            if(tipo === "obra_blanca") return `
-              <div class="def-list">
-                <div class="def-row">
-                  <div class="def-term">Obra blanca</div>
-                  <div class="def-body">
-                    <p>Comprende todas las actividades de acabado y revestimiento en edificaciones, incluyendo instalación de sistemas de protección integrados a la estructura arquitectónica del proyecto.</p>
-                    <ul class="def-bullets">
-                      <li>Instalación de elementos empotrados en la fase de obra para garantizar la mejor estética y durabilidad.</li>
-                      <li>Cumplimiento estricto de los estándares constructivos y de seguridad vigentes.</li>
-                      <li>Coordinación con el equipo de obra para minimizar el impacto en los cronogramas de construcción.</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            `;
-            if(tipo === "estructuras_metalicas") return `
-              <div class="def-list">
-                <div class="def-row">
-                  <div class="def-term">Estructuras metálicas</div>
-                  <div class="def-body">
-                    <p>Comprende el diseño, suministro, fabricación, montaje y adecuación de elementos estructurales, plataformas y perfilería metálica en acero de alta resistencia para soporte de equipos, cubiertas y obras civiles o industriales.</p>
-                    <ul class="def-bullets">
-                      <li>Fabricación bajo especificaciones y normas técnicas estructurales vigentes (NSR-10 / AISC), garantizando capacidades portantes seguras.</li>
-                      <li>Procesos de soldadura y anclajes certificados de alta resistencia química y mecánica.</li>
-                      <li>Tratamiento de superficies con aplicación de pintura anticorrosiva y acabados de alta durabilidad para intemperie.</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            `;
-            if(tipo === "puntos_anclaje") return `
-              <div class="def-list">
-                <div class="def-row">
-                  <div class="def-term">Trabajo en altura</div>
-                  <div class="def-body">Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a <strong>2 metros desde el piso</strong>.</div>
-                </div>
-                <div class="def-row">
-                  <div class="def-term">Puntos de anclaje</div>
-                  <div class="def-body">Son componentes en acero, anclados con un epóxico químico, con perno de <span class="tnum">5/8"</span> a una profundidad de <span class="tnum">12 cm</span> o más según el caso, instalados en estructuras de concreto, con capacidad de resistir una fuerza de caída de más de <strong>5.000 Lbs (2.268 kg)</strong>.</div>
-                </div>
-                <div class="def-row">
-                  <div class="def-term">Línea de vida</div>
-                  <div class="def-body">
-                    <p>Son componentes de un sistema/equipo de protección de caídas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en tres o dos puntos de anclaje para otorgar movilidad al personal que trabaja en áreas elevadas.</p>
-                    <ul class="def-bullets">
-                      <li>La línea de vida permite la fijación o enganche en forma directa o indirecta al arnés completo para el cuerpo, o a un dispositivo de impacto o amortiguador.</li>
-                      <li>Los pernos son grado 8 &mdash; B7, resistentes a corrosión y condiciones ambientales extremas.</li>
-                      <li>Las líneas de vida estarán constituidas por un solo cable continuo.</li>
-                      <li>Los anclajes a los cuales se fijarán las líneas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            `;
-            return `
-              <div class="def-list">
-                <div class="def-row">
-                  <div class="def-term">Trabajo en altura</div>
-                  <div class="def-body">Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a <strong>2 metros desde el piso</strong>.</div>
-                </div>
-                <div class="def-row">
-                  <div class="def-term">Puntos de anclaje</div>
-                  <div class="def-body">Son componentes en acero, anclado con un epóxico químico, con perno de <span class="tnum">5/8</span> a una profundidad de <span class="tnum">12 cm</span> o más según el caso a estructuras en concreto, con capacidad de resistir una fuerza de caída de más de <strong>5000 Lbs</strong>.</div>
-                </div>
-                <div class="def-row">
-                  <div class="def-term">Línea de vida</div>
-                  <div class="def-body">
-                    <p>Son componentes de un sistema/equipo de protección de caídas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en tres o dos puntos de anclaje para otorgar movilidad al personal que trabaja en áreas elevadas.</p>
-                    <ul class="def-bullets">
-                      <li>La línea de vida permite la fijación o enganche en forma directa o indirecta al arnés completo para el cuerpo, o a un dispositivo de impacto o amortiguador.</li>
-                      <li>Las líneas de vida estarán constituidas por un solo cable continuo.</li>
-                      <li>Los anclajes a los cuales se fijarán las líneas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            `;
-            })();
-            return cuerpo
-              ? `<h3 class="doc-h3 con-espacio">Definiciones que estructuran el alcance</h3>${cuerpo}`
-              : "";
-          })()}
+    // La obra y el alcance se destacan en negrita negra pura
+    let apertura = String(textos.saludo || "").trim().replace(/\.$/, "");
+    apertura = escapeHtml(apertura).replace(/\b([A-ZÁÉÍÓÚÜÑ0-9()-]{2,}(?:\s+[A-ZÁÉÍÓÚÜÑ0-9()-]+){2,})\b/g, '<strong style="color:var(--tinta);font-weight:600;">$1</strong>');
+    const conObra = c?.obra
+      ? `${apertura} en la obra <strong style="color:var(--tinta);font-weight:600;">${escapeHtml(normalizarMayusculas(c.obra))}</strong>.`
+      : `${apertura}.`;
+    const lineasPresentacion = lineasDeTexto(textos.presentacion);
+
+    const saludoHtml = `
+      <h2 class="doc-h2">Cordial saludo${c?.cliente ? `, ${escapeHtml(normalizarMayusculas(c.cliente))}` : ""}</h2>
+      <p class="doc-copy" style="color:var(--tinta);">${conObra}</p>
+      <!-- Los renglones de la presentacion van seguidos, sin hueco entre
+           ellos: son un mismo texto partido en lineas, no parrafos
+           distintos, y separados dejaban tres huecos en mitad de la hoja. -->
+      ${lineasPresentacion.map((parrafo)=>`<p class="doc-copy junto" style="color:var(--tinta);">${escapeHtml(parrafo)}</p>`).join("")}
+      ${textoInicial ? `<p class="doc-copy" style="color:var(--tinta);">${escapeHtml(textoInicial)}</p>` : ""}
+    `;
+    const textoSaludoPlano = `${c?.cliente || ""} ${textos.saludo || ""} ${c?.obra || ""} ${textos.presentacion || ""} ${textoInicial || ""}`;
+    const altoSaludo = 16 + Math.ceil(textoSaludoPlano.length / 86) * 5.2 + (textoInicial ? 5 : 0);
+    bloques.push({ tipo: "bloque", alto: altoSaludo, html: saludoHtml });
+
+    // Sin definiciones (propuesta en «Ninguno») tampoco sale el titulo.
+    const cuerpoDef = (()=>{
+      // Si la cotizacion trae un marco tecnico propio, reemplaza a las
+      // definiciones automaticas por tipo.
+      const propio = String(textos.marcoTecnico || "").trim();
+      if (propio) {
+        return `<div class="def-list-libre">${
+          propio.split(/\n{2,}/).map((parrafo)=>
+            `<p class="doc-copy">${lineasDeTexto(parrafo).map((l)=>escapeHtml(l)).join(" ")}</p>`
+          ).join("")
+        }</div>`;
+      }
+      const tipo = (propuestas[0] && tipoDe(propuestas[0])) || tipoCotizacionCanonico(c?.tipoCotizacion || "linea_vida");
+      const TIPOS_CON_DEFINICIONES = ["linea_vida", "linea_vida_camionera", TIPO_VERTICAL, "puntos_anclaje", "obra_blanca", "estructuras_metalicas", "escaleras", "caminaderos", "sistemas_completos", "servicios"];
+      if (!TIPOS_CON_DEFINICIONES.includes(tipo)) return "";
+      if(tipo === "linea_vida_camionera") return `
+        <div class="def-list">
+          <div class="def-row">
+            <div class="def-term">Trabajo en altura</div>
+            <div class="def-body">Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a <strong>2 metros desde el piso</strong>, como la que se hace sobre el techo o la carga de un vehículo.</div>
+          </div>
+          <div class="def-row">
+            <div class="def-term">Línea de vida camionera</div>
+            <div class="def-body">
+              <p>Sistema aéreo de protección contra caídas para el personal que trabaja sobre carrotanques, volquetas y vehículos de carga. Un cable de acero tensionado entre postes tipo cuello de cisne, por encima del vehículo, permite que el trabajador se desplace a lo largo de él conectado en todo momento.</p>
+              <ul class="def-bullets">
+                <li>El trabajador se conecta con arnés de cuerpo completo y una línea autorretráctil a un carro que se desliza por el cable.</li>
+                <li>La altura del cable y la luz entre postes se definen en la memoria de cálculo, según el vehículo y la distancia de detención de la caída.</li>
+                <li>Los postes y sus dados de cimentación se diseñan para la carga de detención de la caída; el sistema lo diseña y certifica una persona calificada, conforme a la Resolución 4272 de 2021.</li>
+                <li>Se respetan las distancias de seguridad a redes eléctricas (RETIE) en el diseño y el montaje.</li>
+              </ul>
+            </div>
+          </div>
         </div>
-        ${footerHtml}
-      </div>
-    </section>
-  `;
+      `;
+      if(tipo === TIPO_VERTICAL) return `
+        <div class="def-list">
+          <div class="def-row">
+            <div class="def-term">Trabajo en altura</div>
+            <div class="def-body">Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a <strong>2 metros desde el piso</strong>.</div>
+          </div>
+          <div class="def-row">
+            <div class="def-term">Línea de vida vertical</div>
+            <div class="def-body">
+              <p>Sistema de protección contra caídas para el ascenso y descenso en alturas. Un cable de acero tensionado entre un soporte superior y uno inferior, fijados a la estructura, guía el arrestador de caídas al que va conectado el trabajador.</p>
+              <ul class="def-bullets">
+                <li>El trabajador se conecta con arnés de cuerpo completo a un arrestador de caídas que se desliza por el cable y se bloquea ante una caída.</li>
+                <li>El soporte superior lleva un absorbedor de energía que limita la fuerza que llega al trabajador y a la estructura.</li>
+                <li>La línea de vida está constituida por un solo cable continuo, con su tensor en el extremo inferior.</li>
+                <li>Los anclajes a los cuales se fija la línea de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      `;
+      if(tipo === "obra_blanca") return `
+        <div class="def-list">
+          <div class="def-row">
+            <div class="def-term">Obra blanca</div>
+            <div class="def-body">
+              <p>Comprende todas las actividades de acabado y revestimiento en edificaciones, incluyendo instalación de sistemas de protección integrados a la estructura arquitectónica del proyecto.</p>
+              <ul class="def-bullets">
+                <li>Instalación de elementos empotrados en la fase de obra para garantizar la mejor estética y durabilidad.</li>
+                <li>Cumplimiento estricto de los estándares constructivos y de seguridad vigentes.</li>
+                <li>Coordinación con el equipo de obra para minimizar el impacto en los cronogramas de construcción.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      `;
+      if(tipo === "estructuras_metalicas") return `
+        <div class="def-list">
+          <div class="def-row">
+            <div class="def-term">Estructuras metálicas</div>
+            <div class="def-body">
+              <p>Comprende el diseño, suministro, fabricación, montaje y adecuación de elementos estructurales, plataformas y perfilería metálica en acero de alta resistencia para soporte de equipos, cubiertas y obras civiles o industriales.</p>
+              <ul class="def-bullets">
+                <li>Fabricación bajo especificaciones y normas técnicas estructurales vigentes (NSR-10 / AISC), garantizando capacidades portantes seguras.</li>
+                <li>Procesos de soldadura y anclajes certificados de alta resistencia química y mecánica.</li>
+                <li>Tratamiento de superficies con aplicación de pintura anticorrosiva y acabados de alta durabilidad para intemperie.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      `;
+      if(tipo === "puntos_anclaje") return `
+        <div class="def-list">
+          <div class="def-row">
+            <div class="def-term">Trabajo en altura</div>
+            <div class="def-body">Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a <strong>2 metros desde el piso</strong>.</div>
+          </div>
+          <div class="def-row">
+            <div class="def-term">Puntos de anclaje</div>
+            <div class="def-body">Son componentes en acero, anclados con un epóxico químico, con perno de <span class="tnum">5/8"</span> a una profundidad de <span class="tnum">12 cm</span> o más según el caso, instalados en estructuras de concreto, con capacidad de resistir una fuerza de caída de más de <strong>5.000 Lbs (2.268 kg)</strong>.</div>
+          </div>
+          <div class="def-row">
+            <div class="def-term">Línea de vida</div>
+            <div class="def-body">
+              <p>Son componentes de un sistema/equipo de protección de caídas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en tres o dos puntos de anclaje para otorgar movilidad al personal que trabaja en áreas elevadas.</p>
+              <ul class="def-bullets">
+                <li>La línea de vida permite la fijación o enganche en forma directa o indirecta al arnés completo para el cuerpo, o a un dispositivo de impacto o amortiguador.</li>
+                <li>Los pernos son grado 8 &mdash; B7, resistentes a corrosión y condiciones ambientales extremas.</li>
+                <li>Las líneas de vida estarán constituidas por un solo cable continuo.</li>
+                <li>Los anclajes a los cuales se fijarán las líneas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      `;
+      return `
+        <div class="def-list">
+          <div class="def-row">
+            <div class="def-term">Trabajo en altura</div>
+            <div class="def-body">Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a <strong>2 metros desde el piso</strong>.</div>
+          </div>
+          <div class="def-row">
+            <div class="def-term">Puntos de anclaje</div>
+            <div class="def-body">Son componentes en acero, anclado con un epóxico químico, con perno de <span class="tnum">5/8</span> a una profundidad de <span class="tnum">12 cm</span> o más según el caso a estructuras en concreto, con capacidad de resistir una fuerza de caída de más de <strong>5000 Lbs</strong>.</div>
+          </div>
+          <div class="def-row">
+            <div class="def-term">Línea de vida</div>
+            <div class="def-body">
+              <p>Son componentes de un sistema/equipo de protección de caídas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en tres o dos puntos de anclaje para otorgar movilidad al personal que trabaja en áreas elevadas.</p>
+              <ul class="def-bullets">
+                <li>La línea de vida permite la fijación o enganche en forma directa o indirecta al arnés completo para el cuerpo, o a un dispositivo de impacto o amortiguador.</li>
+                <li>Las líneas de vida estarán constituidas por un solo cable continuo.</li>
+                <li>Los anclajes a los cuales se fijarán las líneas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      `;
+    })();
+
+    if (cuerpoDef) {
+      const filasDef = (cuerpoDef.match(/class="def-row"/g) || []).length;
+      const textoDef = cuerpoDef.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      const altoDef = 16 + Math.ceil(textoDef.length / 72) * 4.8 + filasDef * 10;
+      bloques.push({
+        tipo: "bloque",
+        alto: altoDef,
+        html: `<h3 class="doc-h3">Definiciones que estructuran el alcance</h3>${cuerpoDef}`,
+      });
+    }
+
+    return bloques;
+  };
 
   // Alto aprovechable de una hoja carta, en milimetros, ya descontados los
   // margenes, el encabezado y el sitio que ocupa el pie.
@@ -1167,7 +1180,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     </div>
     ` });
 
-    bloques.push({ alto: 66, html: `
+    bloques.push({ alto: 66, noSolo: true, html: `
     <div class="signature keep">
       <div>
         <div class="card-label block-label">Próximos pasos</div>
@@ -1193,45 +1206,102 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     return bloques;
   };
 
-  const renderFinalPage = ({ includeSummary = false } = {}) => {
-    // Se van llenando hojas hasta que la siguiente pieza no cabe; ahi se abre
-    // una nueva. Ninguna pieza se parte por dentro: son bloques que se leen de
-    // corrido -las condiciones, lo que incluye, la firma- y cortarlos a la
-    // mitad se ve peor que pasarlos enteros a la hoja siguiente.
-    const hojas = [[]];
-    let ocupado = 0;
+  // Empaqueta una secuencia de piezas fluidas y/o paginas fijas en hojas Carta.
+  // Los bloques consecutivos que caben en la misma hoja se juntan (con 6mm de
+  // separacion entre ellos) en vez de dejar hojas medio vacias; en el navegador
+  // `repaginarHojas` vuelve a medir cada bloque para dejar el reparto exacto.
+  const GAP_BLOQUES_MM = 6;
+  const empaquetarSecuencia = (piezas, flujoBase) => {
+    const salida = [];
+    let tramoIdx = 0;
+    let pendientes = [];
 
-    for (const bloque of bloquesDelCierre({ includeSummary })) {
-      const ultima = hojas[hojas.length - 1];
-      if (ultima.length && ocupado + bloque.alto > ALTO_UTIL_CIERRE) {
-        hojas.push([bloque.html]);
-        ocupado = bloque.alto;
+    const vaciarPendientes = () => {
+      if (!pendientes.length) return;
+      const flujoId = `${flujoBase}-${tramoIdx}`;
+      tramoIdx += 1;
+      const hojas = [[]];
+      let ocupado = 0;
+
+      for (const bloque of pendientes) {
+        const ultima = hojas[hojas.length - 1];
+        const extraGap = ultima.length ? GAP_BLOQUES_MM : 0;
+        if (ultima.length && ocupado + extraGap + bloque.alto > ALTO_UTIL_CIERRE) {
+          hojas.push([bloque]);
+          ocupado = bloque.alto;
+        } else {
+          ultima.push(bloque);
+          ocupado += extraGap + bloque.alto;
+        }
+      }
+
+      // Evita dejar la firma sola al inicio de la ultima hoja si la anterior
+      // tiene al menos dos bloques (acompaña con el bloque previo, ej. SST).
+      if (hojas.length >= 2) {
+        const ultimaHoja = hojas[hojas.length - 1];
+        const penultimaHoja = hojas[hojas.length - 2];
+        if (
+          ultimaHoja.length === 1 &&
+          ultimaHoja[0].noSolo &&
+          penultimaHoja.length >= 2 &&
+          penultimaHoja[penultimaHoja.length - 1].alto + GAP_BLOQUES_MM + ultimaHoja[0].alto <= ALTO_UTIL_CIERRE
+        ) {
+          ultimaHoja.unshift(penultimaHoja.pop());
+        }
+      }
+
+      for (const bloquesHoja of hojas) {
+        salida.push(`
+          <section class="page" data-flujo="${flujoId}">
+            <div class="page-inner">
+              ${headerHtml}
+              <div class="page-content">
+                ${bloquesHoja.map((b) => `<div class="flow-block" data-rol="contenido"${b.noSolo ? ' data-no-solo="1"' : ""}>${b.html}</div>`).join("\n")}
+              </div>
+              ${footerHtml}
+            </div>
+          </section>
+        `);
+      }
+      pendientes = [];
+    };
+
+    for (const pieza of piezas) {
+      if (pieza.tipo === "paginaFija") {
+        vaciarPendientes();
+        salida.push(pieza.html);
       } else {
-        ultima.push(bloque.html);
-        ocupado += bloque.alto;
+        pendientes.push(pieza);
       }
     }
-
-    return hojas.map((piezas, i) => `
-      <section class="page premium-final-page ${includeSummary && i === 0 ? "premium-closing-page" : ""}">
-        <div class="page-inner">
-          ${headerHtml}
-          <div class="page-content">
-            ${piezas.join("\n")}
-          </div>
-          ${footerHtml}
-        </div>
-      </section>
-    `).join("");
+    vaciarPendientes();
+    return salida.join("");
   };
 
   const renderTechnicalPage = () =>
     paginasComponentes({ c, textos, textoInicial, propuestas, hasLifelineItem, headerHtml, footerHtml });
 
-  const proposalSections = propuestas.map((propuesta, idx) => renderProposalPage(propuesta, idx)).join("");
-  const closingSections = mostrarResumenFinal
-    ? renderFinalPage({ includeSummary: true })
-    : renderFinalPage();
+  const technicalSheetsHtml = [
+    showCatLadderAppendix ? fichaSistema(FICHA_ESCALERA_GATO) : "",
+    showVerticalLifelineAppendix ? fichaSistema(FICHA_LINEA_VIDA_VERTICAL) : "",
+    showVerticalSolaAppendix ? fichaSistema(FICHA_LINEA_VIDA_VERTICAL_SOLA) : "",
+    showCamioneraAppendix ? fichaSistema(FICHA_LINEA_CAMIONERA) : "",
+    ...materialesAnclaje.map((material) => fichaSistema(fichaPuntoAnclaje(material))),
+    showTechnicalPage ? renderTechnicalPage() : "",
+    showPlacaAppendix ? fichaSistema(FICHA_PLACA_IDENTIFICACION) : "",
+  ].join("");
+
+  const piezasIntro = construirBloquesIntro();
+  const piezasPropuestas = propuestas.flatMap((propuesta, idx) => construirPiezasPropuesta(propuesta, idx));
+  const piezasCierre = bloquesDelCierre({ includeSummary: mostrarResumenFinal }).map((b) => ({ tipo: "bloque", ...b }));
+
+  // Si no hay fichas tecnicas de por medio (ej. cotizacion manual, obra blanca,
+  // estructuras), el saludo, la tabla y el cierre fluyen juntos desde la hoja 2
+  // aprovechando el espacio libre. Si hay fichas tecnicas, van justo entre el
+  // saludo/definiciones y las propuestas economicas.
+  const cuerpoInteriorHtml = technicalSheetsHtml.trim()
+    ? `${empaquetarSecuencia(piezasIntro, "intro")}${technicalSheetsHtml}${empaquetarSecuencia([...piezasPropuestas, ...piezasCierre], "cuerpo")}`
+    : empaquetarSecuencia([...piezasIntro, ...piezasPropuestas, ...piezasCierre], "cuerpo");
 
   return `<!doctype html>
   <html>
@@ -1239,23 +1309,13 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     <base href="${typeof window !== 'undefined' && window.location ? window.location.origin : ''}/" />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cotizacion ${escapeHtml(c?.numero || "")}</title>
+    <title>${escapeHtml(nombreCotizacion(c))}</title>
     <style>
       ${cssHojaImpresion()}${CSS_COTIZACION}</style>
   </head>
   <body>
     ${coverPage}
-    ${introPage}
-    ${showCatLadderAppendix ? fichaSistema(FICHA_ESCALERA_GATO) : ""}
-    ${showVerticalLifelineAppendix ? fichaSistema(FICHA_LINEA_VIDA_VERTICAL) : ""}
-    ${showVerticalSolaAppendix ? fichaSistema(FICHA_LINEA_VIDA_VERTICAL_SOLA) : ""}
-    ${showCamioneraAppendix ? fichaSistema(FICHA_LINEA_CAMIONERA) : ""}
-    ${materialesAnclaje.map((material) => fichaSistema(fichaPuntoAnclaje(material))).join("")}
-    ${showTechnicalPage ? renderTechnicalPage() : ""}
-    ${showPlacaAppendix ? fichaSistema(FICHA_PLACA_IDENTIFICACION) : ""}
-    ${proposalSections}
-    ${mostrarResumenFinal ? "" : renderResumenPropuestas()}
-    ${closingSections}
+    ${cuerpoInteriorHtml}
   </body>
   </html>`;
 }

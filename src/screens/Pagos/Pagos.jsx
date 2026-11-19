@@ -5,6 +5,7 @@ import LBL from "../../components/ui/LBL";
 import BuscadorCliente from "../../components/BuscadorCliente";
 import ReciboCajaMediaCarta, { generarHtmlMediaCarta } from "./ReciboCajaMediaCarta";
 import { openPrintTab } from "../../lib/abrirImpresion";
+import { nombreDocumento } from "../../lib/nombreArchivo";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import {
   CONCEPTOS_RETEFUENTE,
@@ -1095,7 +1096,13 @@ export default function Pagos({ ctx }) {
                       empresaConfig,
                       reciboParaImprimir.elaboradoPor || membresia?.nombre || "Administración Ingeanclajes"
                     );
-                    openPrintTab(html, `Recibo de Caja ${reciboParaImprimir.id}`);
+                    openPrintTab(
+                      html,
+                      nombreDocumento("Recibo de Caja", [
+                        reciboParaImprimir.id,
+                        reciboParaImprimir.cliente || ob?.cliente,
+                      ])
+                    );
                   }}
                   style={{
                     display: "inline-flex",

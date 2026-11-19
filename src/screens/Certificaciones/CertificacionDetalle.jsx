@@ -61,7 +61,7 @@ export default function CertificacionDetalle({
       onImprimir(cert);
       return;
     }
-    printCurrentPz(`${cert.tipo || "Certificación"} ${cert.numero || cert.id || ""}`.trim());
+    printCurrentPz(nombreDocumento(cert?.tipo || "Certificación", [cert?.numero || cert?.id, cert?.lugar, cert?.cliente]));
   };
 
   const descargarPdf = async () => {

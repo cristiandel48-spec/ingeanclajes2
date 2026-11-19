@@ -10,7 +10,9 @@
 
 import { buildCotizacionPrintHtml } from "./cotizacionPrint";
 import { MARGEN_HOJA } from "./hojaImpresion";
+import { nombreCotizacion } from "./nombreArchivo";
 import { pdfDeHojas } from "./pdfHojas";
+import { repaginarHojas } from "./repaginarHojas";
 
 // La letra y los colores son los mismos de la cotizacion impresa. Antes aqui
 // se cambiaba todo a Arial, porque Inter venia de Google Fonts y la negrita no
@@ -53,10 +55,19 @@ function prepararHtmlParaPdf(html) {
  * memoria («not having enough compute resources», WORKER_RESOURCE_LIMIT).
  * La que se descarga sigue en alta calidad.
  */
+function repartirCotizacionConMedidasReales(doc, ventana) {
+  try {
+    repaginarHojas(doc, { ventana });
+  } catch (fallo) {
+    console.warn("No se pudo recalcular el reparto de hojas de la cotización:", fallo);
+  }
+}
+
 export async function generarCotizacionPdf(cotizacion, { firmaImg = "", sello = null, onProgreso, liviano = false } = {}) {
   const html = prepararHtmlParaPdf(buildCotizacionPrintHtml(cotizacion, { firmaImg, sello }));
   const blob = await pdfDeHojas(html, {
     onProgreso,
+    antesDeFotografiar: repartirCotizacionConMedidasReales,
     ...(liviano
       ? { escala: 2.5, formato: "JPEG", calidad: 0.92 }
       : { escala: 3.5, formato: "PNG" }),
@@ -66,24 +77,9 @@ export async function generarCotizacionPdf(cotizacion, { firmaImg = "", sello = 
 
 // El nombre lleva numero, cliente y obra, como el de los informes y las
 // certificaciones: en una carpeta con veinte, "Cotizacion C-26121" a secas no
-// dice de quien es. Se limpian los caracteres que Windows no admite en un
-// nombre de archivo.
+// dice de quien es. Comparte la regla de nombreArchivo.js con el botón Imprimir.
 function nombreDeCotizacion(cotizacion) {
-  const numero = String(cotizacion?.numero || cotizacion?.id || "cotizacion");
-  const partes = [numero, cotizacion?.cliente, cotizacion?.obra]
-    .map((t) => String(t || "").trim())
-    .filter(Boolean);
-  // La obra se repite muchas veces con el nombre del cliente; asi no sale dos veces.
-  const vistas = [];
-  for (const parte of partes) {
-    if (!vistas.some((v) => v.toLowerCase() === parte.toLowerCase())) vistas.push(parte);
-  }
-  const nombre = ("Cotizacion " + vistas.join(" "))
-    .replace(/[\\/:*?"<>|]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 120);
-  return `${nombre}.pdf`;
+  return `${nombreCotizacion(cotizacion)}.pdf`;
 }
 
 // El correo viaja en JSON, así que el PDF va en base64.

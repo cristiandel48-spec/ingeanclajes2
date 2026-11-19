@@ -573,6 +573,9 @@ export function buildQuoteProposal(propuesta = {}, index = 0) {
     mapImg: propuesta.mapImg ?? null,
     medicionAutomatica: Boolean(propuesta.medicionAutomatica),
     total: Math.round(Number.isFinite(Number(propuesta.total)) ? Number(propuesta.total) : totalCalculado),
+    ...(propuesta.costeoInterno && typeof propuesta.costeoInterno === "object"
+      ? { costeoInterno: propuesta.costeoInterno }
+      : {}),
   };
 
   return ensureProposalDefaultTexts(base);

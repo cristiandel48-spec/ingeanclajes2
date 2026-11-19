@@ -185,6 +185,17 @@ export function puedeVerDinero(membresia) {
   return esAdmin(membresia) || esContador(membresia);
 }
 
+/**
+ * Costos internos de cotizacion (recetas APU, insumos, costo estimado y
+ * margen de ganancia). Estrictamente restringido a administradores
+ * (Cristian, Camila y dueno): oculto para coordinadores, operativos,
+ * contadores y consulta, y nunca se incluye en documentos para clientes.
+ */
+export function puedeVerCostosInternos(membresia) {
+  if (!membresia || membresia.activo === false) return false;
+  return esAdmin(membresia) || puedeAprobarOrdenCompra(membresia);
+}
+
 // Tablas que la base solo deja leer y escribir con cierto modulo (migracion
 // 063). Tiene que coincidir con app.tiene_acceso_modulo: si la aplicacion
 // intentara guardar una de estas sin permiso, la base lo rechaza y el

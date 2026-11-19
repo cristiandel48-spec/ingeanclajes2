@@ -129,4 +129,42 @@ describe("empaquetado compacto de cotizaciones", () => {
     const hojaPrecio = bloquesPagina.find((b) => b.includes("Total propuesta"));
     expect(hojaPrecio).toContain("Condiciones comerciales");
   });
+
+  it("imprime TODAS las fotos de una propuesta (3, 4 o mas) en filas fluidas de a 2 sin recortar ninguna", () => {
+    const img = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    const html = buildCotizacionPrintHtml({
+      id: "COT-26221",
+      numero: "C-26221",
+      fecha: "2026-11-12",
+      cliente: "ZIKLO SOLAR",
+      obra: "FLORIDA PARQUE COMERCIAL",
+      tipoCotizacion: "linea_vida",
+      propuestas: [
+        {
+          id: "prop-a",
+          nombre: "Propuesta A",
+          tipoCotizacion: "linea_vida",
+          items: [{ id: 1, desc: "LINEA DE VIDA HORIZONTAL", cant: 77, unit: "ML", vu: 260000 }],
+          fotos: [
+            { id: 1, src: img, label: "cubierta c1" },
+            { id: 2, src: img, label: "" },
+            { id: 3, src: img, label: "" },
+            { id: 4, src: img, label: "cubierta c4" },
+            { id: 5, src: img, label: "" },
+          ],
+        },
+      ],
+      propuestaActivaId: "prop-a",
+    });
+
+    const fotosRenderizadas = html.match(/class="photo-card"/g) || [];
+    expect(fotosRenderizadas).toHaveLength(5);
+    expect(html).toContain("cubierta c1");
+    expect(html).toContain("Foto 2");
+    expect(html).toContain("Foto 3");
+    expect(html).toContain("cubierta c4");
+    expect(html).toContain("Foto 5");
+    // 5 fotos => 2 filas dobles (4 fotos) + 1 fila centrada (.single) para la 5ta foto
+    expect((html.match(/class="photo-grid single"/g) || []).length).toBe(1);
+  });
 });

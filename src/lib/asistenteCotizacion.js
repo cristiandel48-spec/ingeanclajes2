@@ -1,5 +1,6 @@
 import { getSupabaseClient } from "./backend/supabaseClient";
 import { buscarItemCatalogo, catalogoPlano, itemsPlanos } from "./catalogo";
+import { estimarCostosHeuristico, obtenerConfigCostos } from "./costosCotizacion";
 
 // Puente con la función «armar-cotizacion», que interpreta un dictado o documento
 // y devuelve un borrador de cotización.
@@ -237,5 +238,181 @@ export async function armarCotizacionDesdeTexto(texto, catalogo = []) {
         ? [`${fuera.length} servicio(s) mencionados no están en el catálogo y quedaron fuera. Agrégalos a mano.`]
         : []),
     ],
+  };
+}
+
+/**
+ * Estima materiales, mano de obra y consumibles/transporte con IA para
+ * trabajos a medida o reformas (uso interno de administradores).
+ * Si la función remota falla o aún no está actualizada, responde con una
+ * estimación local editable usando el catálogo real de insumos.
+ */
+export async function estimarCostosConIa({
+  titulo = "",
+  saludo = "",
+  incluyeTexto = "",
+  observaciones = "",
+  obra = "",
+  ciudad = "",
+  alcance = "",
+  requerimientoCliente = "",
+  items = [],
+  configCostos = null,
+  soloSinReceta = false,
+} = {}) {
+  const cfg = configCostos || obtenerConfigCostos([]);
+  const listaItems = Array.isArray(items)
+    ? items
+        .filter((it) => it && (String(it.desc || "").trim() || Number(it.cant || 0) > 0))
+        .map((it) => ({
+          desc: String(it.desc || "").trim(),
+          cant: Math.max(0, Number(it.cant) || 0),
+          unit: String(it.unit || "Und").trim(),
+          vu: Math.max(0, Number(it.vu) || 0),
+        }))
+    : [];
+
+  if (
+    !listaItems.length &&
+    !String(titulo).trim() &&
+    !String(saludo).trim() &&
+    !String(alcance).trim() &&
+    !String(requerimientoCliente).trim()
+  ) {
+    throw new Error("Agrega al menos un ítem o describe el proyecto antes de calcular con IA.");
+  }
+
+  let data = null;
+  let error = null;
+  try {
+    const supabase = getSupabaseClient();
+    const res = await supabase.functions.invoke(FUNCION, {
+      body: {
+        modo: "estimar_costos",
+        soloSinReceta: Boolean(soloSinReceta),
+        proyecto: {
+          titulo: String(titulo || "").slice(0, 400),
+          saludo: String(saludo || "").slice(0, 2500),
+          incluyeTexto: String(incluyeTexto || "").slice(0, 1500),
+          observaciones: String(observaciones || "").slice(0, 1000),
+          obra: String(obra || "").slice(0, 200),
+          ciudad: String(ciudad || "").slice(0, 120),
+          alcance: String(alcance || "").slice(0, 1500),
+          requerimientoCliente: String(requerimientoCliente || "").slice(0, 1500),
+        },
+        items: listaItems,
+        insumosCatalogo: (cfg.insumos || []).map((ins) => ({
+          id: ins.id,
+          nombre: ins.nombre,
+          categoria: ins.categoria,
+          unidad: ins.unidad,
+          costoUnitario: ins.costoUnitario,
+        })),
+      },
+    });
+    data = res.data;
+    error = res.error;
+  } catch (err) {
+    error = err;
+  }
+
+  if (error || data?.error || !Array.isArray(data?.lineas) || data.lineas.length === 0) {
+    const motivo = error ? await motivoDelError(error) : data?.error || "La IA no devolvió líneas.";
+    const respaldo = estimarCostosHeuristico({
+      titulo,
+      saludo,
+      incluyeTexto,
+      observaciones,
+      alcance,
+      requerimientoCliente,
+      items: listaItems,
+      configCostos: cfg,
+    });
+    return {
+      ...respaldo,
+      avisos: [
+        `Se usó la estimación local de respaldo (${motivo}).`,
+        ...respaldo.avisos,
+      ],
+    };
+  }
+
+  const mapaInsumos = new Map((cfg.insumos || []).map((ins) => [ins.id, ins]));
+  const categoriasValidas = new Set(["material", "mano_obra", "logistica"]);
+
+  const lineas = data.lineas
+    .filter((l) => l && String(l.nombre || "").trim() && Number(l.cant) > 0)
+    .map((l, idx) => {
+      const catalogoMatch = l.insumoId ? mapaInsumos.get(String(l.insumoId)) : null;
+      const cant = Math.max(0.1, Number(l.cant) || 1);
+      // Si el insumo está en el catálogo de la empresa, siempre manda el costo unitario del catálogo.
+      const costoUnitario = catalogoMatch
+        ? catalogoMatch.costoUnitario
+        : Math.max(0, Math.round(Number(l.costoUnitario) || 0));
+      const categoria = catalogoMatch
+        ? catalogoMatch.categoria
+        : categoriasValidas.has(l.categoria)
+        ? l.categoria
+        : "material";
+      const nombreIa = String(l.nombre || "").trim();
+      return {
+        id: `ia-${Date.now()}-${idx + 1}`,
+        insumoId: catalogoMatch ? catalogoMatch.id : null,
+        // Conserva el nombre técnico específico que devolvió la IA si viene detallado (p. ej. medidas exactas)
+        nombre: nombreIa || catalogoMatch?.nombre || "Insumo",
+        categoria,
+        unidad: catalogoMatch ? catalogoMatch.unidad : String(l.unidad || "Und").trim() || "Und",
+        cant: Math.round(cant * 10) / 10,
+        costoUnitario,
+        subtotal: Math.round(cant * costoUnitario),
+        origen: "ia",
+        nota: String(l.nota || "").trim(),
+      };
+    });
+
+  const avisosFinales = Array.isArray(data.avisos) ? data.avisos.map(String) : [];
+
+  // Red de seguridad: si la IA omitió por completo la mano de obra o la logística,
+  // se complementan automáticamente desde el motor APU/local para nunca dejar $ 0.
+  const faltaManoObra = !lineas.some((l) => l.categoria === "mano_obra");
+  const faltaLogistica = !lineas.some((l) => l.categoria === "logistica");
+  if (!soloSinReceta && (faltaManoObra || faltaLogistica)) {
+    const complemento = estimarCostosHeuristico({
+      titulo,
+      saludo,
+      incluyeTexto,
+      observaciones,
+      alcance,
+      requerimientoCliente,
+      items: listaItems,
+      configCostos: cfg,
+    });
+    const agregadas = [];
+    for (const cLinea of complemento.lineas) {
+      if (faltaManoObra && cLinea.categoria === "mano_obra") {
+        lineas.push({ ...cLinea, id: `ia-comp-mo-${lineas.length + 1}` });
+        agregadas.push("mano de obra");
+      }
+      if (faltaLogistica && cLinea.categoria === "logistica") {
+        lineas.push({ ...cLinea, id: `ia-comp-log-${lineas.length + 1}` });
+        agregadas.push("transporte/consumibles");
+      }
+    }
+    const rubros = [...new Set(agregadas)];
+    if (rubros.length) {
+      avisosFinales.push(
+        `Se complementó ${rubros.join(" y ")} con base en tus tarifas de Catálogo para no subestimar el costo.`
+      );
+    }
+  }
+
+  const ordenCat = { material: 1, mano_obra: 2, logistica: 3 };
+  lineas.sort((a, b) => (ordenCat[a.categoria] || 9) - (ordenCat[b.categoria] || 9));
+
+  return {
+    lineas,
+    resumen: String(data.resumen || "Estimación generada con IA."),
+    avisos: avisosFinales,
+    esRespaldoLocal: false,
   };
 }

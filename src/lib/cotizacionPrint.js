@@ -408,15 +408,18 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   `;
   const fichaSistema = crearFichaSistema({ headerHtml, footerHtml });
 
-  const renderPhotoGrid = (fotos = [], proposalIndex = 0, customHeight = null) => {
-    if(!Array.isArray(fotos) || !fotos.length) return "";
-    const images = fotos.slice(0, 2);
+  // Dibuja una fila de 1 o 2 fotos conservando su numeracion real. Cuando una
+  // propuesta trae 3 o mas fotos, se reparten en filas de a 2 bloques fluidos
+  // para que nunca se recorten ni se descarten fotos al imprimir o bajar PDF.
+  const renderPhotoRow = (rowFotos = [], startIndex = 0, proposalIndex = 0, customHeight = null) => {
+    const images = (Array.isArray(rowFotos) ? rowFotos : []).filter((f) => f && f.src);
+    if (!images.length) return "";
     const hStyle = customHeight ? `style="height:${customHeight}mm; --card-photo-h:${customHeight}mm;"` : "";
     return `
       <div class="photo-grid ${images.length === 1 ? "single" : ""}">
-        ${images.map((foto, idx)=>{
+        ${images.map((foto, idx) => {
           const src = escapeHtml(foto?.src || "");
-          const label = escapeHtml(foto?.label || `Foto ${idx + 1}`);
+          const label = escapeHtml(foto?.label || `Foto ${startIndex + idx + 1}`);
           return `
             <div class="photo-card" ${customHeight ? `style="--card-photo-h:${customHeight}mm;"` : ""}>
               <img
@@ -724,33 +727,52 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     const hasClientReq = propuesta.esObraBlanca && String(propuesta.requerimientoCliente || "").trim().length > 0;
     const plan = planificarItems(propuesta);
     const hasMap = typeof propuesta?.mapImg === "string" && propuesta.mapImg.trim() !== "";
-    const fotos = Array.isArray(propuesta.fotos) ? propuesta.fotos : [];
-    const numFotos = Math.min(2, fotos.length);
+    const fotos = (Array.isArray(propuesta.fotos) ? propuesta.fotos : []).filter((f) => f && f.src);
+    const numFotos = fotos.length;
+    const filasFotos = [];
+    for (let i = 0; i < numFotos; i += 2) {
+      filasFotos.push({ items: fotos.slice(i, i + 2), inicio: i });
+    }
 
     let customPhotoHeight = null;
     if (numFotos > 0 && idx !== 2) {
-      const esNombreGenerico = !propuesta.nombre || /^propuesta(\s+[a-z0-9]+)?$/i.test(String(propuesta.nombre).trim());
-      const tituloH = !esNombreGenerico ? 10 : 0;
-      const reqH = hasClientReq ? Math.max(16, Math.min(42, Math.ceil(String(propuesta.requerimientoCliente).length / 75) * 5.5 + 10)) : 0;
-      const scopeH = hasScope ? Math.max(16, Math.min(45, Math.ceil(String(propuesta.alcancePropuesta).length / 75) * 5.5 + 10)) : 0;
-      const narrH = hasNarrative ? Math.max(14, Math.min(40, Math.ceil(String(propuesta.narrative).length / 75) * 5.5 + 8)) : 0;
-      const mapH = hasMap ? 64 : 0;
-      const tableRows = plan.juntoAlTexto && plan.hojas.length ? plan.hojas[0].length : 0;
-      const tableH = plan.juntoAlTexto ? (38 + tableRows * 7.5) : 8;
-      const photoOverhead = 10;
-      const espacioDisponible = 194 - (tituloH + reqH + scopeH + narrH + mapH + tableH + photoOverhead);
+      if (numFotos <= 2) {
+        const esNombreGenerico = !propuesta.nombre || /^propuesta(\s+[a-z0-9]+)?$/i.test(String(propuesta.nombre).trim());
+        const tituloH = !esNombreGenerico ? 10 : 0;
+        const reqH = hasClientReq ? Math.max(16, Math.min(42, Math.ceil(String(propuesta.requerimientoCliente).length / 75) * 5.5 + 10)) : 0;
+        const scopeH = hasScope ? Math.max(16, Math.min(45, Math.ceil(String(propuesta.alcancePropuesta).length / 75) * 5.5 + 10)) : 0;
+        const narrH = hasNarrative ? Math.max(14, Math.min(40, Math.ceil(String(propuesta.narrative).length / 75) * 5.5 + 8)) : 0;
+        const mapH = hasMap ? 64 : 0;
+        const tableRows = plan.juntoAlTexto && plan.hojas.length ? plan.hojas[0].length : 0;
+        const tableH = plan.juntoAlTexto ? (38 + tableRows * 7.5) : 8;
+        const photoOverhead = 10;
+        const espacioDisponible = 194 - (tituloH + reqH + scopeH + narrH + mapH + tableH + photoOverhead);
 
-      if (numFotos === 1) {
-        customPhotoHeight = Math.min(135, Math.max(85, Math.round(espacioDisponible * 0.88)));
+        if (numFotos === 1) {
+          customPhotoHeight = Math.min(135, Math.max(85, Math.round(espacioDisponible * 0.88)));
+        } else {
+          customPhotoHeight = Math.min(95, Math.max(70, Math.round(espacioDisponible * 0.68)));
+        }
       } else {
-        customPhotoHeight = Math.min(95, Math.max(70, Math.round(espacioDisponible * 0.68)));
+        // 3 o mas fotos: filas amplias de 2 fotos (~82 mm) para que quepan
+        // limpiamente 2 filas (3 o 4 fotos) en una sola hoja Carta sin recortes.
+        customPhotoHeight = 82;
       }
     }
 
-    const fotosHtml = renderPhotoGrid(propuesta.fotos, idx, customPhotoHeight);
+    const altoDeFilaFoto = (fila) => {
+      if (idx === 2) return 52;
+      if (numFotos >= 3 && fila.items.length === 1) return 86;
+      return customPhotoHeight || (fila.items.length === 1 ? 140 : 76);
+    };
+
+    const primeraFilaFotosHtml = filasFotos.length
+      ? renderPhotoRow(filasFotos[0].items, filasFotos[0].inicio, idx, altoDeFilaFoto(filasFotos[0]))
+      : "";
+    const filasFotosExtra = filasFotos.slice(1);
     const mapaHtml = renderMapBlock(propuesta, idx);
     const tieneContenidoPropio = Boolean(
-      hasClientReq || hasScope || hasNarrative || fotosHtml.trim() || mapaHtml.trim()
+      hasClientReq || hasScope || hasNarrative || filasFotos.length > 0 || mapaHtml.trim()
     );
     const esNombreGenerico = !propuesta.nombre || /^propuesta(\s+[a-z0-9]+)?$/i.test(String(propuesta.nombre).trim());
     const tituloPropuestaHtml = !esNombreGenerico ? `<h2 class="doc-h2">${escapeHtml(propuesta.nombre)}</h2>` : "";
@@ -812,11 +834,21 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     const reqH = hasClientReq ? Math.max(16, Math.ceil(String(propuesta.requerimientoCliente).length / 80) * 5.2 + 10) : 0;
     const scopeH = hasScope ? Math.max(16, Math.ceil(String(propuesta.alcancePropuesta).length / 80) * 5.2 + 10) : 0;
     const narrH = hasNarrative ? Math.max(12, Math.ceil(String(propuesta.narrative).length / 80) * 5.2 + 6) : 0;
-    const photoH = numFotos > 0
-      ? ((idx === 2 ? 52 : (customPhotoHeight || (numFotos === 1 ? 140 : 76))) + 14)
-      : 0;
+    const primeraFilaH = filasFotos.length ? (altoDeFilaFoto(filasFotos[0]) + 14) : 0;
     const mapH = hasMap ? (idx === 2 ? 142 : 68) : 0;
-    const altoCabeceraProp = (!esNombreGenerico ? 11 : 0) + reqH + scopeH + narrH + photoH + mapH;
+    const mapaEnCabecera = Boolean(mapaHtml) && filasFotosExtra.length === 0;
+    const notaContinuaHtml = !plan.juntoAlTexto
+      ? `<p class="doc-copy"><em>El detalle de precios continúa en la página siguiente.</em></p>`
+      : "";
+    const notaEnCabecera = filasFotosExtra.length === 0 && (mapaEnCabecera || !mapaHtml);
+
+    const altoCabeceraProp =
+      (!esNombreGenerico ? 11 : 0) +
+      reqH +
+      scopeH +
+      narrH +
+      primeraFilaH +
+      (mapaEnCabecera ? mapH : 0);
 
     const bloqueCabeceraHtml = `
       ${tituloPropuestaHtml}
@@ -837,16 +869,36 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
           <p class="doc-copy">${escapeHtml(propuesta.narrative)}</p>
         </div>
       ` : ""}
-      ${fotosHtml}
-      ${mapaHtml}
-      ${!plan.juntoAlTexto ? `<p class="doc-copy"><em>El detalle de precios continúa en la página siguiente.</em></p>` : ""}
+      ${primeraFilaFotosHtml}
+      ${mapaEnCabecera ? mapaHtml : ""}
+      ${notaEnCabecera ? notaContinuaHtml : ""}
     `;
 
     piezas.push({
       tipo: "bloque",
-      alto: altoCabeceraProp + (plan.juntoAlTexto ? 0 : 10),
+      alto: altoCabeceraProp + (notaEnCabecera && notaContinuaHtml ? 10 : 0),
       html: bloqueCabeceraHtml,
     });
+
+    // Filas adicionales de fotos (Foto 3-4, 5-6, ...) como bloques fluidos propios
+    // para que `repaginarHojas` las acomode sin recortes ni huecos.
+    filasFotosExtra.forEach((fila, extraIdx) => {
+      const esUltimaExtra = extraIdx === filasFotosExtra.length - 1 && !mapaHtml;
+      const hFila = altoDeFilaFoto(fila);
+      piezas.push({
+        tipo: "bloque",
+        alto: hFila + 14 + (esUltimaExtra && notaContinuaHtml ? 10 : 0),
+        html: `${renderPhotoRow(fila.items, fila.inicio, idx, hFila)}${esUltimaExtra ? notaContinuaHtml : ""}`,
+      });
+    });
+
+    if (mapaHtml && !mapaEnCabecera) {
+      piezas.push({
+        tipo: "bloque",
+        alto: mapH + (notaContinuaHtml ? 10 : 0),
+        html: `${mapaHtml}${notaContinuaHtml}`,
+      });
+    }
 
     if (plan.juntoAlTexto) {
       if (plan.hojas.length) {

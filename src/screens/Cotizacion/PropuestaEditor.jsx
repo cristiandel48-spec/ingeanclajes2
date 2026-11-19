@@ -16,6 +16,7 @@ import { fmt } from "../../lib/format";
 import { DEFAULT_COT_INCLUYE } from "../../data/seed";
 import { TIPO_MANUAL, TIPO_CAMIONERA, fotoDefaultDeTipo, fotosParaTipo, isFotoPuntoAnclajeDefault, getTipoCotizacionLabel, tipoCotizacionCanonico } from "../../lib/cotizaciones";
 import { avisar, confirmar } from "../../lib/dialogos";
+import PanelCosteoInterno from "./PanelCosteoInterno";
 
 // Indice de la categoria del catalogo que corresponde al tipo, o -1 si no
 // tiene. Solo la que significa lo mismo: antes se buscaba «la mas parecida»
@@ -43,6 +44,9 @@ export default function PropuestaEditor({
   onPedirMapa,
   cl,
   setCl,
+  tituloCotizacion = "",
+  saludoCotizacion = "",
+  observacionesCot = "",
 }) {
   const p = propuesta;
   const [showDB, setShowDB] = useState(() => {
@@ -1301,6 +1305,16 @@ export default function PropuestaEditor({
               ✓ Esta propuesta está configurada con <strong>IVA Pleno (19%)</strong>. No aplica porcentaje de utilidad ni saldrá ningún campo de AIU en la impresión del documento.
             </div>
           )}
+
+          {/* Panel confidencial solo para administradores: materiales, costo real y margen */}
+          <PanelCosteoInterno
+            propuesta={p}
+            onChangePropuesta={onChange}
+            cl={cl}
+            tituloCotizacion={tituloCotizacion}
+            saludoCotizacion={saludoCotizacion}
+            observacionesCot={observacionesCot}
+          />
         </div>
 
         {/* 5. Condiciones comerciales. Son datos de la propuesta, pero en el

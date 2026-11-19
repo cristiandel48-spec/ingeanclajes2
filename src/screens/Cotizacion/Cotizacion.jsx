@@ -37,6 +37,7 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
 import { avisar, confirmar } from "../../lib/dialogos";
 import { puedeEscribirTabla } from "../../lib/permisos";
+import { costeoAMaterialesDespacho, obtenerConfigCostos } from "../../lib/costosCotizacion";
 // Si la obra ya tiene trabajo y no se puede retirar al desaprobar. Una sola
 // regla para aprobar y desaprobar: antes desaprobar no miraba el contador de
 // avances de la base -la bitacora no se descarga al arrancar- y borraba obras
@@ -944,6 +945,12 @@ export default function Cotizacion({ctx}){
       obraExistente = ordenadas[0];
     }
 
+    // Lista física de materiales para bodega (sin costos ni márgenes) derivada
+    // de las recetas APU o de la estimación ajustada en la propuesta aprobada.
+    const propuestaAprobada = elegida || opciones.find((p) => p.id === base.propuestaActivaId) || opciones[0] || cotizacion;
+    const despachoCalculado = costeoAMaterialesDespacho(propuestaAprobada, obtenerConfigCostos(empresaConfig));
+    const tieneDespachoCalculado = Boolean(despachoCalculado?.insumos?.length || despachoCalculado?.entregables?.length);
+
     let obraId;
     if (obraExistente) {
       // REUTILIZAR LA OBRA EXISTENTE: No crear una nueva ni gastar otro consecutivo.
@@ -954,6 +961,7 @@ export default function Cotizacion({ctx}){
       setObras((prev) => prev
         .map((o) => {
           if (o.id !== obraId) return o;
+          const yaTieneDespacho = Boolean(o.materialesDespacho?.insumos?.length || o.materialesDespacho?.entregables?.length);
           return {
             ...o,
             cliente: cotizacion.cliente,
@@ -975,6 +983,7 @@ export default function Cotizacion({ctx}){
             utilidadCotizacion: snapshot.utilidadCotizacion,
             baseIngresoContable: snapshot.baseIngresoContable,
             ivaGeneradoCotizacion: snapshot.ivaGeneradoCotizacion,
+            ...(!yaTieneDespacho && tieneDespachoCalculado ? { materialesDespacho: despachoCalculado } : {}),
           };
         })
       );
@@ -1013,6 +1022,7 @@ export default function Cotizacion({ctx}){
         utilidadCotizacion:snapshot.utilidadCotizacion,
         baseIngresoContable:snapshot.baseIngresoContable,
         ivaGeneradoCotizacion:snapshot.ivaGeneradoCotizacion,
+        ...(tieneDespachoCalculado ? { materialesDespacho: despachoCalculado } : {}),
       }]);
     }
 
@@ -2195,6 +2205,9 @@ export default function Cotizacion({ctx}){
           onPedirMapa={()=>setPropuestaActivaId(propuesta.id)}
           cl={cl}
           setCl={setCl}
+          tituloCotizacion={textosDocumento.tituloPortada}
+          saludoCotizacion={textosDocumento.saludo}
+          observacionesCot={observacionesCot}
         />
         </div>
       ))}

@@ -197,6 +197,8 @@ export function AppDataProvider({ children }) {
   // El catalogo de servicios. Vive en la base para que los precios se
   // cambien sin publicar una version del programa.
   const [catalogoItems, setCatalogoItems] = useState([]);
+  // Inventario de bienes propios de la empresa (herramientas, equipos, EPP...).
+  const [inventario, setInventario] = useState([]);
   // Rol y modulos de quien tiene la sesion abierta. null mientras carga.
   const [membresia, setMembresia] = useState(null);
   const [nubeLista, setNubeLista] = useState(false);
@@ -214,6 +216,7 @@ export function AppDataProvider({ children }) {
       horarios: setHorarios, certs: setCerts, informes: setInformes, clientes: setClientes,
       proveedores: setProveedores, cuentas: setCuentas, ordenesCompra: setOrdenesCompra,
       cotizaciones: setCotizaciones, agenda: setAgenda, catalogoItems: setCatalogoItems,
+      inventario: setInventario,
     };
     // Campo con el que otros registros apuntan a uno de esta entidad.
     const VINCULOS = {
@@ -222,7 +225,7 @@ export function AppDataProvider({ children }) {
     };
     const COLECCIONES_CON_VINCULOS = [
       "obras", "cotizaciones", "informes", "certs", "cuentas", "pagos",
-      "horarios", "agenda", "ordenesCompra",
+      "horarios", "agenda", "ordenesCompra", "inventario",
     ];
 
     // Edicion simultanea: otra persona guardo cambios en un registro que esta
@@ -450,6 +453,7 @@ export function AppDataProvider({ children }) {
       nominasGeneradasCloud: nominasGeneradas,
       empresaConfig: empresaConfigConConexiones,
       catalogoItems,
+      inventario,
     };
   };
 
@@ -739,6 +743,7 @@ export function AppDataProvider({ children }) {
           }
         }
         if (Array.isArray(cloud.catalogoItems)) setCatalogoItems(cloud.catalogoItems);
+        if (Array.isArray(cloud.inventario)) setInventario(cloud.inventario);
         if (Array.isArray(cloud.nominasGeneradasCloud)) {
           setNominasGeneradas(cloud.nominasGeneradasCloud.map(normalizeNominaGeneratedRecord));
         }
@@ -887,6 +892,7 @@ export function AppDataProvider({ children }) {
     nominasGeneradas,
     empresaConfig,
     catalogoItems,
+    inventario,
     agenda,
     tareasPersonales,
     documentosEquipo,
@@ -929,6 +935,7 @@ export function AppDataProvider({ children }) {
     if (entidad === "informes") setInformes(mezclar);
     else if (entidad === "obras") setObras(mezclar);
     else if (entidad === "cotizaciones") setCotizaciones(mezclar);
+    else if (entidad === "inventario") setInventario(mezclar);
 
     return { ...completo, __parcial: false };
   }, []);
@@ -1059,6 +1066,7 @@ export function AppDataProvider({ children }) {
     nominasGeneradas, setNominasGeneradas,
     empresaConfig, setEmpresaConfig,
     catalogoItems, setCatalogoItems,
+    inventario, setInventario,
     membresia,
     authUserEmail,
     nubeLista,

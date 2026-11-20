@@ -20,6 +20,8 @@ export const ICONS = {
   fototeca: ico(<><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></>),
   // Etiqueta de precio.
   catalogo: ico(<><path d="M20.6 12.6 12.7 20.5a1.8 1.8 0 0 1-2.5 0l-6.7-6.7a1.8 1.8 0 0 1-.5-1.3V4.8c0-1 .8-1.8 1.8-1.8h7.7c.5 0 1 .2 1.3.5l6.8 6.8c.7.7.7 1.7 0 2.3z"/><circle cx="8" cy="8" r="1.4"/></>),
+  // Caja isometrica: bienes y equipos propios de la empresa.
+  inventario: ico(<><path d="M12 3 4 7.5v9L12 21l8-4.5v-9L12 3z"/><path d="M4 7.5 12 12l8-4.5"/><path d="M12 12v9"/></>),
   // La burbuja de WhatsApp, dibujada con el mismo trazo que las demas para que
   // no desentone: el logotipo oficial es macizo y aqui todos son de linea.
   whatsapp: ico(<><path d="M3.5 20.5l1.3-4.4A8.2 8.2 0 1 1 8 19.3l-4.5 1.2z"/><path d="M9 9.2c.2 1 .7 2 1.4 2.8.8.8 1.7 1.3 2.7 1.6l.9-1.1c.2-.2.4-.2.6-.1l1.7.8c.2.1.3.3.3.5-.1.9-.9 1.6-1.8 1.5a7.7 7.7 0 0 1-6.8-6.8c-.1-.9.6-1.7 1.5-1.8.2 0 .4.1.5.3l.8 1.7c.1.2.1.4-.1.6z"/></>),
@@ -46,6 +48,7 @@ export const ICON_COLORS = {
   cotizacion: "#0A84FF",
   clientes: "#5E5CE6",
   catalogo: "#30B0C7",
+  inventario: "#00A878",
   obras: "#FF7A00",
   horarios: "#AF52DE",
   nomina: "#A2845E",
@@ -84,6 +87,7 @@ export const NAV_SECTIONS = [
       // despues se asigna a la obra y a los turnos. El resto del proceso
       // (liquidacion, nominas generadas, colillas y planilla) sigue apagado.
       { id: "nomina", label: "Personal y empleados", short: "Personal" },
+      { id: "inventario", label: "Inventario" },
       { id: "fototeca", label: "Fototeca de obras", short: "Fototeca" },
     ],
   },

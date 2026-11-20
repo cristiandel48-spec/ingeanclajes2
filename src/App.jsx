@@ -42,6 +42,7 @@ const Dashboard = pantalla(() => import("./screens/Dashboard/Dashboard"));
 const Cotizacion = pantalla(() => import("./screens/Cotizacion/Cotizacion"));
 const ClientesDB = pantalla(() => import("./screens/Clientes/ClientesDB"));
 const Catalogo = pantalla(() => import("./screens/Catalogo/Catalogo"));
+const Inventario = pantalla(() => import("./screens/Inventario/Inventario"));
 const Obras = pantalla(() => import("./screens/Obras/Obras"));
 const FototecaScreen = pantalla(() => import("./screens/Fototeca/FototecaScreen"));
 const Certificaciones = pantalla(() => import("./screens/Certificaciones/Certificaciones"));
@@ -69,6 +70,7 @@ const SCREENS = {
   radar: RadarObras,
   clientes: ClientesDB,
   catalogo: Catalogo,
+  inventario: Inventario,
   obras: Obras,
   fototeca: FototecaScreen,
   pagos: Pagos,

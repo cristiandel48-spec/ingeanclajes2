@@ -206,6 +206,7 @@ export const ENTIDADES_RESTRINGIDAS = {
   plan_cuentas: ["contabilidad"],
   asientos_contables: ["contabilidad"],
   nominas_generadas: ["nomina"],
+  inventario: ["inventario"],
 };
 
 // Tablas que todos leen pero solo MODIFICAN quienes tienen alguno de estos
@@ -226,6 +227,7 @@ export const ENTIDADES_ESCRITURA = {
   agenda: ["agenda"],
   proveedores: ["pagos"],
   ordenes_compra: ["pagos"],
+  inventario: ["inventario"],
 };
 
 // Mismo criterio que la base: administrador o contador, modulos sin limitar

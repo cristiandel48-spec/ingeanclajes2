@@ -23,6 +23,7 @@ const ENTITY_TO_STATE = {
   nominas_generadas: "nominasGeneradasCloud",
   empresa_config: "empresaConfig",
   catalogo_items: "catalogoItems",
+  inventario: "inventario",
   agenda: "agenda",
   tareas_personales: "tareasPersonales",
   documentos_equipo: "documentosEquipo",
@@ -49,6 +50,7 @@ let entidadesSinPermiso = new Set([
   // Escritura por modulo (migracion 069).
   "obras", "cotizaciones", "clientes", "certificaciones", "informes", "horarios",
   "cuentas", "empleados", "cargos", "agenda", "proveedores", "ordenes_compra",
+  "inventario",
 ]);
 
 export function setEntidadesSinPermiso(lista) {

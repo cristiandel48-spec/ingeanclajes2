@@ -547,10 +547,7 @@ export function buildQuoteProposal(propuesta = {}, index = 0) {
 
   const sinAiu = Boolean(propuesta.sinAiu ?? propuesta.ivaPleno ?? false);
   const util = porcentajeUtilidad(propuesta.util);
-  const subtotal = items.reduce((sum, item) => sum + (Number(item.cant || 0) * Number(item.vu || 0)), 0);
-  const utilidadValor = sinAiu ? 0 : (subtotal * (util / 100));
-  const ivaValor = sinAiu ? (subtotal * 0.19) : (utilidadValor * 0.19);
-  const totalCalculado = Math.round(subtotal + utilidadValor + ivaValor);
+  const totalCalculado = Math.round(calcularTotales(items, util, sinAiu).tot);
 
   const tipoCotizacion = propuesta.tipoCotizacion || "linea_vida";
   const fotos = fotosParaTipo(propuesta.fotos, tipoCotizacion);
@@ -743,14 +740,30 @@ export function porcentajeUtilidad(...candidatos) {
   return noNegativo(valor);
 }
 
+// Tarifa de IVA de las cotizaciones.
+export const IVA_TARIFA = 0.19;
+
+// El unico sitio donde se calcula el valor de una propuesta. La cuenta estaba
+// copiada en el editor, el guardado, el documento y el correo, y bastaba con
+// que una copia tratara distinto la utilidad para que la pantalla y el PDF
+// dieran totales diferentes.
+//
+// Con AIU el IVA va sobre la utilidad; sin AIU (IVA pleno) va sobre el
+// subtotal y no hay utilidad. `util` es el porcentaje ya resuelto: quien tenga
+// que elegir entre varios guardados usa antes porcentajeUtilidad().
+export function calcularTotales(items, util, sinAiu = false) {
+  const sub = (Array.isArray(items) ? items : [])
+    .reduce((sum, item) => sum + noNegativo(item?.cant) * noNegativo(item?.vu), 0);
+  const ut = sinAiu ? 0 : (sub * noNegativo(util)) / 100;
+  const iva = (sinAiu ? sub : ut) * IVA_TARIFA;
+  return { sub, ut, iva, tot: sub + ut + iva };
+}
+
 export function getQuoteProposalTotals(baseQuote={}, propuesta){
   const quote = mergeQuoteWithProposal(baseQuote, propuesta);
   const sinAiu = Boolean(propuesta?.sinAiu ?? quote.sinAiu);
   const items = normalizeQuoteItems({ ...quote, items: propuesta?.items || [] });
-  const sub = items.reduce((sum, item)=>sum + noNegativo(item.cant) * noNegativo(item.vu), 0);
-  const ut = sinAiu ? 0 : (sub * porcentajeUtilidad(propuesta?.util, quote.util) / 100);
-  const iva = sinAiu ? (sub * 0.19) : (ut * 0.19);
-  const tot = sub + ut + iva;
+  const { sub, ut, iva, tot } = calcularTotales(items, porcentajeUtilidad(propuesta?.util, quote.util), sinAiu);
   return { quote, items, sub, ut, iva, tot, sinAiu };
 }
 
@@ -845,10 +858,7 @@ export function getQuotePrintableProposals(baseQuote = {}){
     const quote = mergeQuoteWithProposal(baseQuote, propuesta);
     const sinAiu = Boolean(propuesta.sinAiu ?? quote.sinAiu);
     const items = normalizeQuoteItems(quote);
-    const sub = items.reduce((sum, item)=>sum + noNegativo(item.cant) * noNegativo(item.vu), 0);
-    const ut = sinAiu ? 0 : (sub * porcentajeUtilidad(quote.util) / 100);
-    const iva = sinAiu ? (sub * 0.19) : (ut * 0.19);
-    const tot = sub + ut + iva;
+    const { sub, ut, iva, tot } = calcularTotales(items, porcentajeUtilidad(quote.util), sinAiu);
     const measurements = Array.isArray(quote.geoMediciones) ? quote.geoMediciones : [];
     // La imagen del mapa se compone al medir y se guarda con la propuesta. Antes
     // se armaba aqui una URL a la API de Google, que dejo de responder cuando se

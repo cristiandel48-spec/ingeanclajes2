@@ -7,6 +7,7 @@ import {
   calcularLineasDesdeRecetas,
   huellaItemsPropuesta,
   obtenerConfigCostos,
+  revisarCoherenciaCosteo,
 } from "../../lib/costosCotizacion";
 import { estimarCostosConIa } from "../../lib/asistenteCotizacion";
 import { fmt } from "../../lib/format";
@@ -25,6 +26,14 @@ const ESTILOS_ESTADO = {
     border: "#FEDF89",
     text: "#B54708",
     label: "Margen ajustado",
+  },
+  // El costo esta incompleto o sale del propio precio: el margen no se ha
+  // comprobado y no se pinta de verde.
+  sin_confirmar: {
+    bg: "#FFFAEB",
+    border: "#FEDF89",
+    text: "#B54708",
+    label: "Margen sin confirmar",
   },
   critico: {
     bg: "#FEF3F2",
@@ -72,6 +81,18 @@ export default function PanelCosteoInterno({
   const costeo = useMemo(
     () => calcularCosteoPropuesta(propuesta, configCostos),
     [propuesta, configCostos]
+  );
+  // Lo que no cuadra entre el costeo y la cotizacion (recertificacion con
+  // materiales de obra nueva, obra lejos sin viaticos). Se calcula al vuelo,
+  // asi que tambien revisa los costeos que ya estaban guardados.
+  const avisosCoherencia = useMemo(
+    () => revisarCoherenciaCosteo(costeo, {
+      titulo: tituloCotizacion,
+      items: propuesta?.items,
+      ciudad: cl?.ciudad,
+      descartadas: propuesta?.costeoInterno?.avisosDescartados,
+    }),
+    [costeo, tituloCotizacion, propuesta?.items, propuesta?.costeoInterno?.avisosDescartados, cl?.ciudad]
   );
 
   const [abierto, setAbierto] = useState(true);
@@ -227,6 +248,7 @@ export default function PanelCosteoInterno({
           costoUnitario: Math.max(0, Math.round(Number(l.costoUnitario) || 0)),
           origen: l.origen || "ia",
           nota: String(l.nota || "").trim(),
+          ...(l.costoDesdePrecio ? { costoDesdePrecio: true } : {}),
         }));
 
         snap.onChangePropuesta({
@@ -260,7 +282,26 @@ export default function PanelCosteoInterno({
   // Seguridad estricta: si no es administrador, no renderizar absolutamente nada.
   if (!autorizado) return null;
 
-  const estado = ESTILOS_ESTADO[costeo.estadoMargen] || ESTILOS_ESTADO.sin_venta;
+  // Con avisos pendientes, un margen «bueno» todavia no esta comprobado.
+  const claveEstado = avisosCoherencia.length > 0 && ["optimo", "ajustado"].includes(costeo.estadoMargen)
+    ? "sin_confirmar"
+    : costeo.estadoMargen;
+  const estado = ESTILOS_ESTADO[claveEstado] || ESTILOS_ESTADO.sin_venta;
+
+  // «Está bien así»: la persona ya lo reviso y el aviso no vuelve a salir en
+  // esta propuesta. Una estimacion nueva los revisa otra vez.
+  const descartarAviso = (idAviso) => {
+    const previo = propuesta?.costeoInterno && typeof propuesta.costeoInterno === "object"
+      ? propuesta.costeoInterno
+      // Sin `modo`, el costeo sigue saliendo de las recetas automáticas.
+      : {};
+    onChangePropuesta({
+      costeoInterno: {
+        ...previo,
+        avisosDescartados: [...new Set([...(previo.avisosDescartados || []), idAviso])],
+      },
+    });
+  };
 
   const guardarLineasPersonalizadas = (nuevasLineas, extras = {}) => {
     const limpias = nuevasLineas.map((l, idx) => ({
@@ -273,6 +314,7 @@ export default function PanelCosteoInterno({
       costoUnitario: Math.max(0, Math.round(Number(l.costoUnitario) || 0)),
       origen: l.origen || "manual",
       nota: String(l.nota || "").trim(),
+      ...(l.costoDesdePrecio ? { costoDesdePrecio: true } : {}),
     }));
     onChangePropuesta({
       costeoInterno: {
@@ -284,6 +326,8 @@ export default function PanelCosteoInterno({
         avisosIa: extras.avisosIa !== undefined ? extras.avisosIa : costeo.avisosIa,
         esRespaldoLocal: extras.esRespaldoLocal !== undefined ? Boolean(extras.esRespaldoLocal) : false,
         notasInternas: extras.notasInternas !== undefined ? extras.notasInternas : notasInternas,
+        // Editar una linea no borra lo que ya se dio por revisado.
+        avisosDescartados: propuesta?.costeoInterno?.avisosDescartados || [],
         actualizadoEn: new Date().toISOString(),
       },
     });
@@ -346,6 +390,9 @@ export default function PanelCosteoInterno({
             ...l,
             [campo]: valor,
             origen: l.origen === "ia" ? "ia" : "manual",
+            // Al escribir el costo a mano deja de ser un calculo sacado del
+            // precio de venta: ya es un dato real.
+            costoDesdePrecio: campo === "costoUnitario" ? false : l.costoDesdePrecio,
           }
         : l
     );
@@ -615,19 +662,22 @@ export default function PanelCosteoInterno({
 
             <div style={{ background: estado.bg, border: `1px solid ${estado.border}`, borderRadius: 10, padding: "10px 12px" }}>
               <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", color: estado.text, letterSpacing: ".04em" }}>
-                Ganancia neta
+                {costeo.indirectosPct > 0 ? "Ganancia después de indirectos" : "Utilidad bruta"}
               </div>
               <div style={{ fontSize: 17, fontWeight: 800, color: estado.text, marginTop: 3, fontVariantNumeric: "tabular-nums" }}>
                 {costeo.gananciaNeta >= 0 ? fmt(costeo.gananciaNeta) : `-${fmt(Math.abs(costeo.gananciaNeta))}`}
               </div>
-              <div style={{ fontSize: 10.5, color: estado.text, marginTop: 2, opacity: 0.9 }}>
+              <div style={{ fontSize: 10.5, color: estado.text, marginTop: 2, opacity: 0.9, fontVariantNumeric: "tabular-nums" }}>
                 {estado.label}
+                {costeo.indirectosPct > 0
+                  ? ` · Bruta ${fmt(costeo.utilidadBruta)} − indirectos ${costeo.indirectosPct}% (${fmt(costeo.costoIndirectos)})`
+                  : " · Sin descontar gastos fijos de la empresa"}
               </div>
             </div>
 
             <div style={{ background: estado.bg, border: `1px solid ${estado.border}`, borderRadius: 10, padding: "10px 12px" }}>
               <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", color: estado.text, letterSpacing: ".04em" }}>
-                Margen real
+                {costeo.indirectosPct > 0 ? "Margen después de indirectos" : "Margen bruto"}
               </div>
               <div style={{ fontSize: 17, fontWeight: 800, color: estado.text, marginTop: 3, fontVariantNumeric: "tabular-nums" }}>
                 {costeo.ingresoNeto > 0 ? `${costeo.margenPct}%` : "—"}
@@ -637,6 +687,74 @@ export default function PanelCosteoInterno({
               </div>
             </div>
           </div>
+
+          {/* Costo sacado del precio de venta: el margen de esas lineas es
+              siempre el mismo y no prueba nada. Se dice cuales son. */}
+          {costeo.lineasDesdePrecio.length > 0 && (
+            <div
+              style={{
+                background: "#FFFAEB",
+                border: "1px solid #FEDF89",
+                color: "#B54708",
+                borderRadius: 10,
+                padding: "9px 12px",
+                marginBottom: 12,
+                fontSize: 12,
+                lineHeight: 1.5,
+              }}
+            >
+              <strong>El margen todavía no es confiable.</strong>{" "}
+              {costeo.lineasDesdePrecio.length === 1 ? "Esta línea tiene" : "Estas líneas tienen"} un costo
+              calculado a partir del precio que cobras, no de lo que te cuesta. Escribe el costo real en
+              «Tu costo unit.» y el aviso desaparece:
+              <div style={{ marginTop: 4, fontWeight: 600 }}>
+                {costeo.lineasDesdePrecio.map((l) => l.nombre).join(" · ")}
+              </div>
+            </div>
+          )}
+
+          {avisosCoherencia.map((aviso) => (
+            <div
+              key={aviso.id}
+              style={{
+                background: "#FFFAEB",
+                border: "1px solid #FEDF89",
+                color: "#B54708",
+                borderRadius: 10,
+                padding: "9px 12px",
+                marginBottom: 12,
+                fontSize: 12,
+                lineHeight: 1.5,
+                display: "flex",
+                gap: 12,
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <strong>{aviso.titulo}.</strong> {aviso.texto}
+              </div>
+              <button
+                type="button"
+                onClick={() => descartarAviso(aviso.id)}
+                title="Ya lo revisé: el costo está bien así. El aviso no vuelve a salir en esta propuesta."
+                style={{
+                  background: "#ffffff",
+                  color: "#B54708",
+                  border: "1px solid rgba(181,71,8,0.35)",
+                  borderRadius: 999,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: "3px 10px",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
+                Está bien así
+              </button>
+            </div>
+          ))}
 
           {/* Alerta de ítems sin receta fija (reformas / trabajos a medida) */}
           {costeo.itemsSinReceta.length > 0 && costeo.modo === "auto" && (

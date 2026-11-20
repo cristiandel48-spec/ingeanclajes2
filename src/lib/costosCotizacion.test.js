@@ -5,6 +5,8 @@ import {
   calcularCostoUnitarioServicio,
   calcularLineasDesdeRecetas,
   costeoAMaterialesDespacho,
+  esObraFueraDeLaCiudad,
+  revisarCoherenciaCosteo,
   estimarCostosHeuristico,
   guardarConfigCostos,
   huellaItemsPropuesta,
@@ -341,5 +343,98 @@ describe("Motor de costos internos, insumos y recetas (APU)", () => {
     expect(res.itemsConReceta).toHaveLength(0);
     expect(res.itemsSinReceta).toHaveLength(1);
     expect(res.requiereIaAuto).toBe(true);
+  });
+});
+
+describe("Ajustes de rentabilidad", () => {
+  const cant = (lineas, id) => lineas.find((l) => l.insumoId === id)?.cant;
+
+  it("junta jornadas y viajes de toda la propuesta antes de redondear", () => {
+    const tramos = Array.from({ length: 10 }, (_, i) => ({
+      id: i + 1, desc: "LINEA DE VIDA HORIZONTAL", cant: 12, unit: "ML", vu: 100000,
+    }));
+    const porTramos = calcularLineasDesdeRecetas(tramos).lineas;
+    const enUno = calcularLineasDesdeRecetas([{ id: 1, desc: "LINEA DE VIDA HORIZONTAL", cant: 120, unit: "ML", vu: 100000 }]).lineas;
+
+    // 120 ML son 8 jornadas y un viaje, se midan en uno o en diez renglones.
+    expect(cant(porTramos, "tecnico_alturas")).toBe(8);
+    expect(cant(porTramos, "tecnico_alturas")).toBe(cant(enUno, "tecnico_alturas"));
+    expect(cant(porTramos, "coordinador_sst")).toBe(6);
+    expect(cant(porTramos, "transporte_obra")).toBe(1);
+    expect(cant(porTramos, "consumibles_instalacion")).toBe(1);
+    // Los materiales si son por linea: dos postes terminales por cada tramo.
+    expect(cant(porTramos, "poste_terminal")).toBe(20);
+    expect(cant(enUno, "poste_terminal")).toBe(2);
+  });
+
+  it("no da por bueno el margen cuando el costo sale del precio de venta", () => {
+    const items = [{ id: 1, desc: "SERVICIO ESPECIAL DE ASESORIA", cant: 1, unit: "Global", vu: 3000000 }];
+    const est = estimarCostosHeuristico({ items });
+    const derivadas = est.lineas.filter((l) => l.costoDesdePrecio);
+    expect(derivadas).toHaveLength(1);
+
+    const propuesta = { items, util: 10, costeoInterno: { modo: "personalizado", lineas: est.lineas } };
+    const costeo = calcularCosteoPropuesta(propuesta);
+    expect(costeo.margenConfiable).toBe(false);
+    expect(costeo.estadoMargen).toBe("sin_confirmar");
+
+    // Con el costo real escrito a mano, el margen vuelve a contar.
+    const reales = est.lineas.map((l) => ({ ...l, costoDesdePrecio: false }));
+    const confirmado = calcularCosteoPropuesta({ ...propuesta, costeoInterno: { modo: "personalizado", lineas: reales } });
+    expect(confirmado.margenConfiable).toBe(true);
+    expect(confirmado.estadoMargen).not.toBe("sin_confirmar");
+  });
+
+  it("descuenta los gastos indirectos configurados de la utilidad bruta", () => {
+    const propuesta = { util: 10, items: [{ id: 1, desc: "PUNTO DE ANCLAJE EPOXICO", cant: 10, unit: "Und", vu: 400000 }] };
+    const sin = calcularCosteoPropuesta(propuesta);
+    expect(sin.indirectosPct).toBe(0);
+    expect(sin.gananciaNeta).toBe(sin.utilidadBruta);
+
+    const cfg = obtenerConfigCostos(guardarConfigCostos([], { indirectosPct: 15 }));
+    expect(cfg.indirectosPct).toBe(15);
+    const con = calcularCosteoPropuesta(propuesta, cfg);
+    expect(con.utilidadBruta).toBe(sin.utilidadBruta);
+    expect(con.costoIndirectos).toBe(Math.round(con.ingresoNeto * 0.15));
+    expect(con.gananciaNeta).toBe(con.utilidadBruta - con.costoIndirectos);
+    expect(con.margenPct).toBeLessThan(con.margenBrutoPct);
+  });
+});
+describe("Revisión de coherencia del costeo", () => {
+  const lineasRecert = [
+    { nombre: "Cable de acero inoxidable 316 5/16", categoria: "material", cant: 30, costoUnitario: 45000, subtotal: 1350000 },
+    { nombre: "Punto de anclaje epóxico 5.000 lb", categoria: "material", cant: 5, costoUnitario: 95000, subtotal: 475000 },
+    { nombre: "Placa de identificación acero inoxidable", categoria: "material", cant: 5, costoUnitario: 35000, subtotal: 175000 },
+    { nombre: "Jornada técnico instalador", categoria: "mano_obra", cant: 2, costoUnitario: 180000, subtotal: 360000 },
+    { nombre: "Transporte de personal, equipos y materiales", categoria: "logistica", cant: 1, costoUnitario: 140000, subtotal: 140000 },
+  ];
+  const items = [{ desc: "MANTENIMIENTO Y RECERTIFICACIÓN DE TODO EL SISTEMA ANTICAIDAS", cant: 1, unit: "Global", vu: 4500000 }];
+
+  it("avisa de materiales de instalación nueva en una recertificación", () => {
+    const avisos = revisarCoherenciaCosteo({ lineas: lineasRecert }, { items, ciudad: "Medellín" });
+    expect(avisos.map((a) => a.id)).toEqual(["revision-con-material-nuevo"]);
+    expect(avisos[0].texto).toContain("Cable");
+    expect(avisos[0].texto).not.toContain("Placa");
+    expect(avisos[0].texto).toContain("1.825.000");
+  });
+
+  it("no avisa si el trabajo sí incluye suministro o reemplazo", () => {
+    const conCambio = [{ desc: "RECERTIFICACIÓN Y REEMPLAZO DE CABLE DE LÍNEA DE VIDA", cant: 1, unit: "Global", vu: 4500000 }];
+    expect(revisarCoherenciaCosteo({ lineas: lineasRecert }, { items: conCambio, ciudad: "Envigado" })).toEqual([]);
+  });
+
+  it("avisa de obra fuera del Valle de Aburrá sin viáticos y calla si ya están", () => {
+    const fuera = revisarCoherenciaCosteo({ lineas: lineasRecert }, { items, ciudad: "Jardín, Antioquia" });
+    expect(fuera.map((a) => a.id)).toContain("obra-fuera-sin-viaticos");
+
+    const conViaticos = [...lineasRecert, { nombre: "Alojamiento y alimentación cuadrilla", categoria: "logistica", cant: 2, costoUnitario: 150000, subtotal: 300000 }];
+    expect(revisarCoherenciaCosteo({ lineas: conViaticos }, { items, ciudad: "Jardín" }).map((a) => a.id)).not.toContain("obra-fuera-sin-viaticos");
+  });
+
+  it("sin ciudad no supone nada, y respeta los avisos descartados", () => {
+    expect(esObraFueraDeLaCiudad("")).toBe(false);
+    expect(esObraFueraDeLaCiudad("ITAGÜÍ")).toBe(false);
+    expect(esObraFueraDeLaCiudad("Rionegro")).toBe(true);
+    expect(revisarCoherenciaCosteo({ lineas: lineasRecert }, { items, ciudad: "Jardín", descartadas: ["revision-con-material-nuevo", "obra-fuera-sin-viaticos"] })).toEqual([]);
   });
 });

@@ -14,7 +14,7 @@ import { useAppData } from "../../context/AppDataContext";
 import { measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
 import { DEFAULT_COT_INCLUYE } from "../../data/seed";
-import { TIPO_MANUAL, TIPO_CAMIONERA, fotoDefaultDeTipo, fotosParaTipo, isFotoPuntoAnclajeDefault, getTipoCotizacionLabel, tipoCotizacionCanonico } from "../../lib/cotizaciones";
+import { TIPO_MANUAL, TIPO_CAMIONERA, calcularTotales, fotoDefaultDeTipo, fotosParaTipo, isFotoPuntoAnclajeDefault, getTipoCotizacionLabel, tipoCotizacionCanonico } from "../../lib/cotizaciones";
 import { avisar, confirmar } from "../../lib/dialogos";
 import PanelCosteoInterno from "./PanelCosteoInterno";
 
@@ -315,10 +315,7 @@ export default function PropuestaEditor({
   };
 
   const sinAiu = Boolean(p.sinAiu);
-  const sub = items.reduce((s, item) => s + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0);
-  const ut = sinAiu ? 0 : (sub * (Number(p.util) || 0)) / 100;
-  const iva = sinAiu ? (sub * 0.19) : (ut * 0.19);
-  const tot = sub + ut + iva;
+  const { sub, ut, iva, tot } = calcularTotales(items, p.util, sinAiu);
 
   return (
     <div style={{ background: "var(--surface, #fff)", border: "1px solid var(--border, #e2e8f0)", borderRadius: 12, padding: 20, marginBottom: 14 }}>

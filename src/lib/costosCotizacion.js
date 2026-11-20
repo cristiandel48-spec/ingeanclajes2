@@ -7,7 +7,7 @@
 //   propuesta en `propuesta.costeoInterno` (JSONB de `cotizaciones.propuestas`).
 // - NUNCA se imprime ni se exporta en el PDF / vista previa del cliente.
 
-import { porcentajeUtilidad } from "./cotizaciones";
+import { calcularTotales, porcentajeUtilidad } from "./cotizaciones";
 
 export const ID_CONFIG_COSTOS_APU = "costos_apu";
 export const MARGEN_MINIMO_DEFAULT = 25;
@@ -450,6 +450,13 @@ function normalizarReglaReceta(raw = {}) {
   };
 }
 
+// Gastos indirectos de la empresa, como porcentaje del ingreso sin IVA. Sin
+// configurar es 0: no se inventa un gasto que nadie ha medido.
+function normalizarIndirectosPct(valor) {
+  const n = Number(valor);
+  return Number.isFinite(n) ? Math.max(0, Math.min(60, n)) : 0;
+}
+
 /**
  * Lee la configuración de insumos y recetas (APU) desde `empresaConfig`.
  * Si todavía no se ha personalizado, entrega el catálogo base listo para usar.
@@ -466,6 +473,7 @@ export function obtenerConfigCostos(empresaConfig) {
       insumos: clonarInsumosDefault(),
       recetas: clonarRecetasDefault(),
       margenMinimoPct: MARGEN_MINIMO_DEFAULT,
+      indirectosPct: 0,
       personalizada: false,
     };
   }
@@ -495,6 +503,7 @@ export function obtenerConfigCostos(empresaConfig) {
     insumos,
     recetas,
     margenMinimoPct,
+    indirectosPct: normalizarIndirectosPct(doc.indirectosPct),
     personalizada: true,
     actualizadoEn: doc.actualizadoEn || null,
   };
@@ -527,6 +536,9 @@ export function guardarConfigCostos(empresaConfig, nuevaConfig = {}) {
   const margenMinimoPct = Number.isFinite(Number(nuevaConfig.margenMinimoPct))
     ? Math.max(1, Math.min(90, Number(nuevaConfig.margenMinimoPct)))
     : actual.margenMinimoPct;
+  const indirectosPct = nuevaConfig.indirectosPct !== undefined
+    ? normalizarIndirectosPct(nuevaConfig.indirectosPct)
+    : actual.indirectosPct;
 
   const filaNueva = {
     id: ID_CONFIG_COSTOS_APU,
@@ -537,6 +549,7 @@ export function guardarConfigCostos(empresaConfig, nuevaConfig = {}) {
       tipo: ID_CONFIG_COSTOS_APU,
       version: 1,
       margenMinimoPct,
+      indirectosPct,
       insumos,
       recetas: recetasLimpias,
       actualizadoEn: new Date().toISOString(),
@@ -772,10 +785,26 @@ export function calcularLineasDesdeRecetas(items = [], configCostos = null) {
       const cantRegla = evaluarRegla(regla, cant);
       if (cantRegla <= 0) continue;
 
+      // Las jornadas, los viajes y los consumibles son de la OBRA, no de cada
+      // renglon: se juntan antes de redondear. Renglon por renglon, una linea
+      // de vida medida en diez tramos de 12 ML daba diez jornadas de tecnico y
+      // diez viajes; los mismos 120 ML en un renglon, ocho jornadas y un viaje.
+      // - «1 por cada N»: suma la fraccion y se redondea una sola vez al final.
+      // - «fijo»: es el mismo viaje o la misma jornada para todos los renglones
+      //   que lo piden, asi que cuenta el mayor, no la suma.
+      // Los materiales no cambian: dos postes terminales por linea son dos por
+      // cada linea.
+      const esDeLaObra = ins.categoria !== "material";
+      let aporte = cantRegla;
+      let fijo = 0;
+      if (esDeLaObra && regla.modo === "cada_n") aporte = cant / regla.valor;
+      else if (esDeLaObra && regla.modo === "fijo") { aporte = 0; fijo = cantRegla; }
+
       const existente = acumulados.get(ins.id);
       const etiquetaOrigen = `${desc} (${cant} ${item.unit || ""})`.trim();
       if (existente) {
-        existente.cantBruta += cantRegla;
+        existente.cantBruta += aporte;
+        existente.fijoMayor = Math.max(existente.fijoMayor, fijo);
         if (!existente.origenes.includes(etiquetaOrigen)) {
           existente.origenes.push(etiquetaOrigen);
         }
@@ -786,7 +815,8 @@ export function calcularLineasDesdeRecetas(items = [], configCostos = null) {
           nombre: ins.nombre,
           categoria: ins.categoria,
           unidad: ins.unidad,
-          cantBruta: cantRegla,
+          cantBruta: aporte,
+          fijoMayor: fijo,
           costoUnitario: ins.costoUnitario,
           origen: "receta",
           origenes: [etiquetaOrigen],
@@ -798,7 +828,7 @@ export function calcularLineasDesdeRecetas(items = [], configCostos = null) {
   const ordenCat = Object.fromEntries(CATEGORIAS_INSUMO.map((c) => [c.id, c.orden]));
   const lineas = [...acumulados.values()]
     .map((linea) => {
-      const cant = redondearCantidad(linea.cantBruta, linea.unidad);
+      const cant = redondearCantidad(linea.cantBruta + linea.fijoMayor, linea.unidad);
       return {
         id: linea.id,
         insumoId: linea.insumoId,
@@ -869,6 +899,9 @@ function normalizarLineaGuardada(raw = {}, index = 0) {
     subtotal: Math.round(cant * costoUnitario),
     origen: raw.origen || "manual",
     nota: String(raw.nota || "").trim(),
+    // El costo se saco del precio de venta, no de una compra: el panel lo
+    // marca y deja de contar cuando alguien escribe el costo real.
+    ...(raw.costoDesdePrecio ? { costoDesdePrecio: true } : {}),
   };
 }
 
@@ -883,12 +916,8 @@ export function calcularCosteoPropuesta(propuesta = {}, configCostos = null) {
   const sinAiu = Boolean(propuesta?.sinAiu ?? propuesta?.ivaPleno ?? false);
   const utilPct = porcentajeUtilidad(propuesta?.util);
 
-  const ventaSubtotal = items.reduce(
-    (s, it) => s + Math.max(0, Number(it?.cant) || 0) * Math.max(0, Number(it?.vu) || 0),
-    0
-  );
-  const ventaUtilidad = sinAiu ? 0 : (ventaSubtotal * utilPct) / 100;
-  const ventaIva = sinAiu ? ventaSubtotal * 0.19 : ventaUtilidad * 0.19;
+  // La misma cuenta que usan el editor, el guardado y el PDF.
+  const { sub: ventaSubtotal, ut: ventaUtilidad, iva: ventaIva } = calcularTotales(items, utilPct, sinAiu);
   const ventaTotal = Math.round(ventaSubtotal + ventaUtilidad + ventaIva);
   // Ingreso real antes de IVA (coincide con `baseIngresoContable` de cotizaciones.js)
   const ingresoNeto = Math.round(ventaSubtotal + ventaUtilidad);
@@ -920,9 +949,27 @@ export function calcularCosteoPropuesta(propuesta = {}, configCostos = null) {
     .reduce((s, l) => s + l.subtotal, 0);
   const costoTotal = costoMateriales + costoManoObra + costoLogistica;
 
-  const gananciaNeta = Math.round(ingresoNeto - costoTotal);
-  const margenPct = ingresoNeto > 0 ? Number(((gananciaNeta / ingresoNeto) * 100).toFixed(1)) : 0;
+  const pct = (valor) => (ingresoNeto > 0 ? Number(((valor / ingresoNeto) * 100).toFixed(1)) : 0);
+
+  // Utilidad bruta: lo que queda despues de materiales, mano de obra y
+  // transporte. Todavia no es ganancia: de ahi salen los gastos fijos de la
+  // empresa (arriendo, administracion, impuestos, garantias). Ese porcentaje
+  // se configura en «Insumos y costos»; en 0, bruta y neta coinciden.
+  const utilidadBruta = Math.round(ingresoNeto - costoTotal);
+  const margenBrutoPct = pct(utilidadBruta);
+  const indirectosPct = cfg.indirectosPct ?? 0;
+  const costoIndirectos = Math.round((ingresoNeto * indirectosPct) / 100);
+  const gananciaNeta = utilidadBruta - costoIndirectos;
+  const margenPct = pct(gananciaNeta);
   const margenMinimoPct = cfg.margenMinimoPct ?? MARGEN_MINIMO_DEFAULT;
+
+  // Un margen solo dice algo si el costo es de verdad. No lo es cuando hay
+  // renglones vendidos que todavia no tienen costo (sin receta y sin estimar)
+  // o lineas cuyo costo se saco del propio precio de venta: esas dan siempre
+  // el mismo margen, se cobre lo que se cobre.
+  const lineasDesdePrecio = lineas.filter((l) => l.costoDesdePrecio);
+  const itemsSinCosto = usaPersonalizado ? [] : auto.itemsSinReceta;
+  const margenConfiable = lineasDesdePrecio.length === 0 && itemsSinCosto.length === 0;
 
   let estadoMargen = "optimo";
   if (ingresoNeto <= 0) {
@@ -931,6 +978,10 @@ export function calcularCosteoPropuesta(propuesta = {}, configCostos = null) {
     estadoMargen = "perdida";
   } else if (margenPct < 15) {
     estadoMargen = "critico";
+  } else if (!margenConfiable) {
+    // Con costo incompleto el margen real solo puede ser menor: no se pinta
+    // de verde algo que no se ha comprobado.
+    estadoMargen = "sin_confirmar";
   } else if (margenPct < margenMinimoPct) {
     estadoMargen = "ajustado";
   }
@@ -967,9 +1018,16 @@ export function calcularCosteoPropuesta(propuesta = {}, configCostos = null) {
     costoManoObra,
     costoLogistica,
     costoTotal,
+    utilidadBruta,
+    margenBrutoPct,
+    indirectosPct,
+    costoIndirectos,
     gananciaNeta,
     margenPct,
     margenMinimoPct,
+    margenConfiable,
+    lineasDesdePrecio,
+    itemsSinCosto,
     estadoMargen,
   };
 }
@@ -996,7 +1054,7 @@ export function estimarCostosHeuristico({
     "Estimación generada con reglas locales de respaldo. Revisa y ajusta las cantidades y costos según el sitio de obra.",
   ];
 
-  const agregar = (insumoId, fallback, cant, nota) => {
+  const agregar = (insumoId, fallback, cant, nota, { desdePrecio = false } = {}) => {
     const ins = insumoId ? mapa.get(insumoId) : null;
     const base = ins || fallback;
     if (!base || cant <= 0) return;
@@ -1019,6 +1077,7 @@ export function estimarCostosHeuristico({
         subtotal: Math.round(cantRed * base.costoUnitario),
         origen: "ia",
         nota: nota || "Estimado a medida",
+        ...(desdePrecio ? { costoDesdePrecio: true } : {}),
       });
     }
   };
@@ -1235,8 +1294,8 @@ export function estimarCostosHeuristico({
       if (esGlobalOAlto && subtotalItem >= 2000000) {
         // Estima m² aproximados si el techo viene en Global/Und a partir del valor comercial (~$180k-$220k/m² en Colombia)
         const m2Est = Math.max(20, Math.round(subtotalItem / 220000));
-        agregar(null, { nombre: "Teja termoacústica / cubierta + tornillería, caballetes y sellos", categoria: "material", unidad: "M2", costoUnitario: 95000 }, m2Est, tag);
-        agregar(null, { nombre: "Correas, estructura de apoyo, canales, flanches y remates metálicos", categoria: "material", unidad: "Global", costoUnitario: Math.round(subtotalItem * 0.14) }, 1, tag);
+        agregar(null, { nombre: "Teja termoacústica / cubierta + tornillería, caballetes y sellos", categoria: "material", unidad: "M2", costoUnitario: 95000 }, m2Est, tag, { desdePrecio: true });
+        agregar(null, { nombre: "Correas, estructura de apoyo, canales, flanches y remates metálicos", categoria: "material", unidad: "Global", costoUnitario: Math.round(subtotalItem * 0.14) }, 1, tag, { desdePrecio: true });
         agregar("alquiler_grua_manlift", null, Math.max(2, Math.ceil(m2Est / 250)), "Izaje de tejas / andamios certificados");
         if (subtotalItem >= 20000000 || /\bPOLIZ|\bSEGURO|\bRCE\b/.test(contextoGeneral)) {
           agregar("polizas_certificacion", null, 1, "Pólizas y documentación SST");
@@ -1258,7 +1317,7 @@ export function estimarCostosHeuristico({
     } else {
       // Ítem genérico de reforma o servicio especial: estimación conservadora editable
       const costoRef = Number(it?.vu) > 0 ? Math.round(Number(it.vu) * 0.35) : 180000;
-      agregar(null, { nombre: `Materiales e insumos para: ${desc.slice(0, 60)}`, categoria: "material", unidad: it?.unit || "Und", costoUnitario: costoRef }, c, tag);
+      agregar(null, { nombre: `Materiales e insumos para: ${desc.slice(0, 60)}`, categoria: "material", unidad: it?.unit || "Und", costoUnitario: costoRef }, c, tag, { desdePrecio: Number(it?.vu) > 0 });
       diasCuadrilla += 1;
     }
   }
@@ -1363,4 +1422,77 @@ export function costeoAMaterialesDespacho(propuesta = {}, configCostos = null) {
     }));
 
   return { entregables, insumos };
+}
+
+// ---------------------------------------------------------------------------
+// Revision de coherencia del costeo
+//
+// Un costo puede sumar bien y aun asi no corresponder al trabajo. Estas reglas
+// miran el costeo ya armado -venga de recetas, de la IA o de la mano- contra
+// lo que dice la cotizacion, y avisan de lo que no cuadra. No cambian ninguna
+// cifra: la persona decide si corrige o si esta bien asi.
+// ---------------------------------------------------------------------------
+
+// Municipios del Valle de Aburra: un viaje a tarifa de ciudad los cubre.
+const MUNICIPIOS_CERCANOS = [
+  "MEDELLIN", "ENVIGADO", "ITAGUI", "SABANETA", "BELLO", "LA ESTRELLA",
+  "CALDAS", "COPACABANA", "GIRARDOTA", "BARBOSA",
+];
+
+// Lo que se compra para instalar un sistema nuevo, no para revisarlo.
+const MATERIAL_DE_INSTALACION = /\bCABLE\b|\bGUAYA\b|\bANCLAJE|\bPOSTE|\bABSORBEDOR|\bTENSOR|\bESCALERA|\bARRESTADOR|\bRETRACTIL|\bPASARELA|\bCARRO\b/;
+const TRABAJO_DE_REVISION = /\bRECERTIFICACION(?:ES)?\b|\bMANTENIMIENTO\b|\bINSPECCION\b/;
+const TRABAJO_NUEVO = /\bSUMINISTRO|\bINSTALACION|\bFABRICACION|\bMONTAJE|\bCONSTRUCCION|\bREEMPLAZO|\bCAMBIO\b|\bREPOSICION/;
+const GASTO_DE_VIAJE = /\bVIATICO|\bALOJAMIENTO|\bHOSPEDAJE|\bHOTEL|\bALIMENTACION|\bPEAJE|\bFLETE|\bCOMBUSTIBLE/;
+
+export function esObraFueraDeLaCiudad(ciudad = "") {
+  const clave = claveServicio(ciudad);
+  if (!clave) return false; // sin ciudad no se puede saber: no se avisa
+  return !MUNICIPIOS_CERCANOS.some((m) => new RegExp(`\\b${m}\\b`).test(clave));
+}
+
+/**
+ * Avisos sobre un costeo que no cuadra con la cotizacion.
+ * Devuelve `[{ id, titulo, texto }]`; los `id` de `descartadas` no se repiten.
+ */
+export function revisarCoherenciaCosteo(costeo = {}, { titulo = "", items = [], ciudad = "", descartadas = [] } = {}) {
+  const lineas = Array.isArray(costeo?.lineas) ? costeo.lineas : [];
+  if (!lineas.length) return [];
+  const avisos = [];
+  const pesos = (n) => `$ ${Math.round(n).toLocaleString("es-CO")}`;
+
+  // 1. Recertificacion o mantenimiento costeado como instalacion nueva.
+  // Solo se mira el titulo y los renglones cotizados: el texto de «incluye» es
+  // una plantilla que nombra la instalacion en todas las cotizaciones.
+  const trabajo = claveServicio(`${titulo} ${(Array.isArray(items) ? items : []).map((it) => it?.desc || "").join(" ")}`);
+  if (TRABAJO_DE_REVISION.test(trabajo) && !TRABAJO_NUEVO.test(trabajo)) {
+    const nuevos = lineas.filter((l) => l.categoria === "material" && MATERIAL_DE_INSTALACION.test(claveServicio(l.nombre)));
+    const total = nuevos.reduce((s, l) => s + (Number(l.subtotal) || 0), 0);
+    if (nuevos.length && total > 0) {
+      avisos.push({
+        id: "revision-con-material-nuevo",
+        titulo: "Es mantenimiento o recertificación, pero el costo trae materiales de instalación nueva",
+        texto: `${nuevos.map((l) => l.nombre).join(" · ")} (${pesos(total)}). Si no vas a reemplazarlos, quita esas líneas: el margen real es mayor al que se muestra.`,
+      });
+    }
+  }
+
+  // 2. Obra fuera del Valle de Aburra con transporte a tarifa de ciudad.
+  if (esObraFueraDeLaCiudad(ciudad)) {
+    const logistica = lineas.filter((l) => l.categoria === "logistica");
+    const hayGastoDeViaje = lineas.some((l) => GASTO_DE_VIAJE.test(claveServicio(`${l.nombre} ${l.nota || ""}`)));
+    const transporte = logistica
+      .filter((l) => /\bTRANSPORTE|\bVIAJE/.test(claveServicio(l.nombre)))
+      .reduce((s, l) => s + (Number(l.subtotal) || 0), 0);
+    if (!hayGastoDeViaje) {
+      avisos.push({
+        id: "obra-fuera-sin-viaticos",
+        titulo: `La obra es en ${String(ciudad).trim()}, fuera del Valle de Aburrá`,
+        texto: `El transporte suma ${pesos(transporte)}, que es tarifa de ciudad, y no hay peajes, combustible, alojamiento ni alimentación de la cuadrilla. Agrégalos con «+ Agregar material / gasto»: el margen real es menor al que se muestra.`,
+      });
+    }
+  }
+
+  const ocultas = new Set(Array.isArray(descartadas) ? descartadas : []);
+  return avisos.filter((a) => !ocultas.has(a.id));
 }

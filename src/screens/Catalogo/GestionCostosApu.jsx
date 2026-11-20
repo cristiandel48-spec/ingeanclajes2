@@ -144,6 +144,25 @@ export function VistaInsumosCostos({ empresaConfig, setEmpresaConfig, isMobile }
             <span>%</span>
           </label>
 
+          {/* Lo que se lleva la empresa por existir: arriendo, administracion,
+              impuestos, garantias. Se descuenta de la utilidad bruta de cada
+              cotizacion. En 0 no se descuenta nada. */}
+          <label
+            title="Porcentaje del ingreso (sin IVA) que se va en gastos fijos de la empresa: arriendo, administración, impuestos, garantías. Se descuenta de la utilidad bruta de cada cotización."
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-main, #101828)", fontWeight: 600 }}
+          >
+            <span>Gastos indirectos:</span>
+            <input
+              type="number"
+              min="0"
+              max="60"
+              value={config.indirectosPct ?? 0}
+              onChange={(e) => persistir({ indirectosPct: Math.max(0, Math.min(60, Number(e.target.value) || 0)) })}
+              style={{ ...SI, width: 62, padding: "4px 6px", fontSize: 12, textAlign: "center" }}
+            />
+            <span>%</span>
+          </label>
+
           <button
             type="button"
             onClick={restaurarBase}

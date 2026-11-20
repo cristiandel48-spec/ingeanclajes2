@@ -7,6 +7,7 @@ import {
   costeoAMaterialesDespacho,
   esObraFueraDeLaCiudad,
   revisarCoherenciaCosteo,
+  separarMaterialNuevoEnRevision,
   estimarCostosHeuristico,
   guardarConfigCostos,
   huellaItemsPropuesta,
@@ -436,5 +437,27 @@ describe("Revisión de coherencia del costeo", () => {
     expect(esObraFueraDeLaCiudad("ITAGÜÍ")).toBe(false);
     expect(esObraFueraDeLaCiudad("Rionegro")).toBe(true);
     expect(revisarCoherenciaCosteo({ lineas: lineasRecert }, { items, ciudad: "Jardín", descartadas: ["revision-con-material-nuevo", "obra-fuera-sin-viaticos"] })).toEqual([]);
+  });
+});
+describe("Material nuevo en trabajos de revisión", () => {
+  const items = [{ desc: "MANTENIMIENTO Y RECERTIFICACIÓN DE TODO EL SISTEMA ANTICAIDAS", cant: 1, unit: "Global", vu: 4500000 }];
+  const lineas = [
+    { nombre: "Cable inox 316 horizontal", categoria: "material", subtotal: 1350000 },
+    { nombre: "Plataforma de acceso metálica", categoria: "material", subtotal: 1200000 },
+    { nombre: "Pintura anticorrosiva para retoque de anclajes y postes", categoria: "material", subtotal: 95000 },
+    { nombre: "Placa de identificación acero inoxidable", categoria: "material", subtotal: 175000 },
+    { nombre: "Técnico instalador certificado en alturas", categoria: "mano_obra", subtotal: 360000 },
+    { nombre: "Transporte de personal, equipos y materiales", categoria: "logistica", subtotal: 140000 },
+  ];
+
+  it("retira cable y plataforma, y conserva pintura, placas, mano de obra y transporte", () => {
+    const res = separarMaterialNuevoEnRevision(lineas, { items });
+    expect(res.retiradas.map((l) => l.nombre)).toEqual(["Cable inox 316 horizontal", "Plataforma de acceso metálica"]);
+    expect(res.lineas).toHaveLength(4);
+  });
+
+  it("no retira nada si es instalación o si un renglón pide reemplazo", () => {
+    expect(separarMaterialNuevoEnRevision(lineas, { items: [{ desc: "LINEA DE VIDA HORIZONTAL" }] }).retiradas).toEqual([]);
+    expect(separarMaterialNuevoEnRevision(lineas, { items: [{ desc: "RECERTIFICACIÓN CON CAMBIO DE CABLE" }] }).retiradas).toEqual([]);
   });
 });

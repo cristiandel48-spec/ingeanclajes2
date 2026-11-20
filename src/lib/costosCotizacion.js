@@ -1440,7 +1440,10 @@ const MUNICIPIOS_CERCANOS = [
 ];
 
 // Lo que se compra para instalar un sistema nuevo, no para revisarlo.
-const MATERIAL_DE_INSTALACION = /\bCABLE\b|\bGUAYA\b|\bANCLAJE|\bPOSTE|\bABSORBEDOR|\bTENSOR|\bESCALERA|\bARRESTADOR|\bRETRACTIL|\bPASARELA|\bCARRO\b/;
+const MATERIAL_DE_INSTALACION = /\bCABLE\b|\bGUAYA\b|\bANCLAJE|\bPOSTE|\bABSORBEDOR|\bTENSOR|\bESCALERA|\bARRESTADOR|\bRETRACTIL|\bPASARELA|\bPLATAFORMA|\bCARRO\b/;
+// Lo que si se gasta al revisar un sistema, aunque nombre sus piezas
+// («pintura para retoque de anclajes», «tornilleria de postes»).
+const MATERIAL_DE_MANTENIMIENTO = /\bPINTURA|\bANTICORROSIV|\bLIMPIEZA|\bRETOQUE|\bPLACA|\bTORNILL|\bTUERCA|\bARANDELA|\bCONSUMIBLE|\bSELLA|\bLUBRIC|\bGRASA/;
 const TRABAJO_DE_REVISION = /\bRECERTIFICACION(?:ES)?\b|\bMANTENIMIENTO\b|\bINSPECCION\b/;
 const TRABAJO_NUEVO = /\bSUMINISTRO|\bINSTALACION|\bFABRICACION|\bMONTAJE|\bCONSTRUCCION|\bREEMPLAZO|\bCAMBIO\b|\bREPOSICION/;
 const GASTO_DE_VIAJE = /\bVIATICO|\bALOJAMIENTO|\bHOSPEDAJE|\bHOTEL|\bALIMENTACION|\bPEAJE|\bFLETE|\bCOMBUSTIBLE/;
@@ -1449,6 +1452,32 @@ export function esObraFueraDeLaCiudad(ciudad = "") {
   const clave = claveServicio(ciudad);
   if (!clave) return false; // sin ciudad no se puede saber: no se avisa
   return !MUNICIPIOS_CERCANOS.some((m) => new RegExp(`\\b${m}\\b`).test(clave));
+}
+
+/**
+ * Parte las lineas de un costeo en las que se quedan y los materiales de
+ * instalacion nueva que no corresponden a un trabajo de mantenimiento o
+ * recertificacion. Si el trabajo no es de revision -o algun renglon cotizado
+ * habla de suministro, reemplazo o cambio- no retira nada.
+ *
+ * Solo se miran el titulo y los renglones cotizados: el texto de «incluye» es
+ * una plantilla que nombra la instalacion en todas las cotizaciones.
+ */
+export function separarMaterialNuevoEnRevision(lineas = [], { titulo = "", items = [] } = {}) {
+  const todas = Array.isArray(lineas) ? lineas : [];
+  const trabajo = claveServicio(`${titulo} ${(Array.isArray(items) ? items : []).map((it) => it?.desc || "").join(" ")}`);
+  if (!TRABAJO_DE_REVISION.test(trabajo) || TRABAJO_NUEVO.test(trabajo)) {
+    return { lineas: todas, retiradas: [] };
+  }
+  const esNuevo = (l) => {
+    if (l?.categoria !== "material") return false;
+    const nombre = claveServicio(l.nombre);
+    return MATERIAL_DE_INSTALACION.test(nombre) && !MATERIAL_DE_MANTENIMIENTO.test(nombre);
+  };
+  return {
+    lineas: todas.filter((l) => !esNuevo(l)),
+    retiradas: todas.filter(esNuevo),
+  };
 }
 
 /**
@@ -1462,11 +1491,8 @@ export function revisarCoherenciaCosteo(costeo = {}, { titulo = "", items = [], 
   const pesos = (n) => `$ ${Math.round(n).toLocaleString("es-CO")}`;
 
   // 1. Recertificacion o mantenimiento costeado como instalacion nueva.
-  // Solo se mira el titulo y los renglones cotizados: el texto de «incluye» es
-  // una plantilla que nombra la instalacion en todas las cotizaciones.
-  const trabajo = claveServicio(`${titulo} ${(Array.isArray(items) ? items : []).map((it) => it?.desc || "").join(" ")}`);
-  if (TRABAJO_DE_REVISION.test(trabajo) && !TRABAJO_NUEVO.test(trabajo)) {
-    const nuevos = lineas.filter((l) => l.categoria === "material" && MATERIAL_DE_INSTALACION.test(claveServicio(l.nombre)));
+  {
+    const nuevos = separarMaterialNuevoEnRevision(lineas, { titulo, items }).retiradas;
     const total = nuevos.reduce((s, l) => s + (Number(l.subtotal) || 0), 0);
     if (nuevos.length && total > 0) {
       avisos.push({

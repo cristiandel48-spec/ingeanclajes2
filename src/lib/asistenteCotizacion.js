@@ -1,6 +1,6 @@
 import { getSupabaseClient } from "./backend/supabaseClient";
 import { buscarItemCatalogo, catalogoPlano, itemsPlanos } from "./catalogo";
-import { estimarCostosHeuristico, obtenerConfigCostos } from "./costosCotizacion";
+import { estimarCostosHeuristico, obtenerConfigCostos, separarMaterialNuevoEnRevision } from "./costosCotizacion";
 
 // Puente con la función «armar-cotizacion», que interpreta un dictado o documento
 // y devuelve un borrador de cotización.
@@ -411,6 +411,22 @@ export async function estimarCostosConIa({
     });
 
   const avisosFinales = Array.isArray(data.avisos) ? data.avisos.map(String) : [];
+
+  // En un mantenimiento o una recertificacion el sistema ya existe: no se
+  // compra cable, postes ni anclajes. La instruccion se lo dice a la IA, pero
+  // no siempre obedece -llego a costear $9,7 M de materiales para un servicio
+  // de $4,5 M-, asi que la regla se aplica aqui, donde si se cumple. Lo que se
+  // retira se dice con su valor, para que nadie crea que desaparecio solo.
+  const { lineas: conservadas, retiradas } = separarMaterialNuevoEnRevision(lineas, { titulo, items: listaItems });
+  if (retiradas.length) {
+    const total = retiradas.reduce((s, l) => s + (Number(l.subtotal) || 0), 0);
+    lineas.splice(0, lineas.length, ...conservadas);
+    avisosFinales.unshift(
+      `Se retiraron ${retiradas.length} material(es) de instalación nueva que propuso la IA ` +
+      `($ ${Math.round(total).toLocaleString("es-CO")}): ${retiradas.map((l) => l.nombre).join(", ")}. ` +
+      "Es un mantenimiento o recertificación; si vas a reemplazar alguno, agrégalo con «+ Agregar material / gasto»."
+    );
+  }
 
   // Red de seguridad: si la IA omitió por completo la mano de obra o la logística,
   // se complementan automáticamente desde el motor APU/local para nunca dejar $ 0.

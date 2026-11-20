@@ -151,7 +151,17 @@ export function VistaInsumosCostos({ empresaConfig, setEmpresaConfig, isMobile }
             title="Porcentaje del ingreso (sin IVA) que se va en gastos fijos de la empresa: arriendo, administración, impuestos, garantías. Se descuenta de la utilidad bruta de cada cotización."
             style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-main, #101828)", fontWeight: 600 }}
           >
-            <span>Gastos indirectos:</span>
+            <span>Técnicos por cuadrilla:</span>
+            <input
+              type="number"
+              min="1"
+              max="10"
+              title="Cuántos técnicos van juntos a una obra. Con ese dato se calculan los días en sitio, y un viaje y un kit de consumibles por cada día."
+              value={config.tecnicosPorCuadrilla ?? 2}
+              onChange={(e) => persistir({ tecnicosPorCuadrilla: Math.max(1, Math.min(10, Math.round(Number(e.target.value)) || 2)) })}
+              style={{ ...SI, width: 54, padding: "4px 6px", fontSize: 12, textAlign: "center" }}
+            />
+            <span style={{ marginLeft: 8 }}>Gastos indirectos:</span>
             <input
               type="number"
               min="0"

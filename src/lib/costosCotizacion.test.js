@@ -357,12 +357,14 @@ describe("Ajustes de rentabilidad", () => {
     const porTramos = calcularLineasDesdeRecetas(tramos).lineas;
     const enUno = calcularLineasDesdeRecetas([{ id: 1, desc: "LINEA DE VIDA HORIZONTAL", cant: 120, unit: "ML", vu: 100000 }]).lineas;
 
-    // 120 ML son 8 jornadas y un viaje, se midan en uno o en diez renglones.
+    // 120 ML son 8 jornadas, se midan en uno o en diez renglones; con dos
+    // técnicos por cuadrilla son 4 días de obra: 4 viajes y 4 kits.
     expect(cant(porTramos, "tecnico_alturas")).toBe(8);
     expect(cant(porTramos, "tecnico_alturas")).toBe(cant(enUno, "tecnico_alturas"));
     expect(cant(porTramos, "coordinador_sst")).toBe(6);
-    expect(cant(porTramos, "transporte_obra")).toBe(1);
-    expect(cant(porTramos, "consumibles_instalacion")).toBe(1);
+    expect(cant(porTramos, "transporte_obra")).toBe(4);
+    expect(cant(enUno, "transporte_obra")).toBe(4);
+    expect(cant(porTramos, "consumibles_instalacion")).toBe(4);
     // Los materiales si son por linea: dos postes terminales por cada tramo.
     expect(cant(porTramos, "poste_terminal")).toBe(20);
     expect(cant(enUno, "poste_terminal")).toBe(2);
@@ -459,5 +461,31 @@ describe("Material nuevo en trabajos de revisión", () => {
   it("no retira nada si es instalación o si un renglón pide reemplazo", () => {
     expect(separarMaterialNuevoEnRevision(lineas, { items: [{ desc: "LINEA DE VIDA HORIZONTAL" }] }).retiradas).toEqual([]);
     expect(separarMaterialNuevoEnRevision(lineas, { items: [{ desc: "RECERTIFICACIÓN CON CAMBIO DE CABLE" }] }).retiradas).toEqual([]);
+  });
+});
+describe("Viajes y consumibles según los días de obra", () => {
+  const cant = (lineas, id) => lineas.find((l) => l.insumoId === id)?.cant;
+  const obra = [{ id: 1, desc: "LINEA DE VIDA HORIZONTAL", cant: 349, unit: "ML", vu: 240000 }];
+
+  it("un trabajo de un día sigue con un solo viaje", () => {
+    const { lineas, diasDeObra } = calcularLineasDesdeRecetas([{ id: 1, desc: "PUNTO DE ANCLAJE EPOXICO", cant: 4, unit: "Und", vu: 400000 }]);
+    expect(diasDeObra).toBe(1);
+    expect(cant(lineas, "transporte_obra")).toBe(1);
+  });
+
+  it("una obra larga lleva un viaje y un kit por día en sitio", () => {
+    const { lineas, diasDeObra } = calcularLineasDesdeRecetas(obra);
+    expect(cant(lineas, "tecnico_alturas")).toBe(24);
+    expect(diasDeObra).toBe(12);
+    expect(cant(lineas, "transporte_obra")).toBe(12);
+    expect(cant(lineas, "consumibles_instalacion")).toBe(12);
+    expect(lineas.find((l) => l.insumoId === "transporte_obra").subtotal).toBe(12 * 140000);
+  });
+
+  it("respeta los técnicos por cuadrilla configurados", () => {
+    const cfg = obtenerConfigCostos(guardarConfigCostos([], { tecnicosPorCuadrilla: 4 }));
+    expect(cfg.tecnicosPorCuadrilla).toBe(4);
+    expect(cant(calcularLineasDesdeRecetas(obra, cfg).lineas, "transporte_obra")).toBe(6);
+    expect(obtenerConfigCostos([]).tecnicosPorCuadrilla).toBe(2);
   });
 });

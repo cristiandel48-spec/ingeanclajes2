@@ -11,6 +11,10 @@ import { calcularTotales, porcentajeUtilidad } from "./cotizaciones";
 
 export const ID_CONFIG_COSTOS_APU = "costos_apu";
 export const MARGEN_MINIMO_DEFAULT = 25;
+// Cuantos tecnicos van juntos a una obra. De ahi salen los dias en sitio y,
+// con ellos, los viajes y los kits de consumibles.
+export const TECNICOS_POR_CUADRILLA_DEFAULT = 2;
+const INSUMOS_POR_DIA_DE_OBRA = ["transporte_obra", "consumibles_instalacion"];
 
 export const CATEGORIAS_INSUMO = [
   { id: "material", label: "Materiales e insumos", corto: "Materiales", orden: 1 },
@@ -457,6 +461,11 @@ function normalizarIndirectosPct(valor) {
   return Number.isFinite(n) ? Math.max(0, Math.min(60, n)) : 0;
 }
 
+function normalizarTecnicosPorCuadrilla(valor) {
+  const n = Math.round(Number(valor));
+  return Number.isFinite(n) && n >= 1 ? Math.min(10, n) : TECNICOS_POR_CUADRILLA_DEFAULT;
+}
+
 /**
  * Lee la configuración de insumos y recetas (APU) desde `empresaConfig`.
  * Si todavía no se ha personalizado, entrega el catálogo base listo para usar.
@@ -474,6 +483,7 @@ export function obtenerConfigCostos(empresaConfig) {
       recetas: clonarRecetasDefault(),
       margenMinimoPct: MARGEN_MINIMO_DEFAULT,
       indirectosPct: 0,
+      tecnicosPorCuadrilla: TECNICOS_POR_CUADRILLA_DEFAULT,
       personalizada: false,
     };
   }
@@ -504,6 +514,7 @@ export function obtenerConfigCostos(empresaConfig) {
     recetas,
     margenMinimoPct,
     indirectosPct: normalizarIndirectosPct(doc.indirectosPct),
+    tecnicosPorCuadrilla: normalizarTecnicosPorCuadrilla(doc.tecnicosPorCuadrilla),
     personalizada: true,
     actualizadoEn: doc.actualizadoEn || null,
   };
@@ -539,6 +550,9 @@ export function guardarConfigCostos(empresaConfig, nuevaConfig = {}) {
   const indirectosPct = nuevaConfig.indirectosPct !== undefined
     ? normalizarIndirectosPct(nuevaConfig.indirectosPct)
     : actual.indirectosPct;
+  const tecnicosPorCuadrilla = nuevaConfig.tecnicosPorCuadrilla !== undefined
+    ? normalizarTecnicosPorCuadrilla(nuevaConfig.tecnicosPorCuadrilla)
+    : actual.tecnicosPorCuadrilla;
 
   const filaNueva = {
     id: ID_CONFIG_COSTOS_APU,
@@ -550,6 +564,7 @@ export function guardarConfigCostos(empresaConfig, nuevaConfig = {}) {
       version: 1,
       margenMinimoPct,
       indirectosPct,
+      tecnicosPorCuadrilla,
       insumos,
       recetas: recetasLimpias,
       actualizadoEn: new Date().toISOString(),
@@ -845,7 +860,24 @@ export function calcularLineasDesdeRecetas(items = [], configCostos = null) {
     .filter((l) => l.cant > 0)
     .sort((a, b) => (ordenCat[a.categoria] || 9) - (ordenCat[b.categoria] || 9));
 
-  return { lineas, itemsConReceta, itemsSinReceta, itemsGenericosGlobales };
+  // El viaje y el kit de consumibles que piden las recetas son los de UN dia
+  // de obra. Una obra de varias semanas necesita uno por cada dia que la
+  // cuadrilla esta en sitio: con un solo viaje, una obra de 29 jornadas de
+  // tecnico salia con $ 140.000 de transporte.
+  // Dias de obra = jornadas de tecnico / tecnicos de la cuadrilla.
+  const tecnicosPorCuadrilla = cfg.tecnicosPorCuadrilla ?? TECNICOS_POR_CUADRILLA_DEFAULT;
+  const jornadasTecnico = lineas.find((l) => l.insumoId === "tecnico_alturas")?.cant || 0;
+  const diasDeObra = Math.ceil(jornadasTecnico / tecnicosPorCuadrilla - 1e-9);
+  if (diasDeObra > 1) {
+    for (const linea of lineas) {
+      if (!INSUMOS_POR_DIA_DE_OBRA.includes(linea.insumoId) || linea.cant >= diasDeObra) continue;
+      linea.cant = diasDeObra;
+      linea.subtotal = Math.round(diasDeObra * linea.costoUnitario);
+      linea.nota = `${diasDeObra} días de obra (${jornadasTecnico} jornadas de técnico ÷ ${tecnicosPorCuadrilla} por cuadrilla)`;
+    }
+  }
+
+  return { lineas, itemsConReceta, itemsSinReceta, itemsGenericosGlobales, diasDeObra };
 }
 
 /**

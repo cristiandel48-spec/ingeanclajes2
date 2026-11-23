@@ -35,9 +35,15 @@ const ORIGENES = (Deno.env.get("ORIGENES_PERMITIDOS") ??
   "https://ingeanclajes.pages.dev,http://localhost:5173,http://127.0.0.1:5173")
   .split(",").map((o) => o.trim()).filter(Boolean);
 
+// Permite también ramas y despliegues de vista previa del mismo proyecto en Cloudflare Pages
+// (ej. https://prueba.ingeanclajes.pages.dev), sin abrir la función a sitios externos.
+const SUBDOMINIO_PAGES = /^https:\/\/[a-z0-9-]+\.ingeanclajes\.pages\.dev$/i;
+const esOrigenPermitido = (origen: string) =>
+  ORIGENES.includes(origen) || SUBDOMINIO_PAGES.test(origen);
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-api-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -55,7 +61,7 @@ function conOrigenPermitido(manejar: (req: Request) => Response | Promise<Respon
     const origen = req.headers.get("origin") ?? "";
     const respuesta = await manejar(req);
     const cabeceras = new Headers(respuesta.headers);
-    cabeceras.set("Access-Control-Allow-Origin", ORIGENES.includes(origen) ? origen : ORIGENES[0]);
+    cabeceras.set("Access-Control-Allow-Origin", esOrigenPermitido(origen) ? origen : ORIGENES[0]);
     cabeceras.set("Vary", "Origin");
     return new Response(respuesta.body, { status: respuesta.status, headers: cabeceras });
   };

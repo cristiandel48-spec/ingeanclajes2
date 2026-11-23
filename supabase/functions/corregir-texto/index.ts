@@ -75,13 +75,16 @@ Responde SOLO con un JSON así, sin explicaciones ni texto alrededor:
 const ORIGENES = (Deno.env.get("ORIGENES_PERMITIDOS") ??
   "https://ingeanclajes.pages.dev,http://localhost:5173,http://127.0.0.1:5173")
   .split(",").map((o) => o.trim()).filter(Boolean);
+const SUBDOMINIO_PAGES = /^https:\/\/[a-z0-9-]+\.ingeanclajes\.pages\.dev$/i;
+const esOrigenPermitido = (origen: string) =>
+  ORIGENES.includes(origen) || SUBDOMINIO_PAGES.test(origen);
 
 function conOrigenPermitido(manejar: (req: Request) => Response | Promise<Response>) {
   return async (req: Request) => {
     const origen = req.headers.get("origin") ?? "";
     const respuesta = await manejar(req);
     const cabeceras = new Headers(respuesta.headers);
-    cabeceras.set("Access-Control-Allow-Origin", ORIGENES.includes(origen) ? origen : ORIGENES[0]);
+    cabeceras.set("Access-Control-Allow-Origin", esOrigenPermitido(origen) ? origen : ORIGENES[0]);
     cabeceras.set("Vary", "Origin");
     return new Response(respuesta.body, { status: respuesta.status, statusText: respuesta.statusText, headers: cabeceras });
   };

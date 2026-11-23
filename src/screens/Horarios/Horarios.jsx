@@ -860,8 +860,8 @@ export default function Horarios({ctx}){
                 onClick={() => setVerHistorial(true)}
                 title="Consulta dónde estuvo cada persona (por ejemplo el mes pasado) y descárgalo en Excel o PDF"
               >
-                <Icono nombre="reloj" size={14} />
-                <span>Historial</span>
+                <Icono nombre="documento" size={14} />
+                <span>Informes</span>
               </button>
               <button
                 type="button"

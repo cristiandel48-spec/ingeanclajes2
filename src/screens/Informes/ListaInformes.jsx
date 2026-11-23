@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { fmtD } from "../../lib/format";
-import { useIsMobile } from "../../hooks/useMediaQuery";
+import { useIsMobile, useMediaQuery } from "../../hooks/useMediaQuery";
 import { BarraFija, CABECERA_FIJA, ConmutadorVista, EmptyState, StatusPill } from "../../components/ui";
 import { ESTADO_FIRMA } from "../../lib/firmaRecibido";
 import Icono from "../../components/ui/Icono";
@@ -11,6 +11,21 @@ const ORDENES = [
   { key: "obra",      label: "Obra",          comparar: (a, b) => String(a.obraId || "").localeCompare(String(b.obraId || ""), "es") },
   { key: "proyecto",  label: "Proyecto A–Z",  comparar: (a, b) => String(a.proyecto || "").localeCompare(String(b.proyecto || ""), "es") },
 ];
+
+// Columnas de la lista, las mismas para la cabecera y para cada fila. La firma
+// tiene columna propia: debajo del numero no cabia («Enviado a firma» es mas
+// ancha que el codigo) y se montaba sobre el nombre del proyecto.
+const COLUMNAS_TABLA = "92px minmax(190px, 2.3fr) minmax(160px, 1.5fr) 136px 96px 78px 64px 218px";
+const REJILLA_TABLA = {
+  display: "grid",
+  gridTemplateColumns: COLUMNAS_TABLA,
+  columnGap: 12,
+  alignItems: "center",
+  padding: "10px 16px",
+};
+// Por debajo de este ancho las columnas ya no caben: la tabla se desliza de
+// lado en vez de recortar los botones.
+const ANCHO_MINIMO_TABLA = 1150;
 
 function enMilis(fecha) {
   if (!fecha) return 0;
@@ -40,7 +55,9 @@ function MarcaFirma({ estado }) {
   );
 }
 
-export default function ListaInformes({ informes = [], acciones = {}, estadosFirma = {} }) {  const isMobile = useIsMobile();
+export default function ListaInformes({ informes = [], acciones = {}, estadosFirma = {} }) {
+  const isMobile = useIsMobile();
+  const tablaEstrecha = useMediaQuery("(max-width: 1200px)");
   const [busqueda, setBusqueda] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("Todos");
   const [orden, setOrden] = useState("recientes");
@@ -331,42 +348,44 @@ export default function ListaInformes({ informes = [], acciones = {}, estadosFir
             boxShadow: "none",
           }}
         >
-          {/* Cabecera de la tabla */}
-          <div
-            style={{
-              ...CABECERA_FIJA,
-              display: "grid",
-              gridTemplateColumns: "96px minmax(160px, 2.2fr) minmax(130px, 1.4fr) 95px 80px 80px 160px",
-              columnGap: 10,
-              alignItems: "center",
-              padding: "10px 16px",
-              background: "var(--surface-subtle, #f5f5f7)",
-              borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-              fontSize: 11,
-              fontWeight: 700,
-              color: "var(--text-subtle, #86868b)",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-            }}
-          >
-            <div>Informe</div>
-            <div>Proyecto / Cliente</div>
-            <div>Obra & Periodo</div>
-            <div>Actividades</div>
-            <div>Personal</div>
-            <div>Fotos</div>
-            <div style={{ textAlign: "right" }}>Acciones</div>
-          </div>
+          <div style={{ overflowX: tablaEstrecha ? "auto" : "visible", width: "100%" }}>
+            <div style={{ minWidth: tablaEstrecha ? ANCHO_MINIMO_TABLA : 0 }}>
+              {/* Cabecera de la tabla */}
+              <div
+                style={{
+                  ...CABECERA_FIJA,
+                  ...REJILLA_TABLA,
+                  background: "var(--surface-subtle, #f5f5f7)",
+                  borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "var(--text-subtle, #86868b)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <div>Informe</div>
+                <div>Proyecto / Cliente</div>
+                <div>Ubicación / Obra</div>
+                <div>Firma del cliente</div>
+                <div>Actividades</div>
+                <div>Personal</div>
+                <div>Fotos</div>
+                <div style={{ textAlign: "right" }}>Acciones</div>
+              </div>
 
-          {informesFiltrados.map((inf, idx) => (
-            <FilaTablaInforme
-              key={inf.id}
-              informe={inf}
-              acciones={acciones}
-              estadoFirma={estadosFirma[inf.id]}
-              zebra={idx % 2 === 1}
-            />
-          ))}
+              {informesFiltrados.map((inf, idx) => (
+                <FilaTablaInforme
+                  key={inf.id}
+                  informe={inf}
+                  acciones={acciones}
+                  estadoFirma={estadosFirma[inf.id]}
+                  zebra={idx % 2 === 1}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -729,11 +748,7 @@ function FilaTablaInforme({ informe: inf, acciones, estadoFirma, zebra }) {
     <div
       onClick={() => acciones.ver?.(inf)}
       style={{
-        display: "grid",
-        gridTemplateColumns: "96px minmax(160px, 2.2fr) minmax(130px, 1.4fr) 95px 80px 80px 160px",
-        columnGap: 10,
-        padding: "10px 16px",
-        alignItems: "center",
+        ...REJILLA_TABLA,
         background: zebra ? "var(--surface-subtle, #fafbfd)" : "var(--surface, #ffffff)",
         borderBottom: "1px solid var(--border, rgba(0,0,0,0.05))",
         fontSize: 12,
@@ -760,37 +775,44 @@ function FilaTablaInforme({ informe: inf, acciones, estadoFirma, zebra }) {
             background: "var(--surface-subtle, #f1f5f9)",
             borderRadius: 6,
             border: "none",
+            whiteSpace: "nowrap",
+            fontVariantNumeric: "tabular-nums",
           }}
         >
           {inf.id}
         </span>
-        {estadoFirma && estadoFirma !== "anulado" && (
-          <div style={{ marginTop: 4 }}><MarcaFirma estado={estadoFirma} /></div>
-        )}
       </div>
 
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontWeight: 600, color: "var(--text-main, #101828)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div title={proyecto} style={{ fontSize: 13, fontWeight: 600, color: "var(--text-main, #101828)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {proyecto}
         </div>
-        <div style={{ fontSize: 11, color: "var(--text-muted, #667085)", marginTop: 1 }}>
+        <div style={{ fontSize: 11, color: "var(--text-muted, #667085)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           <Icono nombre="calendario" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />{fmtD(inf.fechaInforme)}
         </div>
       </div>
 
       <div style={{ minWidth: 0, color: "var(--text-muted, #475467)", fontSize: 12 }}>
-        <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><Icono nombre="ubicacion" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />{localizacion || "—"}</div>
-        <div style={{ fontVariantNumeric: "tabular-nums", fontSize: 11, color: "var(--text-subtle, #86868b)" }}>{inf.obraId || "—"}</div>
+        <div title={localizacion} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><Icono nombre="ubicacion" size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginRight: 4 }} />{localizacion || "—"}</div>
+        <div style={{ fontVariantNumeric: "tabular-nums", fontSize: 11, color: "var(--text-subtle, #86868b)", marginTop: 2 }}>{inf.obraId || "—"}</div>
       </div>
 
-      <div>
-        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-main, #1d1d1f)" }}>
+      <div style={{ minWidth: 0 }}>
+        {estadoFirma && estadoFirma !== "anulado" ? (
+          <MarcaFirma estado={estadoFirma} />
+        ) : (
+          <span title="Aún no se ha enviado a firma" style={{ color: "var(--text-quaternary, #c7c7cc)" }}>—</span>
+        )}
+      </div>
+
+      <div style={{ whiteSpace: "nowrap" }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-main, #1d1d1f)", fontVariantNumeric: "tabular-nums" }}>
           {actividades} act.
         </span>
       </div>
 
       <div>
-        <span style={{ fontSize: 12, color: "var(--text-muted, #475467)" }}>
+        <span style={{ fontSize: 12, color: "var(--text-muted, #475467)", fontVariantNumeric: "tabular-nums" }}>
           {operarios}
         </span>
       </div>
@@ -811,7 +833,7 @@ function FilaTablaInforme({ informe: inf, acciones, estadoFirma, zebra }) {
         </span>
       </div>
 
-      <div style={{ minWidth: 0, display: "flex", gap: 5, justifyContent: "flex-end", flexWrap: "nowrap" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ minWidth: 0, display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "nowrap", whiteSpace: "nowrap" }} onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
           onClick={() => acciones.ver?.(inf)}

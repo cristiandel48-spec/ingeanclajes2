@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, Icono } from "../../components/ui";
+import { Button, EmptyState, Icono, Sheet } from "../../components/ui";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { today } from "../../lib/format";
 import { obrasMasNuevasPrimero } from "../../lib/identificadores";
@@ -87,6 +87,57 @@ const ESTILOS_PLANILLA = `
     align-items: center;
     gap: 10px;
     min-width: 0;
+  }
+  .hor-head__acciones {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .ui-hor-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 980px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background var(--transicion-rapida), border-color var(--transicion-rapida),
+                color var(--transicion-rapida), transform var(--transicion-rapida), box-shadow var(--transicion-rapida);
+  }
+  .ui-hor-btn:active:not(:disabled) { transform: scale(0.975); }
+  .ui-hor-btn--ghost {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid #c5d0f0;
+    color: #2a3b8f;
+  }
+  .ui-hor-btn--ghost:hover:not(:disabled) {
+    background: #ffffff;
+    border-color: #a8b9ee;
+  }
+  .ui-hor-btn--primary {
+    background: #2a3b8f;
+    border: 1px solid #2a3b8f;
+    color: #ffffff;
+    box-shadow: 0 1px 2px rgba(24, 36, 96, 0.16);
+  }
+  .ui-hor-btn--primary:hover:not(:disabled) {
+    background: #213078;
+    border-color: #213078;
+  }
+  .ui-hor-btn--secondary {
+    background: #ffffff;
+    border: 1px solid #c5d0f0;
+    color: #1d1d1f;
+  }
+  .ui-hor-btn--secondary:hover:not(:disabled) {
+    background: #eef2ff;
   }
   .hor-head__punto {
     width: 8px;
@@ -176,30 +227,32 @@ const ESTILOS_PLANILLA = `
     gap: 5px;
     height: 30px;
     padding: 0 13px;
-    border: 1px solid #c5d0f0;
+    border: 1px solid transparent;
     border-radius: 980px;
-    background: rgba(255, 255, 255, 0.85);
-    color: #3a4668;
+    background: transparent;
+    color: #46506b;
     font-family: inherit;
     font-size: 12.5px;
     font-weight: 600;
     cursor: pointer;
-    transition: background var(--transicion-rapida), color var(--transicion-rapida), border-color var(--transicion-rapida);
+    transition: background var(--transicion-rapida), color var(--transicion-rapida), box-shadow var(--transicion-rapida);
   }
   .ui-hor-chip:hover {
-    background: #ffffff;
-    color: #2a3b8f;
-    border-color: #a8b9ee;
+    color: #1d1d1f;
   }
   .ui-hor-chip--activo {
-    background: #2a3b8f;
-    border-color: #2a3b8f;
-    color: #ffffff;
+    background: #ffffff;
+    color: #2a3b8f;
+    box-shadow: 0 1px 2px rgba(16, 24, 64, 0.08);
   }
-  .ui-hor-chip--activo:hover {
-    background: #223179;
-    border-color: #223179;
-    color: #ffffff;
+  .hor-nav__seg {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 980px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid #c5d0f0;
   }
 
   /* ── Botones nativos de Hora y Fecha (tactiles en iOS/Android y clic en PC) ── */
@@ -686,12 +739,42 @@ const ESTILOS_PLANILLA = `
     padding: 3px 11px;
     min-height: 26px;
   }
+  .hor-shell.hor-planilla--imagen.hor-planilla--preview {
+    position: relative;
+    left: auto;
+    top: auto;
+    border: none;
+  }
+  .hor-preview-marco {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid #d5dcef;
+    background: #ffffff;
+    box-shadow: 0 2px 10px rgba(16, 24, 64, 0.06);
+    cursor: zoom-in;
+    transition: border-color var(--transicion-rapida), box-shadow var(--transicion-rapida);
+  }
+  .hor-preview-marco:hover {
+    border-color: #a8b9ee;
+    box-shadow: 0 6px 20px rgba(16, 24, 64, 0.1);
+  }
+  .hor-preview-marco__escala {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1120px;
+    transform-origin: top left;
+    pointer-events: none;
+  }
 
   @media (max-width: 768px) {
     .hor-head { padding: 14px; }
     .hor-pie { padding: 12px 14px; }
     .ui-hor-flecha { width: 36px; height: 36px; }
-    .ui-hor-chip { height: 36px; padding: 0 13px; }
+    .ui-hor-chip { height: 34px; padding: 0 13px; }
+    .ui-hor-btn { height: 38px; padding: 0 14px; font-size: 13px; }
     .ui-hor-picker--fecha-head { font-size: 13px; padding: 6px 8px; }
     .ui-hor-x--fila { opacity: 1; width: 34px; height: 34px; }
   }
@@ -957,7 +1040,7 @@ const normalizarEncuentro = (texto) =>
 export default function PlanillaDia({
   fecha, dia, obras, empleados, tareasSugeridas = [],
   onCrearFila, onEditarFila, onAgregarTrabajadores, onQuitarTrabajador, onQuitarFila,
-  onCambiarFecha, onMoverFila, onAbrirTextoGrupo,
+  onCambiarFecha, onMoverFila, onAbrirTextoGrupo, accionesCabecera = null,
 }) {
   const isMobile = useIsMobile();
   const [vistaMovil, setVistaMovil] = useState("tarjetas");
@@ -1127,26 +1210,9 @@ export default function PlanillaDia({
             </span>
           )}
         </div>
-        {!esSoloImagen && isMobile && (
-          <div className="ui-seg" role="tablist" aria-label="Vista de la planilla" data-html2canvas-ignore="true">
-            <button
-              type="button"
-              role="tab"
-              className="ui-seg__op"
-              aria-selected={vistaMovil === "tarjetas"}
-              onClick={() => setVistaMovil("tarjetas")}
-            >
-              Tarjetas
-            </button>
-            <button
-              type="button"
-              role="tab"
-              className="ui-seg__op"
-              aria-selected={vistaMovil === "tabla"}
-              onClick={() => setVistaMovil("tabla")}
-            >
-              Tabla
-            </button>
+        {!esSoloImagen && accionesCabecera && (
+          <div className="hor-head__acciones" data-html2canvas-ignore="true">
+            {accionesCabecera}
           </div>
         )}
       </div>
@@ -1189,22 +1255,48 @@ export default function PlanillaDia({
           )}
         </div>
 
-        {!esSoloImagen && onCambiarFecha && (
+        {!esSoloImagen && (onCambiarFecha || isMobile) && (
           <div className="hor-nav__atajos" data-html2canvas-ignore="true">
-            <button
-              type="button"
-              className={`ui-hor-chip${fecha === hoy ? " ui-hor-chip--activo" : ""}`}
-              onClick={() => onCambiarFecha(hoy)}
-            >
-              Hoy
-            </button>
-            <button
-              type="button"
-              className={`ui-hor-chip${fecha === manana ? " ui-hor-chip--activo" : ""}`}
-              onClick={() => onCambiarFecha(manana)}
-            >
-              Mañana
-            </button>
+            {onCambiarFecha && (
+              <div className="hor-nav__seg" role="group" aria-label="Atajos de fecha">
+                <button
+                  type="button"
+                  className={`ui-hor-chip${fecha === hoy ? " ui-hor-chip--activo" : ""}`}
+                  onClick={() => onCambiarFecha(hoy)}
+                >
+                  Hoy
+                </button>
+                <button
+                  type="button"
+                  className={`ui-hor-chip${fecha === manana ? " ui-hor-chip--activo" : ""}`}
+                  onClick={() => onCambiarFecha(manana)}
+                >
+                  Mañana
+                </button>
+              </div>
+            )}
+            {isMobile && (
+              <div className="ui-seg" role="tablist" aria-label="Vista de la planilla">
+                <button
+                  type="button"
+                  role="tab"
+                  className="ui-seg__op"
+                  aria-selected={vistaMovil === "tarjetas"}
+                  onClick={() => setVistaMovil("tarjetas")}
+                >
+                  Tarjetas
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  className="ui-seg__op"
+                  aria-selected={vistaMovil === "tabla"}
+                  onClick={() => setVistaMovil("tabla")}
+                >
+                  Tabla
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1918,6 +2010,294 @@ export default function PlanillaDia({
             {renderTabla(true)}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// Vista previa en vivo de la imagen exacta que saldra para WhatsApp (solo del dia seleccionado).
+export function VistaPreviaImagenDia({ fecha, dia, obras, empleados }) {
+  const filas = filasDeLaPlanilla(dia, obras, empleados);
+  const fechaTexto = fechaLarga(fecha);
+  const marcoRef = useRef(null);
+  const hojaRef = useRef(null);
+  const [medida, setMedida] = useState({ escala: 0.4, alto: 220 });
+  const [ampliada, setAmpliada] = useState(false);
+  const [ocupado, setOcupado] = useState(false);
+  const [aviso, setAviso] = useState(null);
+  const [pendiente, setPendiente] = useState(null);
+  const [puedeCompartir] = useState(puedeCompartirArchivos);
+  const avisoTimer = useRef(null);
+
+  useEffect(() => {
+    const marco = marcoRef.current;
+    const hoja = hojaRef.current;
+    if (!marco || !hoja) return undefined;
+    const recalcular = () => {
+      const ancho = marco.clientWidth || 420;
+      const escala = Math.min(1, ancho / 1120);
+      const altoHoja = hoja.offsetHeight || 260;
+      setMedida({ escala, alto: Math.max(120, Math.ceil(altoHoja * escala)) });
+    };
+    recalcular();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const obs = new ResizeObserver(recalcular);
+    obs.observe(marco);
+    obs.observe(hoja);
+    return () => obs.disconnect();
+  }, [filas.length, fecha, dia]);
+
+  const avisar = (siguiente, segundos = 8) => {
+    clearTimeout(avisoTimer.current);
+    setAviso(siguiente);
+    if (siguiente && segundos) avisoTimer.current = setTimeout(() => setAviso(null), segundos * 1000);
+  };
+
+  const generarImagen = async () => {
+    const { default: html2canvas } = await import("html2canvas");
+    const lienzo = await html2canvas(hojaRef.current, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      windowWidth: 1400,
+      onclone: (doc, copia) => {
+        copia.classList.remove("hor-planilla--preview");
+        copia.classList.add("hor-planilla--imagen");
+        doc.body.appendChild(copia);
+        const tabla = copia.querySelector("table");
+        if (tabla && tabla.scrollWidth > copia.clientWidth) {
+          copia.style.width = `${tabla.scrollWidth + 2}px`;
+        }
+      },
+    });
+    const blob = await new Promise((ok) => lienzo.toBlob(ok, "image/png"));
+    if (!blob) throw new Error("No se pudo generar la imagen.");
+    return new File([blob], `programacion-${fecha}.png`, { type: "image/png" });
+  };
+
+  const bajar = (archivo) => {
+    const url = URL.createObjectURL(archivo);
+    const enlace = document.createElement("a");
+    enlace.href = url;
+    enlace.download = archivo.name;
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  };
+
+  const conImagen = async (accion) => {
+    if (!hojaRef.current || ocupado) return;
+    setOcupado(true);
+    setPendiente(null);
+    avisar(null);
+    try {
+      await accion(await generarImagen());
+    } catch {
+      avisar({ tono: "error", texto: "No se pudo generar la imagen. Intenta de nuevo." });
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  const abrirMenuCompartir = async (archivo) => {
+    try {
+      await navigator.share({ files: [archivo], title: `Programación · ${fechaTexto}` });
+      setPendiente(null);
+      avisar(null);
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+      if (error?.name === "NotAllowedError") {
+        setPendiente(archivo);
+        avisar({ tono: "ok", texto: "La imagen ya está lista. Toca «Compartir ahora»." }, 0);
+        return;
+      }
+      bajar(archivo);
+      avisar({ tono: "ok", texto: "Imagen descargada: adjúntala en el grupo de WhatsApp." }, 12);
+    }
+  };
+
+  const copiarParaPegar = async (archivo) => {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": archivo })]);
+      avisar({ tono: "ok", texto: "Imagen copiada. Pégala en WhatsApp con Ctrl+V." }, 10);
+    } catch {
+      bajar(archivo);
+      avisar({ tono: "ok", texto: "Imagen descargada: adjúntala en el grupo de WhatsApp." }, 10);
+    }
+  };
+
+  const enviarPorWhatsApp = () => conImagen(async (archivo) => {
+    if (puedeCompartir) { await abrirMenuCompartir(archivo); return; }
+    await copiarParaPegar(archivo);
+  });
+  const descargarImagen = () => conImagen(async (archivo) => {
+    bajar(archivo);
+    avisar({ tono: "ok", texto: "Imagen descargada." });
+  });
+
+  if (filas.length === 0) {
+    return (
+      <EmptyState
+        icono="camara"
+        titulo="Sin imagen para este día"
+        texto="Cuando agregues clientes y trabajadores arriba, aquí verás al instante la imagen exacta del horario de este día."
+      />
+    );
+  }
+
+  const hojaLimpia = (conRef) => (
+    <div ref={conRef ? hojaRef : undefined} className="hor-shell doc-shell hor-planilla--imagen hor-planilla--preview">
+      <div className="hor-head">
+        <div className="hor-head__top">
+          <div className="hor-head__marca">
+            <h2 className="hor-head__titulo">Actividades y clientes</h2>
+          </div>
+        </div>
+        <div className="hor-nav">
+          <div className="hor-nav__grupo">
+            <span className="ui-hor-picker ui-hor-picker--fecha-head" style={{ cursor: "default" }}>
+              <Icono nombre="calendario" size={14} style={{ color: "#2a3b8f" }} />
+              <span>{fechaTexto}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <table className="hor-tabla">
+        <colgroup>
+          <col style={{ width: "17%" }} />
+          <col style={{ width: "18%" }} />
+          <col style={{ width: "9%" }} />
+          <col style={{ width: "22%" }} />
+          <col style={{ width: "15%" }} />
+          <col style={{ width: "19%" }} />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Clientes</th>
+            <th>Actividad</th>
+            <th className="hor-col-centro">Cantidades</th>
+            <th>Trabajadores</th>
+            <th>Dirección</th>
+            <th className="hor-col-centro">Fecha y hora</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filas.map((f) => (
+            <tr key={f.obraId} className="hor-fila-datos">
+              <td>
+                <span className="hor-cliente">{f.cliente}</span>
+                {f.proyecto && <span className="hor-proyecto">{f.proyecto}</span>}
+              </td>
+              <td>{f.tareaTexto || <span className="hor-vacio">—</span>}</td>
+              <td className="hor-col-centro">
+                {f.cantidadTexto ? (
+                  <span className={/^\d+$/.test(f.cantidadTexto) ? "hor-cifra" : undefined}>{f.cantidadTexto}</span>
+                ) : (
+                  <span className="hor-vacio">—</span>
+                )}
+              </td>
+              <td>
+                <div className="hor-trabs-lista">
+                  {f.trabajadores.map((t) => (
+                    <span key={t.id} className="hor-trab-chip">
+                      <span className="hor-trab-chip__nombre">{t.etiqueta}</span>
+                    </span>
+                  ))}
+                </div>
+              </td>
+              <td>
+                <span className="hor-direccion">{f.direccion || <span className="hor-vacio">—</span>}</span>
+              </td>
+              <td className="hor-col-centro">
+                <div className="hor-fecha-bloque">
+                  <span className="hor-fecha-texto">{fechaTexto}</span>
+                  <span className="hor-encuentro-texto">{f.encuentroTexto}</span>
+                  {f.inicioTexto && (
+                    <span className="ui-hor-picker ui-hor-picker--hora" style={{ cursor: "default" }}>
+                      <Icono nombre="reloj" size={13} />
+                      <span>{f.inicioTexto}</span>
+                    </span>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  return (
+    <div>
+      <div
+        ref={marcoRef}
+        role="button"
+        tabIndex={0}
+        className="hor-preview-marco"
+        style={{ height: medida.alto }}
+        title="Toca para ver la imagen en grande"
+        aria-label="Ver imagen del horario en grande"
+        onClick={() => setAmpliada(true)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setAmpliada(true); } }}
+      >
+        <div
+          className="hor-preview-marco__escala"
+          style={{ transform: `scale(${medida.escala})` }}
+        >
+          {hojaLimpia(true)}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          {pendiente ? (
+            <Button variante="primary" tam="sm" icono="compartir" onClick={() => abrirMenuCompartir(pendiente)}>
+              Compartir ahora
+            </Button>
+          ) : (
+            <>
+              <Button variante="primary" tam="sm" icono="enviar" onClick={enviarPorWhatsApp} disabled={ocupado}>
+                {ocupado ? "Generando…" : "Enviar por WhatsApp"}
+              </Button>
+              <Button variante="secondary" tam="sm" icono="descargar" onClick={descargarImagen} disabled={ocupado}>
+                Descargar
+              </Button>
+            </>
+          )}
+        </div>
+        <Button variante="texto" tam="sm" icono="ojo" onClick={() => setAmpliada(true)}>
+          Ver en grande
+        </Button>
+      </div>
+
+      {aviso && (
+        <div role="status" style={{ fontSize: 12.5, marginTop: 8, color: aviso.tono === "error" ? "var(--danger-text)" : "var(--success-text)" }}>
+          {aviso.texto}
+        </div>
+      )}
+
+      {ampliada && (
+        <Sheet
+          ancha
+          titulo="Imagen del horario del día"
+          subtitulo={fechaTexto}
+          onCerrar={() => setAmpliada(false)}
+          pie={
+            <>
+              <Button variante="secondary" onClick={() => setAmpliada(false)}>Cerrar</Button>
+              <Button variante="secondary" icono="descargar" onClick={descargarImagen} disabled={ocupado}>
+                Descargar PNG
+              </Button>
+              <Button variante="primary" icono="enviar" onClick={enviarPorWhatsApp} disabled={ocupado}>
+                {ocupado ? "Generando…" : "Enviar por WhatsApp"}
+              </Button>
+            </>
+          }
+        >
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", borderRadius: 12, border: "1px solid #d5dcef" }}>
+            {hojaLimpia(false)}
+          </div>
+        </Sheet>
       )}
     </div>
   );

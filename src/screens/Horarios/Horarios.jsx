@@ -1,12 +1,11 @@
 import Av from "../../components/ui/Av";
 import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
 import SelectorEmpleados from "../../components/SelectorEmpleados";
-import PlanillaDia from "./PlanillaDia";
+import PlanillaDia, { VistaPreviaImagenDia } from "./PlanillaDia";
 import {
-  Button, Card, Callout, EmptyState, Icono, Input, Lista, ListRow,
-  PageHeader, Sheet, StatusPill,
+  Button, Card, Callout, Icono, Input, Lista, ListRow, Sheet,
 } from "../../components/ui";
-import { CIFRA, ESPACIO, TIPO } from "../../styles/designTokens";
+import { ESPACIO, TIPO } from "../../styles/designTokens";
 import { useMemo, useState } from "react";
 import { PAL } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
@@ -736,178 +735,16 @@ export default function Horarios({ctx}){
       .map((h)=>String(h.tarea).trim())
   )].slice(0,20), [horarios]);
 
-  // Edicion y eliminacion de cualquier turno (desde «Turnos del dia» o «Todos los turnos por obra»).
-  const [editandoTurno, setEditandoTurno] = useState(null);
-  const [busquedaHistorial, setBusquedaHistorial] = useState("");
-
-  const separarHorario = (turno) => {
-    const partes = String(turno || "").split("-").map((p) => p.trim());
-    const esHora = (v) => /^\d{1,2}:\d{2}$/.test(v);
-    return {
-      inicio: esHora(partes[0]) ? partes[0].padStart(5, "0") : "07:00",
-      fin: esHora(partes[1]) ? partes[1].padStart(5, "0") : "17:00",
-    };
-  };
-
-  const abrirEdicionTurno = (h) => {
-    const { inicio, fin } = separarHorario(h.turno);
-    setEditandoTurno({
-      id: h.id,
-      obraId: h.obraId || firstObraId,
-      empleadoId: h.empleadoId || "",
-      fecha: h.fecha || fechaF,
-      inicio,
-      fin,
-      tarea: h.tarea || "",
-      cantidad: h.cantidad || "",
-      encuentro: h.encuentro || "",
-    });
-  };
-
-  const guardarEdicionTurno = () => {
-    if (!editandoTurno) return;
-    if (!editandoTurno.obraId || !editandoTurno.empleadoId || !editandoTurno.fecha) {
-      setNotif({ ok: false, texto: "Elige obra, trabajador y fecha para guardar el turno." });
-      setTimeout(() => setNotif(null), 6000);
-      return;
-    }
-    const nuevoTurno = armarTurno(editandoTurno.inicio, editandoTurno.fin);
-    if (!nuevoTurno) {
-      setNotif({ ok: false, texto: "Indica la hora de inicio y la hora de fin del turno." });
-      setTimeout(() => setNotif(null), 6000);
-      return;
-    }
-    const anterior = horarios.find((x) => x.id === editandoTurno.id);
-    const f = firmaDeAutor();
-    const actualizados = horarios.map((h) => (
-      h.id !== editandoTurno.id ? h : {
-        ...h,
-        obraId: editandoTurno.obraId,
-        empleadoId: editandoTurno.empleadoId,
-        fecha: editandoTurno.fecha,
-        turno: nuevoTurno,
-        tarea: String(editandoTurno.tarea || "").trim(),
-        cantidad: String(editandoTurno.cantidad || "").trim(),
-        encuentro: String(editandoTurno.encuentro || "").trim(),
-        modificadoPor: f.por,
-        modificadoPorNombre: f.nombre,
-        modificadoEn: f.en,
-      }
-    ));
-    setHorarios(actualizados);
-    if (setObras && editandoTurno.obraId && editandoTurno.empleadoId) {
-      setObras((prev) => prev.map((o) => {
-        if (o.id !== editandoTurno.obraId) return o;
-        const actuales = Array.isArray(o.empleados) ? o.empleados : [];
-        const combinados = actuales.includes(editandoTurno.empleadoId)
-          ? actuales
-          : [...actuales, editandoTurno.empleadoId];
-        const fechaInicio = o.fechaInicio || editandoTurno.fecha;
-        if (combinados.length === actuales.length && o.fechaInicio === fechaInicio) return o;
-        return { ...o, empleados: combinados, ...(fechaInicio ? { fechaInicio } : {}) };
-      }));
-    }
-    if (anterior && (anterior.obraId !== editandoTurno.obraId || anterior.empleadoId !== editandoTurno.empleadoId)) {
-      limpiarPersonalSinTurnos(anterior.obraId, [anterior.empleadoId].filter(Boolean), actualizados);
-    }
-    setEditandoTurno(null);
-    setNotif({ ok: true, texto: "Turno actualizado correctamente." });
-    setTimeout(() => setNotif(null), 6000);
-  };
-
-  const eliminarTurno = async (h, cerrarModal = false) => {
-    if (!h) return;
-    const e = empleados.find((x) => x.id === h.empleadoId);
-    const o = obras.find((x) => x.id === h.obraId);
-    const ok = await confirmar(
-      `¿Eliminar el turno de ${e?.nombre || "este trabajador"} del ${fmtD(h.fecha)} en ${normalizarMayusculas(o?.cliente || "esta obra")}?\n\n` +
-      "Se quitará tanto de la planilla del día como del historial."
-    );
-    if (!ok) return;
-    const restantes = horarios.filter((x) => x.id !== h.id);
-    setHorarios(restantes);
-    limpiarPersonalSinTurnos(h.obraId, [h.empleadoId].filter(Boolean), restantes);
-    if (cerrarModal) setEditandoTurno(null);
-    setNotif({ ok: true, texto: `Turno de ${e?.nombre || "trabajador"} eliminado.` });
-    setTimeout(() => setNotif(null), 6000);
-  };
-
-  const obrasConHistorial = useMemo(() => {
-    const q = busquedaHistorial.trim().toLowerCase();
-    return obrasMasNuevasPrimero(obras)
-      .map((o) => {
-        const hs = horarios
-          .filter((h) => h.obraId === o.id)
-          .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
-        if (!hs.length) return null;
-        if (!q) return { obra: o, turnos: hs };
-        const obraCoincide = [o.cliente, o.proyecto, o.ciudad, o.direccion]
-          .some((v) => String(v || "").toLowerCase().includes(q));
-        if (obraCoincide) return { obra: o, turnos: hs };
-        const turnosFiltrados = hs.filter((h) => {
-          const e = empleados.find((x) => x.id === h.empleadoId);
-          return [e?.nombre, h.tarea, h.fecha, fmtD(h.fecha), h.cantidad, h.encuentro]
-            .some((v) => String(v || "").toLowerCase().includes(q));
-        });
-        return turnosFiltrados.length ? { obra: o, turnos: turnosFiltrados } : null;
-      })
-      .filter(Boolean);
-  }, [obras, horarios, empleados, busquedaHistorial]);
-
-  const reenviarDiaEmpleado=(h)=>{
-    const relacionados = horarios.filter(x=>
-      x.empleadoId===h.empleadoId &&
-      x.obraId===h.obraId &&
-      x.fecha===h.fecha
-    );
-    enviarWA(h.empleadoId,h.obraId,h.fecha,relacionados);
-  };
-
   return(
     <div
       style={{
         maxWidth: 1360,
         margin: "0 auto",
-        padding: isMobile ? "10px 8px 24px" : "14px 16px 28px",
+        padding: isMobile ? "10px 8px 24px" : "18px 16px 28px",
         width: "100%",
         boxSizing: "border-box",
       }}
     >
-      <PageHeader
-        eyebrow="Asignación de turnos"
-        titulo="Horarios de obra"
-        subtitulo="Asigna turnos por día a trabajadores o grupos y avísales por WhatsApp"
-        acciones={
-          <>
-            {empleados.length>0 && puedeCrearPersonal(membresia) && !nuevoEmp && (
-              <Button variante="texto" icono="mas" onClick={()=>setNuevoEmp(true)}>
-                Registrar trabajador
-              </Button>
-            )}
-            {diaAnteriorConTurnos && (
-              <Button
-                variante="secondary"
-                icono="mas"
-                onClick={copiarDiaAnterior}
-                title={`Copia a este día los turnos del ${fmtD(diaAnteriorConTurnos)}`}
-              >
-                Copiar del {fmtD(diaAnteriorConTurnos)}
-              </Button>
-            )}
-            <Button
-              // Solo una accion principal a la vez: con el formulario abierto el
-              // boton pasa a cerrarlo, y con turnos recien guardados lo urgente
-              // es avisarle a la gente, no asignar otro.
-              variante={showF || avisarEsLoSiguiente ? "secondary" : "primary"}
-              icono={showF ? "cerrar" : "mas"}
-              onClick={abrirFormulario}
-            >
-              {showF ? "Cerrar" : "Asignar turnos"}
-            </Button>
-          </>
-        }
-      />
-
       {empleados.length===0 && (
         <Callout tono="aviso" titulo="Todavía no hay empleados para asignar" style={SEPARA}>
           Regístralo aquí mismo con lo básico —nombre, cargo, cédula y celular— y podrás asignarle
@@ -964,6 +801,39 @@ export default function Horarios({ctx}){
           onCambiarFecha={setFechaF}
           onMoverFila={moverFilaPlanilla}
           onAbrirTextoGrupo={abrirHorarioDelDia}
+          accionesCabecera={
+            <>
+              {empleados.length > 0 && puedeCrearPersonal(membresia) && !nuevoEmp && (
+                <button
+                  type="button"
+                  className="ui-hor-btn ui-hor-btn--ghost"
+                  onClick={() => setNuevoEmp(true)}
+                >
+                  <Icono nombre="mas" size={14} />
+                  <span>Registrar trabajador</span>
+                </button>
+              )}
+              {diaAnteriorConTurnos && (
+                <button
+                  type="button"
+                  className="ui-hor-btn ui-hor-btn--ghost"
+                  onClick={copiarDiaAnterior}
+                  title={`Copia a este día los turnos del ${fmtD(diaAnteriorConTurnos)}`}
+                >
+                  <Icono nombre="mas" size={14} />
+                  <span>Copiar del {fmtD(diaAnteriorConTurnos)}</span>
+                </button>
+              )}
+              <button
+                type="button"
+                className={`ui-hor-btn ${showF || avisarEsLoSiguiente ? "ui-hor-btn--secondary" : "ui-hor-btn--primary"}`}
+                onClick={abrirFormulario}
+              >
+                <Icono nombre={showF ? "cerrar" : "mas"} size={14} />
+                <span>{showF ? "Cerrar" : "Asignar turnos"}</span>
+              </button>
+            </>
+          }
           dia={dia}
           obras={obras}
           empleados={empleados}
@@ -1281,361 +1151,18 @@ export default function Horarios({ctx}){
         </Card>
       )}
 
-      {editandoTurno && (
-        <Sheet
-          onCerrar={() => setEditandoTurno(null)}
-          titulo="Editar turno"
-          subtitulo="Corrige cualquier dato si hubo un error y guarda los cambios."
-          pie={
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: ESPACIO.sm, width: "100%", flexWrap: "wrap" }}>
-              <Button
-                variante="destructive"
-                icono="papelera"
-                onClick={() => {
-                  const actual = horarios.find((x) => x.id === editandoTurno.id);
-                  eliminarTurno(actual || editandoTurno, true);
-                }}
-              >
-                Eliminar turno
-              </Button>
-              <div style={{ display: "flex", gap: ESPACIO.sm }}>
-                <Button variante="secondary" onClick={() => setEditandoTurno(null)}>
-                  Cancelar
-                </Button>
-                <Button variante="primary" onClick={guardarEdicionTurno}>
-                  Guardar cambios
-                </Button>
-              </div>
-            </div>
-          }
-        >
-          <div style={{ display: "grid", gap: ESPACIO.md }}>
-            <Input
-              label="Obra / cliente"
-              como="select"
-              value={editandoTurno.obraId}
-              onChange={(e) => setEditandoTurno((prev) => ({ ...prev, obraId: e.target.value }))}
-            >
-              {obrasMasNuevasPrimero(obras).map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.cliente}{o.proyecto && o.proyecto !== o.cliente ? ` · ${o.proyecto}` : ""}
-                </option>
-              ))}
-            </Input>
-
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.2fr 1fr", gap: ESPACIO.md }}>
-              <Input
-                label="Trabajador"
-                como="select"
-                value={editandoTurno.empleadoId}
-                onChange={(e) => setEditandoTurno((prev) => ({ ...prev, empleadoId: e.target.value }))}
-              >
-                {empleados.map((e) => (
-                  <option key={e.id} value={e.id}>{e.nombre}{e.cargo ? ` · ${e.cargo}` : ""}</option>
-                ))}
-              </Input>
-              <Input
-                label="Fecha"
-                type="date"
-                value={editandoTurno.fecha}
-                onChange={(e) => setEditandoTurno((prev) => ({ ...prev, fecha: e.target.value }))}
-              />
-            </div>
-
-            <div style={PANEL}>
-              <div style={{ ...TIPO.eyebrow, color: "var(--text-tertiary)", marginBottom: ESPACIO.xs }}>Horario</div>
-              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: ESPACIO.sm, marginLeft: -6 }}>
-                {JORNADAS.map((j) => (
-                  <Button
-                    key={j.etiqueta}
-                    variante="texto"
-                    tam="sm"
-                    aria-pressed={editandoTurno.inicio === j.inicio && editandoTurno.fin === j.fin}
-                    onClick={() => setEditandoTurno((prev) => ({ ...prev, inicio: j.inicio, fin: j.fin }))}
-                  >
-                    {j.etiqueta}
-                  </Button>
-                ))}
-              </div>
-              <div className="grid-2-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: ESPACIO.md }}>
-                <Input
-                  label="Desde"
-                  type="time"
-                  value={editandoTurno.inicio}
-                  onChange={(e) => setEditandoTurno((prev) => ({ ...prev, inicio: e.target.value }))}
-                />
-                <Input
-                  label="Hasta"
-                  type="time"
-                  value={editandoTurno.fin}
-                  onChange={(e) => setEditandoTurno((prev) => ({ ...prev, fin: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <Input
-              label="Actividad / tarea"
-              value={editandoTurno.tarea}
-              list="hor-planilla-tareas"
-              placeholder="Ej: Instalación de puntos de anclaje"
-              onChange={(e) => setEditandoTurno((prev) => ({ ...prev, tarea: e.target.value }))}
-            />
-
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1.6fr", gap: ESPACIO.md }}>
-              <Input
-                label="Cantidad (opcional)"
-                value={editandoTurno.cantidad}
-                maxLength={40}
-                placeholder="Ej: 10"
-                onChange={(e) => setEditandoTurno((prev) => ({ ...prev, cantidad: e.target.value }))}
-              />
-              <Input
-                label="Punto de encuentro (opcional)"
-                value={editandoTurno.encuentro}
-                list="hor-planilla-encuentros"
-                maxLength={60}
-                placeholder="Salida desde la oficina"
-                onChange={(e) => setEditandoTurno((prev) => ({ ...prev, encuentro: e.target.value }))}
-              />
-            </div>
-          </div>
-        </Sheet>
-      )}
-
-      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:ESPACIO.lg,alignItems:"start"}}>
-        <Card ajustado>
-          <CabeceraCard titulo="Turnos del día" descripcion={fmtD(fechaF)}/>
-          {dia.length===0 ? (
-            <EmptyState
-              icono="calendario"
-              titulo="No hay turnos para esta fecha"
-              texto={diaAnteriorConTurnos
-                ? `Agrégalos arriba en la planilla, copia los del ${fmtD(diaAnteriorConTurnos)} o usa «Asignar turnos».`
-                : "Agrégalos arriba en la planilla o usa «Asignar turnos»."}
-            />
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: ESPACIO.sm }}>
-              {dia.map((h) => {
-                const e = empleados.find((x) => x.id === h.empleadoId);
-                const o = obras.find((x) => x.id === h.obraId);
-                const idx = empleados.findIndex((x) => x.id === h.empleadoId);
-                const conHora = Boolean(String(h.turno || "").trim());
-                return (
-                  <div
-                    key={h.id}
-                    style={{
-                      ...PANEL,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 8,
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: ESPACIO.sm }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
-                        <Av init={e?.avatar || "?"} color={PAL[(idx >= 0 ? idx : 0) % PAL.length]} size={34} />
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ ...TIPO.callout, fontWeight: 600, color: "var(--text-primary)", overflowWrap: "break-word" }}>
-                            {e?.nombre || "—"}
-                          </div>
-                          <div style={{ ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)", marginTop: 1 }}>
-                            {o?.cliente || o?.proyecto || "Sin obra"}{o?.ciudad ? ` · ${o.ciudad}` : ""}
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ flexShrink: 0 }}>
-                        {conHora
-                          ? <StatusPill tono="acento">{fmtTurno12Local(h.turno)}</StatusPill>
-                          : <StatusPill tono="peligro">Sin horario</StatusPill>}
-                      </div>
-                    </div>
-
-                    {(h.tarea || h.cantidad || h.encuentro) && (
-                      <div style={{ ...TIPO.caption, fontWeight: 400, color: "var(--text-secondary)", lineHeight: 1.45, paddingLeft: 44 }}>
-                        {h.tarea || "Sin actividad"}
-                        {h.cantidad ? ` · Cant: ${h.cantidad}` : ""}
-                        {h.encuentro ? ` · ${h.encuentro}` : ""}
-                      </div>
-                    )}
-
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, paddingTop: 4, borderTop: "1px solid var(--separator)" }}>
-                      <Button
-                        variante="secondary"
-                        tam="sm"
-                        icono="enviar"
-                        onClick={() => reenviarDiaEmpleado(h)}
-                        disabled={!conHora}
-                        title={conHora ? `Reenviar WhatsApp · +57 ${e?.tel || ""}` : "Este turno no tiene hora, no hay nada que avisar"}
-                      >
-                        Reenviar WA
-                      </Button>
-                      <Button
-                        variante="secondary"
-                        tam="sm"
-                        soloIcono
-                        icono="lapiz"
-                        onClick={() => abrirEdicionTurno(h)}
-                        aria-label={`Editar el turno de ${e?.nombre || "esta persona"}`}
-                        title="Editar turno"
-                      />
-                      <Button
-                        variante="destructive"
-                        tam="sm"
-                        soloIcono
-                        icono="papelera"
-                        onClick={() => eliminarTurno(h)}
-                        aria-label={`Eliminar el turno de ${e?.nombre || "esta persona"}`}
-                        title="Eliminar turno"
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
-
-        <Card ajustado>
-          <CabeceraCard
-            titulo="Todos los turnos por obra"
-            descripcion="Edita o elimina cualquier turno si hubo un error."
-            accion={horarios.length > 0 && (
-              <span style={{
-                ...TIPO.caption, ...CIFRA,
-                padding: "3px 10px", borderRadius: 980,
-                background: "var(--fill)", color: "var(--text-secondary)", fontWeight: 600,
-              }}>
-                {horarios.length} turno{horarios.length !== 1 ? "s" : ""}
-              </span>
-            )}
-          />
-          {horarios.length > 0 && (
-            <div style={{ position: "relative", width: "100%", marginBottom: ESPACIO.md }}>
-              <span
-                style={{
-                  position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)",
-                  color: "var(--text-quaternary)", pointerEvents: "none", display: "flex",
-                }}
-              >
-                <Icono nombre="buscar" size={15} />
-              </span>
-              <input
-                type="search"
-                className="ui-input"
-                style={{ paddingLeft: 34, width: "100%" }}
-                value={busquedaHistorial}
-                onChange={(e) => setBusquedaHistorial(e.target.value)}
-                placeholder="Buscar por cliente, trabajador o actividad…"
-                aria-label="Buscar por cliente, trabajador o actividad"
-              />
-            </div>
-          )}
-          {obras.every(o=>!horarios.some(h=>h.obraId===o.id)) ? (
-            <EmptyState
-              icono="obra"
-              titulo="Ninguna obra tiene turnos todavía"
-              texto="Los turnos que asignes van quedando aquí, agrupados por obra."
-            />
-          ) : obrasConHistorial.length === 0 ? (
-            <EmptyState
-              icono="buscar"
-              titulo="Sin coincidencias"
-              texto={`No encontramos turnos con «${busquedaHistorial}».`}
-              accion={
-                <Button variante="secondary" tam="sm" onClick={() => setBusquedaHistorial("")}>
-                  Ver todos
-                </Button>
-              }
-            />
-          ) : obrasConHistorial.map(({ obra: o, turnos: hs }) => (
-            <div key={o.id} style={{ ...PANEL, marginBottom: ESPACIO.md }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: ESPACIO.sm, marginBottom: ESPACIO.sm }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ ...TIPO.headline, fontSize: 14, color: "var(--text-primary)" }}>{o.cliente}</div>
-                  {o.proyecto && o.proyecto !== o.cliente && (
-                    <div style={{ ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)" }}>{o.proyecto}</div>
-                  )}
-                </div>
-                <span style={{
-                  ...TIPO.caption, ...CIFRA,
-                  padding: "2px 9px", borderRadius: 980, flexShrink: 0,
-                  background: "var(--surface)", border: "1px solid var(--separator)",
-                  color: "var(--text-tertiary)",
-                }}>
-                  {hs.length} turno{hs.length !== 1 ? "s" : ""}
-                </span>
-              </div>
-              {hs.map((h) => {
-                const e = empleados.find((x) => x.id === h.empleadoId);
-                return (
-                  <div
-                    key={h.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      justifyContent: "space-between",
-                      gap: ESPACIO.sm,
-                      padding: "10px 0",
-                      borderTop: "1px solid var(--separator)",
-                    }}
-                  >
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <span style={{ ...TIPO.callout, fontWeight: 600, color: "var(--text-primary)" }}>
-                          {e?.nombre || "Sin trabajador"}
-                        </span>
-                        <span style={{
-                          ...TIPO.caption, ...CIFRA,
-                          padding: "2px 8px", borderRadius: 980,
-                          background: "var(--surface)", border: "1px solid var(--separator)",
-                          color: "var(--text-secondary)",
-                        }}>
-                          {fmtD(h.fecha)}
-                        </span>
-                        {h.turno && (
-                          <span style={{
-                            ...TIPO.caption, ...CIFRA,
-                            padding: "2px 8px", borderRadius: 980,
-                            background: "var(--accent-tint)", color: "var(--accent)", fontWeight: 600,
-                          }}>
-                            {fmtTurno12Local(h.turno)}
-                          </span>
-                        )}
-                      </div>
-                      {(h.tarea || h.cantidad || h.encuentro) && (
-                        <div style={{ ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)", marginTop: 4, lineHeight: 1.45 }}>
-                          {h.tarea || "Sin actividad"}
-                          {h.cantidad ? ` · Cant: ${h.cantidad}` : ""}
-                          {h.encuentro ? ` · ${h.encuentro}` : ""}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                      <Button
-                        variante="secondary"
-                        tam="sm"
-                        soloIcono
-                        icono="lapiz"
-                        onClick={() => abrirEdicionTurno(h)}
-                        aria-label={`Editar turno de ${e?.nombre || "trabajador"} del ${fmtD(h.fecha)}`}
-                        title="Editar turno"
-                      />
-                      <Button
-                        variante="destructive"
-                        tam="sm"
-                        soloIcono
-                        icono="papelera"
-                        onClick={() => eliminarTurno(h)}
-                        aria-label={`Eliminar turno de ${e?.nombre || "trabajador"} del ${fmtD(h.fecha)}`}
-                        title="Eliminar turno"
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </Card>
-      </div>
+      <Card ajustado style={{ minWidth: 0, overflow: "hidden" }}>
+        <CabeceraCard
+          titulo="Imagen del horario del día"
+          descripcion={dia.length ? `Vista previa lista para WhatsApp · ${fmtD(fechaF)}` : fmtD(fechaF)}
+        />
+        <VistaPreviaImagenDia
+          fecha={fechaF}
+          dia={dia}
+          obras={obras}
+          empleados={empleados}
+        />
+      </Card>
     </div>
   );
 }

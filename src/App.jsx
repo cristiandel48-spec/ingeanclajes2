@@ -7,6 +7,7 @@ import { pantallaInicial, puedeVer } from "./lib/permisos";
 import AvisoInteligenteAgenda from "./components/agenda/AvisoInteligenteAgenda";
 import AvisoFirmaCoordinador from "./components/AvisoFirmaCoordinador";
 import AvisoModuloInventario from "./components/AvisoModuloInventario";
+import AvisoModuloHorarios from "./components/AvisoModuloHorarios";
 import { ToastProvider } from "./components/ui/Toast";
 import PantallaArranque from "./components/PantallaArranque";
 import { FUENTE } from "./styles/designTokens";
@@ -206,6 +207,7 @@ function AppRoot() {
       <AvisoInteligenteAgenda onIrAAgenda={() => setScr("agenda")} />
       <AvisoFirmaCoordinador />
       <AvisoModuloInventario scr={destino} onIrAInventario={() => setScr("inventario")} />
+      <AvisoModuloHorarios onIrAHorarios={() => setScr("horarios")} />
     </AppShell>
   );
 }

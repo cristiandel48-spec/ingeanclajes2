@@ -932,6 +932,8 @@ export const entityConfig = {
         hora_fin: fin || item.horaFin || null,
         horas: item.horas ?? null,
         notas: item.tarea ?? item.notas ?? null,
+        // Migracion 085. Sin ella aplicada se reintenta con toLegacyRow.
+        cantidad: String(item.cantidad ?? "").trim() || null,
         creado_por: item.creadoPor ?? null,
         creado_por_nombre: item.creadoPorNombre ?? null,
         creado_en: item.creadoEn ?? null,
@@ -939,6 +941,12 @@ export const entityConfig = {
         modificado_por_nombre: item.modificadoPorNombre ?? null,
         modificado_en: item.modificadoEn ?? null,
       };
+    },
+    // La misma fila sin `cantidad`, para bases donde aun no corre la 085.
+    toLegacyRow: (item) => {
+      const fila = entityConfig.horarios.toRow(item);
+      delete fila.cantidad;
+      return fila;
     },
     fromRow: (row) => ({
       id: row.id,
@@ -953,6 +961,7 @@ export const entityConfig = {
       // "Turno completo", vuelve tal cual.
       turno: [row.hora_inicio, row.hora_fin].filter(Boolean).join(" - "),
       tarea: row.notas ?? "",
+      cantidad: row.cantidad ?? "",
       creadoPor: row.creado_por ?? null,
       creadoPorNombre: row.creado_por_nombre ?? "",
       creadoEn: row.creado_en ?? row.created_at ?? null,

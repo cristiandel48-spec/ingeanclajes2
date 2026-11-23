@@ -1,6 +1,7 @@
 import Av from "../../components/ui/Av";
 import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
 import SelectorEmpleados from "../../components/SelectorEmpleados";
+import PlanillaDia from "./PlanillaDia";
 import {
   Button, Card, Callout, EmptyState, Input, Lista, ListRow,
   PageHeader, Sheet, StatusPill, Toolbar, EspacioToolbar,
@@ -131,6 +132,9 @@ export default function Horarios({ctx}){
     turno2Inicio:"",
     turno2Fin:"",
     tarea2:"",
+    // Cuantas lineas, anclajes o puntos se instalan. Sale en la columna
+    // CANTIDADES de la planilla del dia.
+    cantidad:"",
   };
   const [formEscrito,setForm]=useState(FORM_VACIO);
   // Si a alguien lo dan de baja -o desaparece la obra- mientras el formulario
@@ -193,6 +197,7 @@ export default function Horarios({ctx}){
           fecha,
           turno: item.turno,
           tarea: item.tarea,
+          cantidad: String(baseForm.cantidad||"").trim(),
         }))
       )
     );
@@ -380,7 +385,7 @@ export default function Horarios({ctx}){
     const origen=horarios.filter((h)=>h.fecha===diaAnteriorConTurnos);
     const nuevos=origen
       .filter((h)=>obras.some((o)=>o.id===h.obraId) && empleados.some((e)=>e.id===h.empleadoId))
-      .map((h)=>({empleadoId:h.empleadoId, obraId:h.obraId, fecha:fechaF, turno:h.turno, tarea:h.tarea}))
+      .map((h)=>({empleadoId:h.empleadoId, obraId:h.obraId, fecha:fechaF, turno:h.turno, tarea:h.tarea, cantidad:h.cantidad||""}))
       .filter((p)=>!horarios.some((h)=>
         h.empleadoId===p.empleadoId && h.obraId===p.obraId && h.fecha===p.fecha && h.turno===p.turno
       ));
@@ -665,6 +670,70 @@ export default function Horarios({ctx}){
       {notif&&(
         <Callout tono={notif.ok ? "exito" : "peligro"} style={SEPARA}>{notif.texto}</Callout>
       )}
+      <Toolbar>
+        {/* Pasar de un dia a otro sin abrir el calendario: es lo que mas se
+            hace aqui, revisar hoy, mañana y lo que viene. */}
+        <Button variante="texto" tam="sm" soloIcono icono="flechaIzq" aria-label="Día anterior" title="Día anterior"
+          onClick={()=>setFechaF(sumarDias(fechaF,-1))}/>
+        <Input
+          type="date"
+          value={fechaF}
+          onChange={e=>e.target.value && setFechaF(e.target.value)}
+          aria-label="Filtrar por fecha"
+          wrapStyle={{flex:"0 0 auto"}}
+          style={{width:"auto"}}
+        />
+        <Button variante="texto" tam="sm" soloIcono icono="flechaDer" aria-label="Día siguiente" title="Día siguiente"
+          onClick={()=>setFechaF(sumarDias(fechaF,1))}/>
+        {fechaF!==today() && (
+          <Button variante="texto" tam="sm" onClick={()=>setFechaF(today())}>Hoy</Button>
+        )}
+        <span style={{...TIPO.footnote,fontWeight:400,color:"var(--text-tertiary)"}}>
+          {dia.length} turno{dia.length!==1?"s":""} · {fmtD(fechaF)}
+        </span>
+        <EspacioToolbar/>
+        {diaAnteriorConTurnos && (
+          <Button
+            variante="texto"
+            icono="mas"
+            onClick={copiarDiaAnterior}
+            title={`Copia a este día los turnos del ${fmtD(diaAnteriorConTurnos)}`}
+          >
+            Copiar del {fmtD(diaAnteriorConTurnos)}
+          </Button>
+        )}
+        <Button
+          variante="secondary"
+          icono="documento"
+          onClick={abrirHorarioDelDia}
+          disabled={!dia.length}
+          title="Arma el mensaje con todos los turnos del día para pegarlo en el grupo"
+        >
+          Enviar horario al grupo
+        </Button>
+      </Toolbar>
+      {/* La hoja «Actividades y clientes» es lo primero que se ve al entrar,
+          tenga o no turnos el dia: es la programacion que se manda al grupo. */}
+      <div style={SEPARA}>
+        <PlanillaDia
+          fecha={fechaF}
+          dia={dia}
+          obras={obras}
+          empleados={empleados}
+          accionVacia={!showF && (
+            <div style={{display:"flex",gap:ESPACIO.sm,flexWrap:"wrap",justifyContent:"center"}}>
+              {diaAnteriorConTurnos && (
+                <Button variante="secondary" tam="sm" onClick={copiarDiaAnterior}>
+                  Copiar del {fmtD(diaAnteriorConTurnos)}
+                </Button>
+              )}
+              <Button variante="primary" tam="sm" icono="mas" onClick={abrirFormulario}>
+                Asignar turnos
+              </Button>
+            </div>
+          )}
+        />
+      </div>
       {showF&&(
         <Card ajustado style={{...SEPARA,scrollMarginTop:16}} ref={formRef}>
           <CabeceraCard
@@ -673,7 +742,7 @@ export default function Horarios({ctx}){
           />
           {/* La obra va primero: de ella sale el atajo para marcar al equipo
               completo, que es lo que evita repetir el formulario por persona. */}
-          <div style={{display:"grid",gridTemplateColumns:isMobile ? "1fr" : "2fr 1fr 1fr",gap:ESPACIO.md,marginBottom:ESPACIO.sm}}>
+          <div style={{display:"grid",gridTemplateColumns:isMobile ? "1fr" : "2fr 1fr 1fr 1fr",gap:ESPACIO.md,marginBottom:ESPACIO.sm}}>
             <Input
               label="Obra"
               como="select"
@@ -697,6 +766,14 @@ export default function Horarios({ctx}){
               ayuda={fechasForm.length>1
                 ? `${fechasForm.length} días${form.incluirDomingos?"":", sin domingos"}`
                 : "Para varios días seguidos"}
+            />
+            <Input
+              label="Cantidad (opcional)"
+              value={form.cantidad}
+              onChange={e=>setForm({...form,cantidad:e.target.value})}
+              placeholder="Ej: 10"
+              maxLength={40}
+              ayuda="Sale en la planilla del día"
             />
           </div>
           {fechasForm.length>1 && (
@@ -950,48 +1027,6 @@ export default function Horarios({ctx}){
         </Card>
       )}
 
-      <Toolbar>
-        {/* Pasar de un dia a otro sin abrir el calendario: es lo que mas se
-            hace aqui, revisar hoy, mañana y lo que viene. */}
-        <Button variante="texto" tam="sm" soloIcono icono="flechaIzq" aria-label="Día anterior" title="Día anterior"
-          onClick={()=>setFechaF(sumarDias(fechaF,-1))}/>
-        <Input
-          type="date"
-          value={fechaF}
-          onChange={e=>e.target.value && setFechaF(e.target.value)}
-          aria-label="Filtrar por fecha"
-          wrapStyle={{flex:"0 0 auto"}}
-          style={{width:"auto"}}
-        />
-        <Button variante="texto" tam="sm" soloIcono icono="flechaDer" aria-label="Día siguiente" title="Día siguiente"
-          onClick={()=>setFechaF(sumarDias(fechaF,1))}/>
-        {fechaF!==today() && (
-          <Button variante="texto" tam="sm" onClick={()=>setFechaF(today())}>Hoy</Button>
-        )}
-        <span style={{...TIPO.footnote,fontWeight:400,color:"var(--text-tertiary)"}}>
-          {dia.length} turno{dia.length!==1?"s":""} · {fmtD(fechaF)}
-        </span>
-        <EspacioToolbar/>
-        {diaAnteriorConTurnos && (
-          <Button
-            variante="texto"
-            icono="mas"
-            onClick={copiarDiaAnterior}
-            title={`Copia a este día los turnos del ${fmtD(diaAnteriorConTurnos)}`}
-          >
-            Copiar del {fmtD(diaAnteriorConTurnos)}
-          </Button>
-        )}
-        <Button
-          variante="secondary"
-          icono="documento"
-          onClick={abrirHorarioDelDia}
-          disabled={!dia.length}
-          title="Arma el mensaje con todos los turnos del día para pegarlo en el grupo"
-        >
-          Enviar horario al grupo
-        </Button>
-      </Toolbar>
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:ESPACIO.lg,alignItems:"start"}}>
         <Card ajustado>
           <CabeceraCard titulo="Turnos del día" descripcion={fmtD(fechaF)}/>

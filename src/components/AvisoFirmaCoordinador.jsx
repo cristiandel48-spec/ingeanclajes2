@@ -10,6 +10,7 @@ import {
   detectarCoordinadorEnSesion,
   guardarFirmaCoordinador,
   leerFirmaCoordinadorComoDataUri,
+  recordatorioFirmaPara,
 } from "../lib/firmasCoordinadores";
 
 const CAMPO = { ...SI, borderRadius: 12 };
@@ -39,8 +40,13 @@ export default function AvisoFirmaCoordinador() {
     [membresia, authUserEmail, empleados, empresaConfig]
   );
 
+  // Recordatorio dirigido solo a esta persona, si lo hay. Lleva su version en
+  // la clave de descarte: asi el aviso vuelve a abrirse aunque ya lo hubiera
+  // cerrado con «Ahora no» antes de que se lanzara el recordatorio.
+  const recordatorio = coordSesion ? recordatorioFirmaPara(coordSesion) : null;
+
   const claveDescarte = coordSesion
-    ? `ingeanclajes_aviso_firma_coord_v1:${coordSesion.clave}`
+    ? `ingeanclajes_aviso_firma_coord_v1:${coordSesion.clave}${recordatorio ? `:r${recordatorio.version}` : ""}`
     : "";
 
   const [descartadoClave, setDescartadoClave] = useState("");
@@ -215,6 +221,27 @@ export default function AvisoFirmaCoordinador() {
               ×
             </button>
           </div>
+
+          {recordatorio && (
+            <div
+              role="status"
+              style={{
+                margin: "12px 0 4px",
+                padding: "10px 12px",
+                borderRadius: 12,
+                background: "var(--warning-bg, #FFF7ED)",
+                border: "1px solid #FED7AA",
+                borderLeft: "3px solid #F97316",
+              }}
+            >
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary, #1d1d1f)" }}>
+                {primerNombre}, {recordatorio.titulo}
+              </div>
+              <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--text-secondary, #475467)", marginTop: 2 }}>
+                {recordatorio.mensaje}
+              </div>
+            </div>
+          )}
 
           <p
             style={{

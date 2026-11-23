@@ -9,6 +9,7 @@ import {
   obtenerOpcionesCoordinadores,
   personalVisibleEnInforme,
   quitarFirmaCoordinador,
+  recordatorioFirmaPara,
 } from "./firmasCoordinadores";
 import { getControlDocumental } from "./controlDocumental";
 import { getFirmaImg } from "./firmaEmpresa";
@@ -189,6 +190,22 @@ describe("firmasCoordinadores", () => {
         cargo: "COORDINADOR SST",
         tieneFirmaGuardada: false,
       });
+    });
+
+    it("el recordatorio de firma es solo para Richard Buelvas, con nombre corto o completo", () => {
+      const sesionRichard = detectarCoordinadorEnSesion({
+        membresia: { nombre: "Richard Buelvas", email: "sst@ejemplo.com", role: "manager" },
+        empleados: [{ id: "E16", nombre: "Richard Javier Buelvas Mendoza", cargo: "COORDINADOR SST", activo: true }],
+        empresaConfig: [],
+      });
+      expect(sesionRichard?.tieneFirmaGuardada).toBe(false);
+      expect(recordatorioFirmaPara(sesionRichard)?.mensaje).toMatch(/Informe de Actividades/);
+      expect(recordatorioFirmaPara("Richard Javier Buelvas Mendoza")?.persona).toBe("Richard Buelvas");
+
+      expect(recordatorioFirmaPara("Paola Escobar")).toBeNull();
+      expect(recordatorioFirmaPara({ nombre: "Arelis Quiñones Herrera" })).toBeNull();
+      expect(recordatorioFirmaPara({ nombre: "Richard Gómez" })).toBeNull();
+      expect(recordatorioFirmaPara(null)).toBeNull();
     });
 
     it("reconoce a cualquier otro empleado activo cuyo cargo sea Coordinador / SST", () => {

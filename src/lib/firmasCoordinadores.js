@@ -24,6 +24,22 @@ export const COORDINADORES_SUGERIDOS = [
   { nombre: "Paola Escobar", cargo: "COORDINADORA SST" },
 ];
 
+// Recordatorios dirigidos a una sola persona. El aviso de firma ya le sale a
+// cada coordinador que no la ha subido, pero se cierra con «Ahora no»; un
+// recordatorio lo vuelve a abrir aunque lo haya cerrado y le pone encima un
+// mensaje propio. Solo lo ve quien tenga abierta la sesion de esa persona, y
+// deja de salir en cuanto guarda la firma. Para relanzarlo otra vez basta con
+// cambiar `version`.
+export const RECORDATORIOS_FIRMA = [
+  {
+    persona: "Richard Buelvas",
+    version: "2026-11-23",
+    titulo: "todavía falta tu firma",
+    mensaje:
+      "Se necesita para imprimirla en el Informe de Actividades. Mientras no la subas, los informes donde eres coordinador salen sin tu firma.",
+  },
+];
+
 const ES_CARGO_COORDINADOR = /COORDINAD|SST|HSEQ|SEGURIDAD\s+Y\s+SALUD/i;
 
 export function esCargoCoordinador(cargo = "") {
@@ -68,6 +84,13 @@ export function coincidenNombresPersona(nombreA = "", nombreB = "") {
   if (toksA.length < 2 || toksB.length < 2) return false;
   const [corto, largo] = toksA.length <= toksB.length ? [toksA, toksB] : [toksB, toksA];
   return corto.every((tok) => largo.includes(tok));
+}
+
+/** Recordatorio de firma dirigido a este coordinador, o `null` si no tiene. */
+export function recordatorioFirmaPara(coordinador, recordatorios = RECORDATORIOS_FIRMA) {
+  const nombre = typeof coordinador === "string" ? coordinador : coordinador?.nombre;
+  if (!String(nombre || "").trim()) return null;
+  return (recordatorios || []).find((r) => coincidenNombresPersona(r.persona, nombre)) || null;
 }
 
 /** Lista todos los perfiles de coordinadores guardados en `empresaConfig`. */

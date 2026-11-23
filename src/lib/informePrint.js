@@ -1,6 +1,6 @@
 // Generación del HTML imprimible de Informes de Actividades con diseño
-// ejecutivo estilo macOS / Apple (jerarquía limpia, acentos cromáticos
-// sobrios y tarjetas con bordes suaves).
+// Ejecutivo Grafito + Rojo corporativo Ingeanclajes (encabezado en grafito
+// oscuro con hilo rojo marca, cuerpo neutro y jerarquía tipográfica limpia).
 // Empaquetado fluido por páginas con fidelidad 100%, sin desbordes y con
 // auto-firma del coordinador de obra / SST cuando está configurado.
 
@@ -20,35 +20,21 @@ import {
   personalVisibleEnInforme,
 } from "./firmasCoordinadores";
 
-// Paleta ejecutiva estilo macOS / Apple en armonía con la marca Ingeanclajes:
-// tintas limpias sobre papel blanco, tarjetas suaves y acentos de color con
-// propósito semántico (marca, operación, conformidad SST y dictamen).
-const TINTA = "#1d1d1f";
-const GRIS = "#6e6e73";
-const FONDO = "#f8fafc";
-const LINEA = "#cbd5e1";
-const LINEA_SUAVE = "#e2e8f0";
+// Paleta Ejecutiva Grafito + Rojo (Opción B) en armonía con la marca
+// Ingeanclajes: tinta grafito profunda, superficies neutras sobre papel blanco
+// y un único acento rojo corporativo reservado para la cabecera y la marca.
+const TINTA = "#18181B";
+const GRAFITO = "#18181B";
+const GRAFITO_BORDE = "#27272A";
+const GRIS = "#52525B";
+const GRIS_CLARO = "#A1A1AA";
+const FONDO = "#F4F4F5";
+const FONDO_SUAVE = "#F8F8FA";
+const LINEA = "#D4D4D8";
+const LINEA_SUAVE = "#E4E4E7";
 
-// Acentos de color estilo macOS
+// Acento corporativo único
 const MARCA = "#E0342A";
-const MARCA_SOFT = "#FEF2F2";
-const MARCA_BORDE = "#FECACA";
-const MARCA_TEXTO = "#B91C1C";
-
-const AZUL = "#0071E3";
-const AZUL_SOFT = "#EFF6FF";
-const AZUL_BORDE = "#BFDBFE";
-const AZUL_TEXTO = "#1D4ED8";
-
-const VERDE = "#059669";
-const VERDE_SOFT = "#ECFDF5";
-const VERDE_BORDE = "#A7F3D0";
-const VERDE_TEXTO = "#047857";
-
-const AMBAR = "#D97706";
-const AMBAR_SOFT = "#FFFBEB";
-const AMBAR_BORDE = "#FDE68A";
-const AMBAR_TEXTO = "#B45309";
 
 // Capacidad util de contenido por hoja, en pixeles de pantalla (96 ppp).
 // Una hoja carta mide 1056px de alto. Con los margenes de @page -14mm arriba
@@ -150,30 +136,31 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
 
   const numDoc = informe?.id ? String(informe.id).trim() : (informe?.numero ? String(informe.numero).trim() : "");
 
-  // --- RENDERIZADORES DE FRAGMENTOS VISUALES ESTILO MAC ---
+  // --- RENDERIZADORES DE FRAGMENTOS VISUALES EJECUTIVOS (GRAFITO + ROJO) ---
 
   const celdaControl = (etiqueta, valor, { ultima = false, destacado = false } = {}) => `
     <tr>
-      <td style="padding:4.5px 9px;font-size:8.5px;font-weight:700;color:${GRIS};text-transform:uppercase;letter-spacing:0.05em;${ultima ? "" : `border-bottom:1px solid ${LINEA_SUAVE};`}">${etiqueta}</td>
-      <td style="padding:4.5px 9px;font-size:9.5px;font-weight:700;color:${destacado ? MARCA_TEXTO : TINTA};text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;${ultima ? "" : `border-bottom:1px solid ${LINEA_SUAVE};`}">
-        ${destacado ? `<span style="background:${MARCA_SOFT};color:${MARCA_TEXTO};border:1px solid ${MARCA_BORDE};padding:1.5px 6px;border-radius:999px;font-size:9px;font-weight:800;">${valor}</span>` : valor}
+      <td style="padding:4.5px 9px;font-size:8.5px;font-weight:700;color:${GRIS_CLARO};text-transform:uppercase;letter-spacing:0.05em;${ultima ? "" : "border-bottom:1px solid rgba(255,255,255,0.12);"}">${etiqueta}</td>
+      <td style="padding:4.5px 9px;font-size:9.5px;font-weight:700;color:#ffffff;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;${ultima ? "" : "border-bottom:1px solid rgba(255,255,255,0.12);"}">
+        ${destacado ? `<span style="background:${MARCA};color:#ffffff;padding:1.5px 7px;border-radius:999px;font-size:9px;font-weight:800;">${valor}</span>` : valor}
       </td>
     </tr>`;
 
   const renderHeaderPortada = () => `
-    <div style="border:1px solid ${LINEA_SUAVE};border-radius:12px;overflow:hidden;margin-bottom:10px;background:#ffffff;">
-      <div style="height:3.5px;background:linear-gradient(90deg, ${MARCA} 0%, #F97316 48%, ${AZUL} 100%);"></div>
-      <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+    <div style="border:1px solid ${LINEA_SUAVE};border-radius:10px;overflow:hidden;margin-bottom:10px;background:#ffffff;">
+      <table style="width:100%;border-collapse:collapse;table-layout:fixed;background:${GRAFITO};">
         <tr>
-          <td style="width:27%;padding:9px 12px;border-right:1px solid ${LINEA_SUAVE};vertical-align:middle;text-align:center;background:#ffffff;">
-            ${LOGO_INGEANCLAJES ? `<img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes" style="height:44px;max-width:100%;object-fit:contain;display:inline-block;"/>` : `<div style="font-size:17px;font-weight:800;color:${TINTA};letter-spacing:-0.03em;"><span style="color:${MARCA};">INGE</span>ANCLAJES</div>`}
+          <td style="width:27%;padding:9px 12px;border-right:1px solid ${GRAFITO_BORDE};vertical-align:middle;text-align:center;">
+            ${LOGO_INGEANCLAJES
+              ? `<span style="display:inline-flex;align-items:center;justify-content:center;background:#ffffff;border-radius:7px;padding:5px 10px;"><img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes" style="height:36px;max-width:100%;object-fit:contain;display:block;"/></span>`
+              : `<div style="font-size:17px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;"><span style="color:${MARCA};">INGE</span>ANCLAJES</div>`}
           </td>
-          <td style="padding:9px 12px;vertical-align:middle;text-align:center;background:#ffffff;">
-            <span style="display:inline-block;background:${MARCA_SOFT};color:${MARCA_TEXTO};border:1px solid ${MARCA_BORDE};font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:2px 8px;border-radius:999px;">Sistema de gestión de calidad</span>
-            <div style="font-size:14px;font-weight:800;color:${TINTA};letter-spacing:-0.01em;text-transform:uppercase;margin-top:4px;line-height:1.2;">Informe técnico de actividades en obra</div>
-            <div style="font-size:8.5px;color:${GRIS};margin-top:3px;">Ingeanclajes S.A.S. · NIT 900.193.965-4 · PBX (604) 448 26 86</div>
+          <td style="padding:9px 12px;vertical-align:middle;text-align:center;">
+            <span style="display:inline-block;background:rgba(255,255,255,0.10);color:#E4E4E7;border:1px solid rgba(255,255,255,0.20);font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:2px 8px;border-radius:999px;">Sistema de gestión de calidad</span>
+            <div style="font-size:13.5px;font-weight:800;color:#ffffff;letter-spacing:-0.01em;text-transform:uppercase;margin-top:4px;line-height:1.2;">Informe técnico de actividades en obra</div>
+            <div style="font-size:8.5px;color:${GRIS_CLARO};margin-top:3px;">Ingeanclajes S.A.S. · NIT 900.193.965-4 · PBX (604) 448 26 86</div>
           </td>
-          <td style="width:25%;padding:0;border-left:1px solid ${LINEA_SUAVE};vertical-align:middle;background:${FONDO};">
+          <td style="width:25%;padding:0;border-left:1px solid ${GRAFITO_BORDE};vertical-align:middle;background:rgba(255,255,255,0.04);">
             <table style="width:100%;border-collapse:collapse;">
               ${celdaControl("Código", escapeHtml(docCodigo))}
               ${celdaControl("Versión", escapeHtml(docVersion))}
@@ -182,30 +169,33 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
           </td>
         </tr>
       </table>
+      <div style="height:2.5px;background:${MARCA};"></div>
     </div>
   `;
 
   const renderHeaderSecundario = () => `
-    <div style="height:2.5px;background:linear-gradient(90deg, ${MARCA} 0%, #F97316 50%, ${AZUL} 100%);border-radius:2px;margin-bottom:7px;"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid ${LINEA_SUAVE};padding-bottom:5px;margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:11px;font-weight:800;color:${TINTA};letter-spacing:-0.02em;"><span style="color:${MARCA};">INGE</span>ANCLAJES</span>
-        <span style="color:${LINEA};font-size:11px;">·</span>
-        <span style="font-size:9px;font-weight:700;color:${GRIS};text-transform:uppercase;letter-spacing:0.04em;">Informe de Actividades · ${escapeHtml(proyecto)}</span>
+    <div style="border-radius:7px;overflow:hidden;margin-bottom:10px;border:1px solid ${GRAFITO};">
+      <div style="display:flex;justify-content:space-between;align-items:center;background:${GRAFITO};padding:5px 10px;">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+          <span style="font-size:10.5px;font-weight:800;color:#ffffff;letter-spacing:-0.02em;white-space:nowrap;"><span style="color:${MARCA};">INGE</span>ANCLAJES</span>
+          <span style="color:${GRIS};font-size:10.5px;">·</span>
+          <span style="font-size:8.5px;font-weight:600;color:#D4D4D8;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Informe de Actividades · ${escapeHtml(proyecto)}</span>
+        </div>
+        <span style="background:${MARCA};color:#ffffff;padding:1.5px 7px;border-radius:999px;font-size:8.5px;font-variant-numeric:tabular-nums;font-weight:800;white-space:nowrap;">${escapeHtml(numDoc)}</span>
       </div>
-      <span style="background:${AZUL_SOFT};color:${AZUL_TEXTO};border:1px solid ${AZUL_BORDE};padding:1.5px 7px;border-radius:999px;font-size:9px;font-variant-numeric:tabular-nums;font-weight:700;">${escapeHtml(numDoc)}</span>
+      <div style="height:2px;background:${MARCA};"></div>
     </div>
   `;
 
   const hasFilaExtra = Boolean(cotizacionRef || coordinador?.nombre);
 
   const renderDatosProyecto = () => `
-    <div style="border:1px solid ${LINEA_SUAVE};border-left:3.5px solid ${AZUL};border-radius:10px;padding:8px 12px;margin-bottom:10px;background:${FONDO};">
+    <div style="border:1px solid ${LINEA_SUAVE};border-radius:9px;padding:8px 12px;margin-bottom:10px;background:${FONDO_SUAVE};">
       <table style="width:100%;border-collapse:collapse;font-size:9.5px;">
         <tr>
-          <td style="width:17%;font-weight:700;color:${AZUL_TEXTO};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;font-size:8.5px;">PROYECTO:</td>
+          <td style="width:17%;font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;font-size:8.5px;">PROYECTO:</td>
           <td style="width:39%;font-weight:700;color:${TINTA};font-size:10.5px;padding:3.5px 6px;">${escapeHtml(proyecto || "OBRA GENERAL")}</td>
-          <td style="width:17%;font-weight:700;color:${AZUL_TEXTO};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-left:1px solid ${LINEA_SUAVE};font-size:8.5px;">PERÍODO:</td>
+          <td style="width:17%;font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-left:1px solid ${LINEA_SUAVE};font-size:8.5px;">PERÍODO:</td>
           <td style="width:27%;color:${TINTA};font-weight:600;font-size:9.5px;padding:3.5px 6px;">${escapeHtml(periodo)}</td>
         </tr>
         <tr>
@@ -219,7 +209,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
           <td style="color:${TINTA};font-weight:600;font-size:9.5px;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};">${escapeHtml(localizacion || "MEDELLÍN")}</td>
           <td style="font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-left:1px solid ${LINEA_SUAVE};border-top:1px solid ${LINEA_SUAVE};font-size:8.5px;">NORMATIVA:</td>
           <td style="padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};">
-            <span style="background:${AZUL_SOFT};color:${AZUL_TEXTO};border:1px solid ${AZUL_BORDE};font-size:8.5px;font-weight:700;padding:1.5px 7px;border-radius:999px;display:inline-block;letter-spacing:0.02em;">Res. 4272/2021 · OSHA 1926</span>
+            <span style="background:#ffffff;color:${TINTA};border:1px solid ${LINEA};font-size:8.5px;font-weight:700;padding:1.5px 7px;border-radius:999px;display:inline-block;letter-spacing:0.02em;">Res. 4272/2021 · OSHA 1926</span>
           </td>
         </tr>
         ${hasFilaExtra ? `
@@ -227,13 +217,13 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
           ${cotizacionRef ? `
             <td style="font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};font-size:8.5px;">REF. COTIZACIÓN:</td>
             <td ${coordinador?.nombre ? "" : 'colspan="3"'} style="color:${TINTA};font-weight:700;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};font-variant-numeric:tabular-nums;">
-              <span style="background:#ffffff;color:${TINTA};padding:1.5px 7px;border-radius:999px;border:1px solid ${LINEA};font-size:8.5px;">📄 ${escapeHtml(cotizacionRef)}</span>
+              <span style="background:#ffffff;color:${TINTA};padding:1.5px 7px;border-radius:999px;border:1px solid ${LINEA};font-size:8.5px;">${escapeHtml(cotizacionRef)}</span>
             </td>
           ` : ""}
           ${coordinador?.nombre ? `
             <td style="font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;${cotizacionRef ? `border-left:1px solid ${LINEA_SUAVE};` : ""}border-top:1px solid ${LINEA_SUAVE};font-size:8.5px;">COORD. OBRA / SST:</td>
             <td ${cotizacionRef ? "" : 'colspan="3"'} style="padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};">
-              <span style="background:${VERDE_SOFT};color:${VERDE_TEXTO};border:1px solid ${VERDE_BORDE};font-size:8.5px;font-weight:700;padding:1.5px 7px;border-radius:999px;display:inline-block;">${escapeHtml(coordinador.nombre)}</span>
+              <span style="background:${GRAFITO};color:#ffffff;border:1px solid ${GRAFITO};font-size:8.5px;font-weight:700;padding:1.5px 8px;border-radius:999px;display:inline-block;">${escapeHtml(coordinador.nombre)}</span>
             </td>
           ` : ""}
         </tr>
@@ -245,10 +235,10 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
   const renderPersonalEnObra = () => `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
       <div style="display:flex;align-items:center;gap:6px;">
-        <span style="width:18px;height:18px;border-radius:6px;background:${AZUL};color:#ffffff;font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;">1</span>
+        <span style="width:18px;height:18px;border-radius:5px;background:${GRAFITO};color:#ffffff;font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;">1</span>
         <span style="font-size:10px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:${TINTA};">Personal Técnico Asignado en Sitio</span>
       </div>
-      <span style="font-size:8.5px;font-weight:600;color:${AZUL_TEXTO};background:${AZUL_SOFT};padding:1.5px 7px;border-radius:999px;">Personal certificado en alturas</span>
+      <span style="font-size:8.5px;font-weight:600;color:${GRIS};background:${FONDO};border:1px solid ${LINEA_SUAVE};padding:1.5px 7px;border-radius:999px;">Personal certificado en alturas</span>
     </div>
     <div style="display:grid;grid-template-columns:repeat(${Math.min(3, Math.max(1, personal.length))}, 1fr);gap:7px;margin-bottom:10px;">
       ${personal.length > 0 ? personal.map((p, idx) => {
@@ -258,12 +248,12 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
           (claveCoord && claveCoordinador(p.nombre) === claveCoord)
         );
         return `
-        <div style="border:1px solid ${esCoordCard ? AZUL_BORDE : LINEA_SUAVE};border-radius:8px;padding:5.5px 8px;background:${esCoordCard ? AZUL_SOFT : "#ffffff"};display:flex;align-items:center;gap:7px;">
-          <div style="width:21px;height:21px;background:${esCoordCard ? AZUL : FONDO};border-radius:6px;color:${esCoordCard ? "#ffffff" : AZUL_TEXTO};border:1px solid ${esCoordCard ? AZUL : LINEA_SUAVE};font-variant-numeric:tabular-nums;font-size:8.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <div style="border:1px solid ${esCoordCard ? GRIS_CLARO : LINEA_SUAVE};border-radius:8px;padding:5.5px 8px;background:${esCoordCard ? FONDO : "#ffffff"};display:flex;align-items:center;gap:7px;">
+          <div style="width:21px;height:21px;background:${esCoordCard ? GRAFITO : "#ffffff"};border-radius:5px;color:${esCoordCard ? "#ffffff" : GRIS};border:1px solid ${esCoordCard ? GRAFITO : LINEA_SUAVE};font-variant-numeric:tabular-nums;font-size:8.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             ${String(idx + 1).padStart(2, "0")}
           </div>
           <div style="min-width:0;flex:1;">
-            <div style="font-size:8px;font-weight:700;color:${esCoordCard ? AZUL_TEXTO : GRIS};text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(String(p.cargo || "TÉCNICO ESPECIALISTA").toUpperCase())}</div>
+            <div style="font-size:8px;font-weight:700;color:${esCoordCard ? TINTA : GRIS};text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(String(p.cargo || "TÉCNICO ESPECIALISTA").toUpperCase())}</div>
             <div style="font-size:9.5px;font-weight:700;color:${TINTA};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.nombre || "Sin nombre")}</div>
           </div>
         </div>
@@ -277,7 +267,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
   const renderBannerActividades = () => `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-top:2px;">
       <div style="display:flex;align-items:center;gap:6px;">
-        <span style="width:18px;height:18px;border-radius:6px;background:${MARCA};color:#ffffff;font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;">2</span>
+        <span style="width:18px;height:18px;border-radius:5px;background:${GRAFITO};color:#ffffff;font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;">2</span>
         <span style="font-size:10px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:${TINTA};">Metodología y Registro de Actividades Ejecutadas</span>
       </div>
       <span style="font-size:8.5px;font-weight:600;color:${GRIS};">Control y Trazabilidad Operativa</span>
@@ -285,10 +275,10 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
   `;
 
   const renderTablaActividad = (act, idx) => `
-    <div style="border:1px solid ${LINEA_SUAVE};border-left:3.5px solid ${AZUL};border-radius:10px;background:#ffffff;padding:9px 12px;margin-bottom:10px;">
+    <div style="border:1px solid ${LINEA_SUAVE};border-left:3.5px solid ${GRAFITO};border-radius:9px;background:#ffffff;padding:9px 12px;margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid ${LINEA_SUAVE};padding-bottom:6px;margin-bottom:7px;">
         <div style="display:flex;align-items:center;gap:7px;">
-          <span style="background:${AZUL};color:#ffffff;font-variant-numeric:tabular-nums;font-size:8.5px;font-weight:800;padding:2px 7px;border-radius:6px;letter-spacing:0.02em;">
+          <span style="background:${GRAFITO};color:#ffffff;font-variant-numeric:tabular-nums;font-size:8.5px;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:0.02em;">
             ACT-${String(idx + 1).padStart(2, "0")}
           </span>
           <span style="font-size:11px;font-weight:700;color:${TINTA};">
@@ -305,13 +295,13 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
       <div style="font-size:10.5px;color:${TINTA};line-height:1.48;text-align:justify;">
         ${(act.actividadesRealizadas || "").trim() ? `
           <div style="margin-bottom:5px;">
-            <strong style="color:${AZUL_TEXTO};text-transform:uppercase;font-size:8.5px;letter-spacing:0.05em;display:block;margin-bottom:1.5px;">Actividades Realizadas:</strong>
+            <strong style="color:${TINTA};text-transform:uppercase;font-size:8.5px;letter-spacing:0.05em;display:block;margin-bottom:1.5px;">Actividades Realizadas:</strong>
             ${escapeHtml(act.actividadesRealizadas)}
           </div>
         ` : ""}
         ${(act.descripcion || "").trim() ? `
           <div style="margin-bottom:4px;">
-            <strong style="color:${AZUL_TEXTO};text-transform:uppercase;font-size:8.5px;letter-spacing:0.05em;display:block;margin-bottom:1.5px;">Descripción Técnica:</strong>
+            <strong style="color:${TINTA};text-transform:uppercase;font-size:8.5px;letter-spacing:0.05em;display:block;margin-bottom:1.5px;">Descripción Técnica:</strong>
             ${escapeHtml(act.descripcion)}
           </div>
         ` : ""}
@@ -320,10 +310,10 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
       <table style="width:100%;border-collapse:collapse;margin-top:6px;border-top:1px solid ${LINEA_SUAVE};">
         <tr>
           <td style="padding:5.5px 10px 0 0;font-size:9px;color:${TINTA};vertical-align:top;line-height:1.45;">
-            <strong style="color:${VERDE};">✓ Conforme:</strong> ${(act.observaciones || "").trim() ? escapeHtml(act.observaciones) : "Ejecutado a conformidad sin novedades reportadas."}
+            <strong style="color:${TINTA};">✓ Conforme:</strong> ${(act.observaciones || "").trim() ? escapeHtml(act.observaciones) : "Ejecutado a conformidad sin novedades reportadas."}
           </td>
           <td style="padding:5.5px 0 0;width:1%;white-space:nowrap;vertical-align:top;text-align:right;">
-            <span style="display:inline-block;background:${VERDE_SOFT};border:1px solid ${VERDE_BORDE};border-radius:999px;padding:2px 8px;font-size:8px;font-weight:800;color:${VERDE_TEXTO};letter-spacing:0.03em;">
+            <span style="display:inline-block;background:${GRAFITO};border:1px solid ${GRAFITO};border-radius:999px;padding:2px 8px;font-size:8px;font-weight:800;color:#ffffff;letter-spacing:0.03em;">
               ESTADO: CONCLUIDO · 100%
             </span>
           </td>
@@ -334,7 +324,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
 
   const renderBannerFotos = (act, actIdx, continuacion, { oculto = false } = {}) => `
     <div${continuacion ? ' data-banner-cont="1"' : ""} style="display:${oculto ? "none" : "flex"};align-items:center;gap:7px;margin:-2px 0 6px;">
-      <span style="font-size:8.5px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:${AZUL_TEXTO};background:${AZUL_SOFT};border:1px solid ${AZUL_BORDE};padding:1.5px 8px;border-radius:999px;">
+      <span style="font-size:8.5px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#ffffff;background:${GRAFITO};border:1px solid ${GRAFITO};padding:1.5px 8px;border-radius:999px;">
         Evidencias fotográficas · ACT-${String(actIdx + 1).padStart(2, "0")}${continuacion ? " (cont.)" : ""}
       </span>
       <span style="flex:1;height:1px;background:${LINEA_SUAVE};"></span>
@@ -344,10 +334,10 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
   const renderFotoCard = (ft, actIdx, fotoIdx) => {
     const comentario = String(ft.comentario || "").trim();
     return `
-    <div class="foto-card" style="border:1px solid ${LINEA_SUAVE};border-radius:10px;overflow:hidden;background:#ffffff;display:flex;flex-direction:column;">
+    <div class="foto-card" style="border:1px solid ${LINEA_SUAVE};border-radius:9px;overflow:hidden;background:#ffffff;display:flex;flex-direction:column;">
       <div style="height:155px;display:flex;align-items:center;justify-content:center;background:${FONDO};border-bottom:1px solid ${LINEA_SUAVE};overflow:hidden;position:relative;">
         <img src="${ft.img || ft.url}" alt="Evidencia ${fotoIdx + 1}" style="width:100%;height:100%;object-fit:contain;object-position:center;display:block;background:${FONDO};"/>
-        ${comentario ? `<span style="position:absolute;top:6px;left:6px;background:rgba(15,23,42,0.82);color:#ffffff;font-size:8.5px;font-variant-numeric:tabular-nums;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:0.03em;">
+        ${comentario ? `<span style="position:absolute;top:6px;left:6px;background:rgba(24,24,27,0.84);color:#ffffff;font-size:8.5px;font-variant-numeric:tabular-nums;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:0.03em;">
           EVIDENCIA ${actIdx + 1}.${fotoIdx + 1}
         </span>` : ""}
       </div>
@@ -365,8 +355,8 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
   `;
 
   const renderTablaRecomendaciones = () => `
-    <div style="border:1px solid ${AMBAR_BORDE};border-left:3.5px solid ${AMBAR};border-radius:10px;overflow:hidden;margin-bottom:10px;background:${AMBAR_SOFT};padding:9px 12px;">
-      <div style="font-size:8.5px;font-weight:800;color:${AMBAR_TEXTO};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">DICTAMEN TÉCNICO Y RECOMENDACIONES</div>
+    <div style="border:1px solid ${LINEA};border-left:3.5px solid ${GRAFITO};border-radius:9px;overflow:hidden;margin-bottom:10px;background:${FONDO};padding:9px 12px;">
+      <div style="font-size:8.5px;font-weight:800;color:${TINTA};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">DICTAMEN TÉCNICO Y RECOMENDACIONES</div>
       <div style="font-size:10px;color:${TINTA};line-height:1.48;text-align:justify;white-space:pre-line;">${escapeHtml(recomendaciones)}</div>
     </div>
   `;
@@ -380,8 +370,8 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
 
     const cardContratista = `
       <td style="width:${anchoCol};padding:0 ${conCoord ? "5px" : "6px"} 0 0;vertical-align:stretch;">
-        <div style="border:1px solid ${LINEA_SUAVE};border-top:2.5px solid ${MARCA};border-radius:10px;padding:8px 10px;background:#ffffff;height:100%;box-sizing:border-box;">
-          <div style="font-size:8px;font-weight:800;color:${MARCA_TEXTO};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px;">Por el Contratista Especialista</div>
+        <div style="border:1px solid ${LINEA_SUAVE};border-top:2.5px solid ${MARCA};border-radius:9px;padding:8px 10px;background:#ffffff;height:100%;box-sizing:border-box;">
+          <div style="font-size:8px;font-weight:800;color:${TINTA};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px;">Por el Contratista Especialista</div>
           <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:4px;border-bottom:1px solid ${LINEA_SUAVE};padding-bottom:3px;">
             ${firmaImg ? `<img src="${firmaImg}" alt="Firma" style="max-height:40px;max-width:165px;object-fit:contain;"/>` : `<div style="font-family:'Segoe Script',cursive,sans-serif;font-size:13.5px;font-weight:700;color:${TINTA};">Jhon Jaime Sepúlveda L.</div>`}
           </div>
@@ -393,25 +383,25 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
 
     const cardCoordinador = conCoord ? `
       <td style="width:${anchoCol};padding:0 5px;vertical-align:stretch;">
-        <div style="border:1px solid ${AZUL_BORDE};border-top:2.5px solid ${AZUL};border-radius:10px;padding:8px 10px;background:${AZUL_SOFT};height:100%;box-sizing:border-box;">
-          <div style="font-size:8px;font-weight:800;color:${AZUL_TEXTO};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px;">Coordinador de Obra / SST</div>
-          <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:4px;border-bottom:1px solid ${AZUL_BORDE};padding-bottom:3px;font-size:8.5px;color:${GRIS};font-style:italic;">
+        <div style="border:1px solid ${LINEA};border-top:2.5px solid ${GRAFITO};border-radius:9px;padding:8px 10px;background:${FONDO_SUAVE};height:100%;box-sizing:border-box;">
+          <div style="font-size:8px;font-weight:800;color:${TINTA};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px;">Coordinador de Obra / SST</div>
+          <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:4px;border-bottom:1px solid ${LINEA};padding-bottom:3px;font-size:8.5px;color:${GRIS};font-style:italic;">
             ${firmaCoordImg
               ? `<img src="${firmaCoordImg}" alt="Firma del coordinador" style="max-height:40px;max-width:165px;object-fit:contain;display:inline-block;font-style:normal;"/>`
               : "(Firma del coordinador de obra / SST)"}
           </div>
           <div style="font-weight:800;font-size:9.5px;color:${TINTA};line-height:1.25;text-transform:uppercase;">${escapeHtml(coordinador.nombre)}</div>
           ${coordinador.cedula ? `<div style="font-size:8.5px;color:${TINTA};margin-top:2px;font-variant-numeric:tabular-nums;">C.C.: ${escapeHtml(coordinador.cedula)}</div>` : ""}
-          <div style="font-size:8.5px;color:${AZUL_TEXTO};font-weight:600;margin-top:1.5px;">${escapeHtml(coordinador.cargo || "COORDINADOR SST")}</div>
+          <div style="font-size:8.5px;color:${GRIS};font-weight:600;margin-top:1.5px;">${escapeHtml(coordinador.cargo || "COORDINADOR SST")}</div>
           <div style="font-size:8px;color:${GRIS};margin-top:1px;">Encargado del personal · Ingeanclajes S.A.S.</div>
         </div>
       </td>` : "";
 
     const cardCliente = `
       <td style="width:${anchoCol};padding:0 0 0 ${conCoord ? "5px" : "6px"};vertical-align:stretch;">
-        <div style="border:1px solid ${firmaClienteImg ? VERDE_BORDE : LINEA_SUAVE};border-top:2.5px solid ${firmaClienteImg ? VERDE : "#64748B"};border-radius:10px;padding:8px 10px;background:${firmaClienteImg ? VERDE_SOFT : "#ffffff"};height:100%;box-sizing:border-box;">
-          <div style="font-size:8px;font-weight:800;color:${firmaClienteImg ? VERDE_TEXTO : GRIS};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px;">Recibido Interventoría / Constructora</div>
-          <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:4px;border-bottom:1px solid ${firmaClienteImg ? VERDE_BORDE : LINEA_SUAVE};padding-bottom:3px;font-size:8.5px;color:${GRIS};font-style:italic;">
+        <div style="border:1px solid ${firmaClienteImg ? LINEA : LINEA_SUAVE};border-top:2.5px solid ${firmaClienteImg ? GRAFITO : GRIS};border-radius:9px;padding:8px 10px;background:#ffffff;height:100%;box-sizing:border-box;">
+          <div style="font-size:8px;font-weight:800;color:${TINTA};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px;">Recibido Interventoría / Constructora</div>
+          <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:4px;border-bottom:1px solid ${firmaClienteImg ? LINEA : LINEA_SUAVE};padding-bottom:3px;font-size:8.5px;color:${GRIS};font-style:italic;">
             ${firmaClienteImg
               ? `<img src="${firmaClienteImg}" alt="Firma del cliente" style="max-height:40px;max-width:165px;object-fit:contain;display:inline-block;font-style:normal;"/>`
               : "(Firma y sello de recepción a satisfacción)"}
@@ -420,7 +410,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
           <div style="font-size:8.5px;color:${GRIS};margin-top:2px;">C.C.: ${documentoFirmante ? escapeHtml(documentoFirmante) : rayaDoc}</div>
           <div style="font-size:8.5px;color:${GRIS};margin-top:2px;">CARGO: ${cargoFirmante ? escapeHtml(cargoFirmante) : rayaCargo}</div>
           <div style="font-size:8.5px;color:${GRIS};margin-top:1.5px;">EMPRESA: ${escapeHtml(cliente || "Constructora / Contratante")}</div>${fechaFirmaTexto ? `
-          <div style="font-size:7.5px;color:${VERDE_TEXTO};font-weight:600;margin-top:3px;">Firmado electrónicamente · ${escapeHtml(fechaFirmaTexto)}</div>` : ""}
+          <div style="font-size:7.5px;color:${TINTA};font-weight:600;margin-top:3px;">Firmado electrónicamente · ${escapeHtml(fechaFirmaTexto)}</div>` : ""}
         </div>
       </td>`;
 
@@ -537,7 +527,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
         </div>
         <div class="page-footer">
           <span><strong style="color:${TINTA};">Ingeanclajes S.A.S.</strong> · Documento Técnico Oficial SGC · ${escapeHtml(docCodigo)} (V-${escapeHtml(docVersion)})</span>
-          <span data-rol="numeracion" style="font-weight:700;color:${AZUL_TEXTO};">Página ${idx + 1} de ${totalHojas}</span>
+          <span data-rol="numeracion" style="font-weight:700;color:${TINTA};">Página ${idx + 1} de ${totalHojas}</span>
         </div>
       </div>
     </section>

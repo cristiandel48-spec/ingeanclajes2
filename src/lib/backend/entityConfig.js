@@ -934,6 +934,11 @@ export const entityConfig = {
         notas: item.tarea ?? item.notas ?? null,
         // Migracion 085. Sin ella aplicada se reintenta con toLegacyRow.
         cantidad: String(item.cantidad ?? "").trim() || null,
+        // Migracion 086. Solo viaja cuando se escribio un punto de encuentro
+        // distinto al de siempre (vacio = «Salida desde la oficina»): asi, con
+        // la 086 sin aplicar, el turno normal se sigue guardando con su
+        // cantidad en vez de caer a toLegacyRow y perderla.
+        ...(String(item.encuentro ?? "").trim() ? { encuentro: String(item.encuentro).trim() } : {}),
         creado_por: item.creadoPor ?? null,
         creado_por_nombre: item.creadoPorNombre ?? null,
         creado_en: item.creadoEn ?? null,
@@ -942,10 +947,12 @@ export const entityConfig = {
         modificado_en: item.modificadoEn ?? null,
       };
     },
-    // La misma fila sin `cantidad`, para bases donde aun no corre la 085.
+    // La misma fila sin `cantidad` ni `encuentro`, para bases donde aun no
+    // corren la 085 y la 086.
     toLegacyRow: (item) => {
       const fila = entityConfig.horarios.toRow(item);
       delete fila.cantidad;
+      delete fila.encuentro;
       return fila;
     },
     fromRow: (row) => ({
@@ -962,6 +969,7 @@ export const entityConfig = {
       turno: [row.hora_inicio, row.hora_fin].filter(Boolean).join(" - "),
       tarea: row.notas ?? "",
       cantidad: row.cantidad ?? "",
+      encuentro: row.encuentro ?? "",
       creadoPor: row.creado_por ?? null,
       creadoPorNombre: row.creado_por_nombre ?? "",
       creadoEn: row.creado_en ?? row.created_at ?? null,

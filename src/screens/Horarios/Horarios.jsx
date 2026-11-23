@@ -114,7 +114,12 @@ export default function Horarios({ctx}){
   };
 
   const [nuevoEmp,setNuevoEmp]=useState(false);
-  const [fechaF,setFechaF]=useState(today());
+  // La pantalla abre en el proximo dia de trabajo, no en hoy: aqui se arma la
+  // programacion de mañana (el sabado, la del lunes). Hoy queda a un toque.
+  const [fechaF,setFechaF]=useState(()=>{
+    const manana = sumarDias(today(),1);
+    return desdeIso(manana).getDay()===0 ? sumarDias(manana,1) : manana;
+  });
   const [showF,setShowF]=useState(false);
   // Arranca sin nadie marcado. Antes venia preseleccionado el primero de la
   // lista y era facil asignarle el turno a quien no era.
@@ -135,6 +140,9 @@ export default function Horarios({ctx}){
     // Cuantas lineas, anclajes o puntos se instalan. Sale en la columna
     // CANTIDADES de la planilla del dia.
     cantidad:"",
+    // Donde se encuentra la cuadrilla. Vacio = «Salida desde la oficina»,
+    // que es lo de siempre; se cambia cuando llegan directo a la obra.
+    encuentro:"",
   };
   const [formEscrito,setForm]=useState(FORM_VACIO);
   // Si a alguien lo dan de baja -o desaparece la obra- mientras el formulario
@@ -198,6 +206,7 @@ export default function Horarios({ctx}){
           turno: item.turno,
           tarea: item.tarea,
           cantidad: String(baseForm.cantidad||"").trim(),
+          encuentro: String(baseForm.encuentro||"").trim(),
         }))
       )
     );
@@ -385,7 +394,7 @@ export default function Horarios({ctx}){
     const origen=horarios.filter((h)=>h.fecha===diaAnteriorConTurnos);
     const nuevos=origen
       .filter((h)=>obras.some((o)=>o.id===h.obraId) && empleados.some((e)=>e.id===h.empleadoId))
-      .map((h)=>({empleadoId:h.empleadoId, obraId:h.obraId, fecha:fechaF, turno:h.turno, tarea:h.tarea, cantidad:h.cantidad||""}))
+      .map((h)=>({empleadoId:h.empleadoId, obraId:h.obraId, fecha:fechaF, turno:h.turno, tarea:h.tarea, cantidad:h.cantidad||"", encuentro:h.encuentro||""}))
       .filter((p)=>!horarios.some((h)=>
         h.empleadoId===p.empleadoId && h.obraId===p.obraId && h.fecha===p.fecha && h.turno===p.turno
       ));
@@ -576,6 +585,132 @@ export default function Horarios({ctx}){
     setCopiado(await copiarAlPortapapeles(mensaje));
   };
 
+  // ── Edicion directa en la planilla ──────────────────────────────────────
+  //
+  // La hoja «Actividades y clientes» se llena ahi mismo, como en Excel. Por
+  // debajo son los turnos de siempre: una fila es el grupo de turnos de una
+  // obra en el dia que se mira. No abre WhatsApp ni llena la lista de avisos:
+  // lo que sale de la hoja es la imagen para el grupo; el aviso persona por
+  // persona sigue en «Reenviar» y en el formulario.
+  const firmaDeAutor=()=>{
+    const autor = resolverAutorGuardado(ctx?.membresia) || "Camila Sepúlveda";
+    return {por: ctx?.membresia?.userId || null, nombre: autor, en: new Date().toISOString()};
+  };
+
+  const sumarTurnosDeLaPlanilla=(obraId, empleadoIds, plantilla)=>{
+    const candidatos = empleadoIds.flatMap((empleadoId)=>
+      plantilla.map((pl)=>({empleadoId, obraId, fecha:fechaF, ...pl}))
+    );
+    const nuevos = candidatos.filter((p)=>!horarios.some((h)=>
+      h.empleadoId===p.empleadoId && h.obraId===p.obraId && h.fecha===p.fecha && h.turno===p.turno
+    ));
+    if(!nuevos.length) return;
+    const f = firmaDeAutor();
+    setHorarios((p)=>[
+      ...p,
+      ...nuevos.map((item,idx)=>({
+        id:"H" + (Date.now()) + "p" + (idx),
+        ...item,
+        creadoPor:f.por, creadoPorNombre:f.nombre, creadoEn:f.en,
+        modificadoPor:f.por, modificadoPorNombre:f.nombre, modificadoEn:f.en,
+      })),
+    ]);
+    // Igual que con el formulario: quien entra a un turno queda en el equipo
+    // de la obra.
+    if(setObras){
+      setObras((prev)=>prev.map((o)=>{
+        if(o.id!==obraId) return o;
+        const actuales = Array.isArray(o.empleados) ? o.empleados : [];
+        const combinados = [...new Set([...actuales, ...empleadoIds])];
+        return combinados.length===actuales.length ? o : {...o, empleados:combinados};
+      }));
+    }
+  };
+
+  // Fila nueva: ya tiene cliente y al menos una persona.
+  const crearFilaPlanilla=(fila)=>{
+    sumarTurnosDeLaPlanilla(fila.obraId, fila.empleadoIds, [{
+      turno: armarTurno(fila.inicio || "07:00", "17:00"),
+      tarea: fila.tarea || "",
+      cantidad: fila.cantidad || "",
+      encuentro: fila.encuentro || "",
+    }]);
+  };
+
+  // Otra persona en una fila que ya existe: recibe los mismos turnos que el
+  // primero de la fila (hora, actividad, cantidad y punto de encuentro).
+  const agregarTrabajadoresPlanilla=(obraId, empleadoIds)=>{
+    const grupo = dia.filter((h)=>h.obraId===obraId);
+    if(!grupo.length) return;
+    const plantilla = grupo
+      .filter((h)=>h.empleadoId===grupo[0].empleadoId)
+      .map((h)=>({turno:h.turno, tarea:h.tarea||"", cantidad:h.cantidad||"", encuentro:h.encuentro||""}));
+    sumarTurnosDeLaPlanilla(obraId, empleadoIds, plantilla);
+  };
+
+  // Un dato de la fila (actividad, cantidad, punto de encuentro u hora de
+  // entrada) vale para todos sus turnos.
+  const editarFilaPlanilla=(obraId, cambios)=>{
+    const {inicio, ...resto} = cambios;
+    const f = firmaDeAutor();
+    setHorarios((p)=>p.map((h)=>{
+      if(h.obraId!==obraId || h.fecha!==fechaF) return h;
+      const siguiente = {...h, ...resto};
+      if(inicio){
+        const fin = String(h.turno||"").split("-")[1]?.trim() || "17:00";
+        siguiente.turno = armarTurno(inicio, fin);
+      }
+      return {...siguiente, modificadoPor:f.por, modificadoPorNombre:f.nombre, modificadoEn:f.en};
+    }));
+  };
+
+  const quitarTrabajadorPlanilla=(obraId, empleadoId)=>{
+    setHorarios((p)=>p.filter((h)=>!(h.obraId===obraId && h.fecha===fechaF && h.empleadoId===empleadoId)));
+  };
+
+  const quitarFilaPlanilla=async(obraId)=>{
+    const grupo = dia.filter((h)=>h.obraId===obraId);
+    if(!grupo.length) return;
+    const o = obras.find((x)=>x.id===obraId);
+    const personas = new Set(grupo.map((h)=>h.empleadoId)).size;
+    if(!(await confirmar(
+      `¿Quitar a ${normalizarMayusculas(o?.cliente || "esta obra")} de la planilla del ${fmtD(fechaF)}?\n\n` +
+      `Se borran los turnos de ${personas} persona${personas!==1?"s":""} en esa obra ese día.`
+    ))) return;
+    setHorarios((p)=>p.filter((h)=>!(h.obraId===obraId && h.fecha===fechaF)));
+  };
+
+  // Pasar una fila a otro dia: se armo en la hoja de hoy y era para mañana.
+  // Los turnos cambian de fecha y la hoja salta a ese dia para verla alla. Si
+  // en el destino alguien ya tenia ese mismo turno en esa obra, no se duplica.
+  const moverFilaPlanilla=(obraId, nuevaFecha)=>{
+    if(!nuevaFecha || nuevaFecha===fechaF) return;
+    const grupo = dia.filter((h)=>h.obraId===obraId);
+    if(!grupo.length) return;
+    const origen = fechaF;
+    const f = firmaDeAutor();
+    setHorarios((p)=>{
+      const yaAlla = p.filter((h)=>h.obraId===obraId && h.fecha===nuevaFecha);
+      return p.flatMap((h)=>{
+        if(h.obraId!==obraId || h.fecha!==origen) return [h];
+        if(yaAlla.some((x)=>x.empleadoId===h.empleadoId && x.turno===h.turno)) return [];
+        return [{...h, fecha:nuevaFecha, modificadoPor:f.por, modificadoPorNombre:f.nombre, modificadoEn:f.en}];
+      });
+    });
+    setFechaF(nuevaFecha);
+    const o = obras.find((x)=>x.id===obraId);
+    setNotif({ok:true, texto:`${normalizarMayusculas(o?.cliente || "La fila")} pasó del ${fmtD(origen)} al ${fmtL(nuevaFecha)}.`});
+    setTimeout(()=>setNotif(null),8000);
+  };
+
+  // Actividades usadas hace poco, para que salgan al escribir en la hoja.
+  const tareasRecientes = useMemo(()=>[...new Set(
+    [...horarios]
+      .filter((h)=>String(h.tarea||"").trim())
+      .sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)))
+      .map((h)=>String(h.tarea).trim())
+  )].slice(0,20), [horarios]);
+
   const reenviarDiaEmpleado=(h)=>{
     const relacionados = horarios.filter(x=>
       x.empleadoId===h.empleadoId &&
@@ -716,10 +851,21 @@ export default function Horarios({ctx}){
           tenga o no turnos el dia: es la programacion que se manda al grupo. */}
       <div style={SEPARA}>
         <PlanillaDia
+          // Sin `key`: la fila que se este empezando sobrevive al cambio de
+          // dia. Lo normal es elegir el cliente y despues caer en cuenta de
+          // que la hoja es la de mañana.
           fecha={fechaF}
+          onCambiarFecha={setFechaF}
+          onMoverFila={moverFilaPlanilla}
           dia={dia}
           obras={obras}
           empleados={empleados}
+          tareasSugeridas={tareasRecientes}
+          onCrearFila={crearFilaPlanilla}
+          onEditarFila={editarFilaPlanilla}
+          onAgregarTrabajadores={agregarTrabajadoresPlanilla}
+          onQuitarTrabajador={quitarTrabajadorPlanilla}
+          onQuitarFila={quitarFilaPlanilla}
           accionVacia={!showF && (
             <div style={{display:"flex",gap:ESPACIO.sm,flexWrap:"wrap",justifyContent:"center"}}>
               {diaAnteriorConTurnos && (
@@ -775,6 +921,19 @@ export default function Horarios({ctx}){
               maxLength={40}
               ayuda="Sale en la planilla del día"
             />
+            <Input
+              label="Punto de encuentro (opcional)"
+              value={form.encuentro}
+              onChange={e=>setForm({...form,encuentro:e.target.value})}
+              list="horarios-puntos-encuentro"
+              placeholder="Salida desde la oficina"
+              maxLength={60}
+              ayuda="Vacío = Salida desde la oficina. Cámbialo si llegan directo a la obra."
+            />
+            <datalist id="horarios-puntos-encuentro">
+              <option value="Salida desde la oficina"/>
+              <option value="Llegada a la obra"/>
+            </datalist>
           </div>
           {fechasForm.length>1 && (
             <label style={{display:"inline-flex",alignItems:"center",gap:8,...TIPO.footnote,fontWeight:400,color:"var(--text-secondary)",marginBottom:ESPACIO.md,cursor:"pointer"}}>

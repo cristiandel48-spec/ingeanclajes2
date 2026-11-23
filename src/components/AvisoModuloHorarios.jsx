@@ -65,7 +65,7 @@ const PASOS = [
     titulo: () => "Pruébalo en tu próxima programación del día",
     lista: [
       ["1", "Entra a Horarios", "desde el menú izquierdo (el ícono del reloj) o tocando el botón de abajo."],
-      ["2", "Elige cliente y trabajadores", "en la planilla «Actividades y clientes»: cada cambio se guarda automáticamente."],
+      ["2", "Elige la obra y los trabajadores", "en la planilla «Actividades y clientes»: cada cambio se guarda automáticamente."],
       ["3", "Envía la imagen al grupo", "desde «Imagen del horario del día» con un solo toque en «Enviar por WhatsApp»."],
     ],
     nota: "Úsalo desde hoy: entre más programemos la operación aquí, menos tiempo perdemos pasando datos a mano entre Excel, obras e informes.",

@@ -2,6 +2,7 @@ import Av from "../../components/ui/Av";
 import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
 import SelectorEmpleados from "../../components/SelectorEmpleados";
 import PlanillaDia, { VistaPreviaImagenDia } from "./PlanillaDia";
+import HistorialPersonal from "./HistorialPersonal";
 import {
   Button, Card, Callout, Icono, Input, Lista, ListRow, Sheet,
 } from "../../components/ui";
@@ -113,6 +114,7 @@ export default function Horarios({ctx}){
   };
 
   const [nuevoEmp,setNuevoEmp]=useState(false);
+  const [verHistorial,setVerHistorial]=useState(false);
   // La pantalla abre en el proximo dia de trabajo, no en hoy: aqui se arma la
   // programacion de mañana (el sabado, la del lunes). Hoy queda a un toque.
   const [fechaF,setFechaF]=useState(()=>{
@@ -176,6 +178,28 @@ export default function Horarios({ctx}){
   }, [obraSel, horarios]);
   const seleccionados=empleados.filter(e=>form.empleadoIds.includes(e.id));
 
+  // La direccion escrita a mano en la planilla (migracion 087). La de la obra
+  // viene de la cotizacion y muchas veces no es la del sitio; la corregida se
+  // guarda en el turno, sin tocar la obra.
+  //
+  // Para una obra en un dia: la que ya tengan sus turnos de ese dia y, si
+  // todavia no hay, la del ultimo dia que se programo. Asi la correccion se
+  // hace una vez y sigue saliendo los dias siguientes. Vacio = la de la obra.
+  const direccionVigente=(obraId, fecha)=>{
+    const delDia = horarios.find((h)=>h.obraId===obraId && h.fecha===fecha);
+    if(delDia) return String(delDia.direccion||"").trim();
+    const ultimo = horarios
+      .filter((h)=>h.obraId===obraId)
+      .sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)))[0];
+    return String(ultimo?.direccion||"").trim();
+  };
+
+  // El lugar que se le dice a la gente: la direccion corregida si la hay.
+  const lugarDe=(o, turnos)=>{
+    const manual = (turnos||[]).map((t)=>String(t?.direccion||"").trim()).find(Boolean);
+    return manual || o?.direccion || o?.ciudad || "";
+  };
+
   const armarTurno=(inicio,fin)=>{
     if(!inicio || !fin) return "";
     return (inicio) + " - " + (fin);
@@ -206,6 +230,7 @@ export default function Horarios({ctx}){
           tarea: item.tarea,
           cantidad: String(baseForm.cantidad||"").trim(),
           encuentro: String(baseForm.encuentro||"").trim(),
+          direccion: direccionVigente(baseForm.obraId, fecha),
         }))
       )
     );
@@ -225,7 +250,7 @@ export default function Horarios({ctx}){
       if(fechas.every((fecha)=>firmaDe(fecha)===firmaDe(fechas[0]))){
         const diasTexto=fechas.map((fecha)=>fmtD(fecha)||fecha).join(", ");
         return [
-          "Hola " + (e.nombre) + ", has sido asignado a la obra *" + (normalizarMayusculas(o.proyecto)) + "* del cliente *" + (normalizarMayusculas(o.cliente)) + "* en *" + (o.direccion||o.ciudad) + "* estos " + fechas.length + " días:",
+          "Hola " + (e.nombre) + ", has sido asignado a la obra *" + (normalizarMayusculas(o.proyecto)) + "* del cliente *" + (normalizarMayusculas(o.cliente)) + "* en *" + lugarDe(o,turnos) + "* estos " + fechas.length + " días:",
           "*" + diasTexto + "*",
           "",
           "Turnos asignados (cada día):",
@@ -240,7 +265,7 @@ export default function Horarios({ctx}){
         ...turnos.filter((t)=>(t.fecha||f)===fecha).map(lineaTurno),
       ].join("\n"));
       return [
-        "Hola " + (e.nombre) + ", has sido asignado a la obra *" + (normalizarMayusculas(o.proyecto)) + "* del cliente *" + (normalizarMayusculas(o.cliente)) + "* en *" + (o.direccion||o.ciudad) + "* estos " + fechas.length + " días:",
+        "Hola " + (e.nombre) + ", has sido asignado a la obra *" + (normalizarMayusculas(o.proyecto)) + "* del cliente *" + (normalizarMayusculas(o.cliente)) + "* en *" + lugarDe(o,turnos) + "* estos " + fechas.length + " días:",
         "",
         porDia.join("\n\n"),
         "",
@@ -254,7 +279,7 @@ export default function Horarios({ctx}){
     // WhatsApp los mostraba tal cual: el mensaje llegaba como un bloque con
     // las barras a la vista.
     return [
-      "Hola " + (e.nombre) + ", has sido asignado a la obra *" + (normalizarMayusculas(o.proyecto)) + "* del cliente *" + (normalizarMayusculas(o.cliente)) + "* para el día *" + (fechaMsg) + "* en *" + (o.direccion||o.ciudad) + "*.",
+      "Hola " + (e.nombre) + ", has sido asignado a la obra *" + (normalizarMayusculas(o.proyecto)) + "* del cliente *" + (normalizarMayusculas(o.cliente)) + "* para el día *" + (fechaMsg) + "* en *" + lugarDe(o,turnos) + "*.",
       "",
       "Turnos asignados:",
       detalle,
@@ -395,7 +420,7 @@ export default function Horarios({ctx}){
     const origen=horarios.filter((h)=>h.fecha===diaAnteriorConTurnos);
     const nuevos=origen
       .filter((h)=>obras.some((o)=>o.id===h.obraId) && empleados.some((e)=>e.id===h.empleadoId))
-      .map((h)=>({empleadoId:h.empleadoId, obraId:h.obraId, fecha:fechaF, turno:h.turno, tarea:h.tarea, cantidad:h.cantidad||"", encuentro:h.encuentro||""}))
+      .map((h)=>({empleadoId:h.empleadoId, obraId:h.obraId, fecha:fechaF, turno:h.turno, tarea:h.tarea, cantidad:h.cantidad||"", encuentro:h.encuentro||"", direccion:h.direccion||""}))
       .filter((p)=>!horarios.some((h)=>
         h.empleadoId===p.empleadoId && h.obraId===p.obraId && h.fecha===p.fecha && h.turno===p.turno
       ));
@@ -477,7 +502,8 @@ export default function Horarios({ctx}){
     // direccion: se leia como una sola linea de texto.
     const bloques=[...porObra.entries()].map(([obraId,turnos])=>{
       const o=obras.find(x=>x.id===obraId);
-      const lugar=[o?.direccion,o?.ciudad].filter(Boolean).join(", ");
+      const corregida=turnos.map((h)=>String(h.direccion||"").trim()).find(Boolean);
+      const lugar=corregida || [o?.direccion,o?.ciudad].filter(Boolean).join(", ");
       const lineas=turnos.map((h)=>{
         const e=empleados.find(x=>x.id===h.empleadoId);
         return `• ${e?.nombre||"—"} · ${fmtTurno12Local(h.turno)} · ${h.tarea}`;
@@ -637,6 +663,7 @@ export default function Horarios({ctx}){
       tarea: fila.tarea || "",
       cantidad: fila.cantidad || "",
       encuentro: fila.encuentro || "",
+      direccion: fila.direccion || "",
     }]);
   };
 
@@ -647,7 +674,7 @@ export default function Horarios({ctx}){
     if(!grupo.length) return;
     const plantilla = grupo
       .filter((h)=>h.empleadoId===grupo[0].empleadoId)
-      .map((h)=>({turno:h.turno, tarea:h.tarea||"", cantidad:h.cantidad||"", encuentro:h.encuentro||""}));
+      .map((h)=>({turno:h.turno, tarea:h.tarea||"", cantidad:h.cantidad||"", encuentro:h.encuentro||"", direccion:h.direccion||""}));
     sumarTurnosDeLaPlanilla(obraId, empleadoIds, plantilla);
   };
 
@@ -800,6 +827,7 @@ export default function Horarios({ctx}){
           fecha={fechaF}
           onCambiarFecha={setFechaF}
           onMoverFila={moverFilaPlanilla}
+          direccionSugerida={(obraId)=>direccionVigente(obraId, fechaF)}
           onAbrirTextoGrupo={abrirHorarioDelDia}
           accionesCabecera={
             <>
@@ -824,6 +852,17 @@ export default function Horarios({ctx}){
                   <span>Copiar del {fmtD(diaAnteriorConTurnos)}</span>
                 </button>
               )}
+              {/* Donde estuvo cada persona y que obras hubo cada dia, con
+                  descarga en Excel y PDF. */}
+              <button
+                type="button"
+                className="ui-hor-btn ui-hor-btn--ghost"
+                onClick={() => setVerHistorial(true)}
+                title="Consulta dónde estuvo cada persona (por ejemplo el mes pasado) y descárgalo en Excel o PDF"
+              >
+                <Icono nombre="reloj" size={14} />
+                <span>Historial</span>
+              </button>
               <button
                 type="button"
                 className={`ui-hor-btn ${showF || avisarEsLoSiguiente ? "ui-hor-btn--secondary" : "ui-hor-btn--primary"}`}
@@ -845,6 +884,14 @@ export default function Horarios({ctx}){
           onQuitarFila={quitarFilaPlanilla}
         />
       </div>
+      {verHistorial && (
+        <HistorialPersonal
+          horarios={horarios}
+          obras={obras}
+          empleados={empleados}
+          onCerrar={() => setVerHistorial(false)}
+        />
+      )}
       {showF&&(
         <Card ajustado style={{...SEPARA,scrollMarginTop:16}} ref={formRef}>
           <CabeceraCard
@@ -1009,7 +1056,7 @@ export default function Horarios({ctx}){
                 borderRadius:10,padding:"12px 14px",
               }}>
                 <div>Hola <strong>{seleccionados[0].nombre}</strong>, has sido asignado a la obra <strong>{obraSel.proyecto}</strong> del cliente <strong>{obraSel.cliente}</strong>.</div>
-                <div>Lugar: <strong>{obraSel.direccion||obraSel.ciudad}, {obraSel.ciudad}</strong></div>
+                <div>Lugar: <strong>{direccionVigente(obraSel.id, form.fecha) || `${obraSel.direccion||obraSel.ciudad}, ${obraSel.ciudad}`}</strong></div>
                 <div>
                   {fechasForm.length>1
                     ? <>Días: <strong>{fmtD(fechasForm[0])} al {fmtD(fechasForm[fechasForm.length-1])}</strong> ({fechasForm.length} días{form.incluirDomingos?"":", sin domingos"})</>

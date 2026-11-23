@@ -53,6 +53,34 @@ const etiquetaTrabajador = (e) => {
 };
 
 const direccionDe = (o) => [limpio(o?.direccion), limpio(o?.ciudad)].filter(Boolean).join(", ");
+// Dejar escrita la misma direccion de la obra no es una correccion: se guarda
+// vacio, para que la fila siga a la obra si alguien la arregla alla.
+const mismaDireccion = (a, b) =>
+  limpio(a).toLowerCase().replace(/\s+/g, " ") === limpio(b).toLowerCase().replace(/\s+/g, " ");
+
+// Las obras para elegir, agrupadas por cliente. Un cliente puede tener varias
+// obras, y los trabajadores de la fila viajan a la obra elegida en «Ejecucion
+// de obra»: por eso se elige la obra, con su codigo, y no solo el cliente.
+const nombreDeObra = (o) => {
+  const cliente = limpio(o?.cliente);
+  const proyecto = limpio(o?.proyecto);
+  return proyecto && proyecto.toLowerCase() !== cliente.toLowerCase() ? proyecto : "";
+};
+const etiquetaDeObra = (o) =>
+  [limpio(o?.id), nombreDeObra(o) || limpio(o?.cliente), limpio(o?.ciudad)].filter(Boolean).join(" · ");
+function OpcionesDeObra({ obras }) {
+  const porCliente = new Map();
+  for (const o of obras) {
+    const cliente = limpio(o.cliente) || "Sin cliente";
+    if (!porCliente.has(cliente)) porCliente.set(cliente, []);
+    porCliente.get(cliente).push(o);
+  }
+  return [...porCliente.entries()].map(([cliente, lista]) => (
+    <optgroup key={cliente} label={cliente}>
+      {lista.map((o) => <option key={o.id} value={o.id}>{etiquetaDeObra(o)}</option>)}
+    </optgroup>
+  ));
+}
 
 const ESTILOS_PLANILLA = `
   .hor-shell {
@@ -424,6 +452,34 @@ const ESTILOS_PLANILLA = `
     font-size: 13px;
     color: #475467;
   }
+  /* Codigo de la obra bajo el cliente: dice a cual obra viajan los
+     trabajadores cuando el cliente tiene varias. Solo en pantalla. */
+  .hor-obra-codigo {
+    display: inline-block;
+    margin-top: 5px;
+    padding: 1px 7px;
+    border-radius: 6px;
+    background: #eef2ff;
+    color: #2a3b8f;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .ui-hor-enlace {
+    display: block;
+    margin-top: 6px;
+    padding: 2px 0;
+    border: none;
+    background: transparent;
+    color: #2a3b8f;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+  }
+  .ui-hor-enlace:hover, .ui-hor-enlace:focus-visible { text-decoration: underline; }
   .hor-cifra {
     display: inline-block;
     font-size: 18px;
@@ -795,6 +851,10 @@ function filasDeLaPlanilla(dia, obras, empleados) {
     const tareas = distintos(turnos.map((t) => limpio(t.tarea)));
     const cantidades = distintos(turnos.map((t) => limpio(t.cantidad)));
     const encuentros = distintos(turnos.map((t) => limpio(t.encuentro)));
+    // La direccion escrita a mano en el turno manda sobre la de la obra, que
+    // viene de la cotizacion y muchas veces no es la del sitio.
+    const direcciones = distintos(turnos.map((t) => limpio(t.direccion)));
+    const direccionBase = direccionDe(o);
     const horas = distintos(turnos.map((t) => limpio(t.turno)));
     const inicios = horas.map(inicioDelTurno).filter(Boolean).sort();
     const cliente = limpio(o?.cliente) || "Sin obra";
@@ -804,7 +864,11 @@ function filasDeLaPlanilla(dia, obras, empleados) {
       cliente,
       proyecto: proyecto && proyecto.toLowerCase() !== cliente.toLowerCase() ? proyecto : "",
       trabajadores,
-      direccion: direccionDe(o),
+      direccionBase,
+      // Nulo = cambia entre los turnos de la fila: se muestra, no se edita.
+      direccion: direcciones.length === 1 ? (direcciones[0] || direccionBase) : null,
+      direccionTexto: distintos(direcciones.map((x) => x || direccionBase)).filter(Boolean).join(" / "),
+      direccionManual: direcciones.some(Boolean),
       tarea: tareas.length === 1 ? tareas[0] : null,
       tareaTexto: tareas.filter(Boolean).join(" / "),
       cantidad: cantidades.length === 1 ? cantidades[0] : null,
@@ -1032,7 +1096,9 @@ const puedeCompartirArchivos = () => {
   }
 };
 
-const FILA_NUEVA = { obraId: "", empleadoIds: [], tarea: "", cantidad: "", encuentro: "", inicio: INICIO_POR_DEFECTO };
+const FILA_NUEVA = {
+  obraId: "", empleadoIds: [], tarea: "", cantidad: "", encuentro: "", direccion: "", inicio: INICIO_POR_DEFECTO,
+};
 
 const normalizarEncuentro = (texto) =>
   limpio(texto).toLowerCase() === ENCUENTRO_POR_DEFECTO.toLowerCase() ? "" : limpio(texto);
@@ -1041,6 +1107,7 @@ export default function PlanillaDia({
   fecha, dia, obras, empleados, tareasSugeridas = [],
   onCrearFila, onEditarFila, onAgregarTrabajadores, onQuitarTrabajador, onQuitarFila,
   onCambiarFecha, onMoverFila, onAbrirTextoGrupo, accionesCabecera = null,
+  direccionSugerida,
 }) {
   const isMobile = useIsMobile();
   const [vistaMovil, setVistaMovil] = useState("tarjetas");
@@ -1079,6 +1146,11 @@ export default function PlanillaDia({
 
   const cambiarNueva = (cambios) => {
     const siguiente = { ...nueva, ...cambios };
+    // Al elegir la obra, la fila arranca con la direccion que se le corrigio
+    // la ultima vez: no hay que volver a escribirla cada dia.
+    if (cambios.obraId && !siguiente.direccion && direccionSugerida) {
+      siguiente.direccion = direccionSugerida(cambios.obraId) || "";
+    }
     if (siguiente.obraId && siguiente.empleadoIds.length) {
       onCrearFila(siguiente);
       setNueva(FILA_NUEVA);
@@ -1089,8 +1161,16 @@ export default function PlanillaDia({
   const obraNueva = obras.find((o) => o.id === nueva.obraId);
   const obrasLibres = obrasMasNuevasPrimero(obras).filter((o) => !filas.some((f) => f.obraId === o.id));
   const nuevaEmpezada = Boolean(
-    nueva.obraId || nueva.empleadoIds.length || nueva.tarea || nueva.cantidad || nueva.encuentro
+    nueva.obraId || nueva.empleadoIds.length || nueva.tarea || nueva.cantidad || nueva.encuentro || nueva.direccion
   );
+  // La direccion de la fila nueva: la corregida o, si no, la de la obra.
+  const direccionNueva = nueva.direccion || direccionDe(obraNueva);
+  const guardarDireccionNueva = (v) => cambiarNueva({
+    direccion: mismaDireccion(v, direccionDe(obraNueva)) ? "" : v,
+  });
+  const guardarDireccionFila = (f, v) => onEditarFila(f.obraId, {
+    direccion: mismaDireccion(v, f.direccionBase) ? "" : v,
+  });
 
   // ── Exportacion como imagen PNG para WhatsApp ────────────────────────────
   const avisoTimer = useRef(null);
@@ -1333,6 +1413,14 @@ export default function PlanillaDia({
                 <td>
                   <span className="hor-cliente">{f.cliente}</span>
                   {f.proyecto && <span className="hor-proyecto">{f.proyecto}</span>}
+                  {/* El codigo de la obra: con varias obras del mismo cliente,
+                      es lo que dice a cual viajan los trabajadores. Solo en
+                      pantalla; en la imagen no hace falta. */}
+                  {permiteEditar && (
+                    <span className="hor-obra-codigo" data-html2canvas-ignore="true" title="Obra a la que viajan estos trabajadores">
+                      {f.obraId}
+                    </span>
+                  )}
                   {permiteEditar && (
                     <button
                       type="button"
@@ -1408,7 +1496,33 @@ export default function PlanillaDia({
                   </div>
                 </td>
                 <td>
-                  <span className="hor-direccion">{f.direccion || <span className="hor-vacio">—</span>}</span>
+                  {permiteEditar ? (
+                    <>
+                      <CeldaTexto
+                        etiqueta="Dirección"
+                        valor={f.direccion}
+                        mostrar={f.direccionTexto}
+                        placeholder="Escribir dirección"
+                        maxLength={200}
+                        claseTexto="hor-direccion"
+                        onGuardar={(v) => guardarDireccionFila(f, v)}
+                      />
+                      {/* Corregida a mano: un toque la devuelve a la de la obra. */}
+                      {f.direccionManual && f.direccionBase && (
+                        <button
+                          type="button"
+                          className="ui-hor-enlace"
+                          data-html2canvas-ignore="true"
+                          title={`Vuelve a la dirección de la obra: ${f.direccionBase}`}
+                          onClick={() => onEditarFila(f.obraId, { direccion: "" })}
+                        >
+                          Usar la de la obra
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <span className="hor-direccion">{f.direccionTexto || <span className="hor-vacio">—</span>}</span>
+                  )}
                 </td>
                 <td className="hor-col-centro">
                   <div className="hor-fecha-bloque">
@@ -1462,28 +1576,24 @@ export default function PlanillaDia({
                   {obraNueva ? (
                     <>
                       <span className="hor-cliente">{limpio(obraNueva.cliente) || obraNueva.id}</span>
-                      {obraNueva.proyecto && obraNueva.proyecto !== obraNueva.cliente && (
-                        <span className="hor-proyecto">{limpio(obraNueva.proyecto)}</span>
+                      {nombreDeObra(obraNueva) && (
+                        <span className="hor-proyecto">{nombreDeObra(obraNueva)}</span>
                       )}
+                      <span className="hor-obra-codigo">{obraNueva.id}</span>
                     </>
                   ) : obrasLibres.length ? (
                     <span className="ui-hor-picker ui-hor-picker--select">
                       <Icono nombre="mas" size={13} />
-                      <span>Agregar cliente</span>
+                      <span>Agregar obra</span>
                       <Icono nombre="flechaAbajo" size={12} style={{ opacity: 0.6 }} />
                       <select
                         className="hor-native-overlay"
-                        aria-label="Agregar cliente a la planilla"
+                        aria-label="Agregar obra a la planilla"
                         value=""
                         onChange={(e) => e.target.value && cambiarNueva({ obraId: e.target.value })}
                       >
-                        <option value="">＋ Agregar cliente</option>
-                        {obrasLibres.map((o) => (
-                          <option key={o.id} value={o.id}>
-                            {limpio(o.cliente) || o.id}
-                            {o.proyecto && o.proyecto !== o.cliente ? ` · ${o.proyecto}` : ""}
-                          </option>
-                        ))}
+                        <option value="">＋ Agregar obra</option>
+                        <OpcionesDeObra obras={obrasLibres} />
                       </select>
                     </span>
                   ) : (
@@ -1553,15 +1663,22 @@ export default function PlanillaDia({
                     <span className="hor-pista">Agrega un trabajador para guardar</span>
                   )}
                   {!nueva.obraId && nueva.empleadoIds.length > 0 && (
-                    <span className="hor-pista">Elige el cliente para guardar</span>
+                    <span className="hor-pista">Elige la obra para guardar</span>
                   )}
                 </td>
                 <td>
                   {obraNueva ? (
-                    <span className="hor-direccion">{direccionDe(obraNueva) || "—"}</span>
+                    <CeldaTexto
+                      etiqueta="Dirección"
+                      valor={direccionNueva}
+                      placeholder="Escribir dirección"
+                      maxLength={200}
+                      claseTexto="hor-direccion"
+                      onGuardar={guardarDireccionNueva}
+                    />
                   ) : (
                     <span className="hor-pista hor-pista--suave" style={{ marginTop: 0 }}>
-                      Se completa al elegir cliente
+                      Sale al elegir la obra; se puede corregir
                     </span>
                   )}
                 </td>
@@ -1626,12 +1743,7 @@ export default function PlanillaDia({
             <div style={{ minWidth: 0, flex: 1 }}>
               <span className="hor-cliente" style={{ fontSize: 15.5 }}>{f.cliente}</span>
               {f.proyecto && <span className="hor-proyecto">{f.proyecto}</span>}
-              {f.direccion && (
-                <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, color: "var(--text-tertiary)", fontSize: 12.5 }}>
-                  <Icono nombre="ubicacion" size={13} />
-                  <span>{f.direccion}</span>
-                </div>
-              )}
+              <span className="hor-obra-codigo" title="Obra a la que viajan estos trabajadores">{f.obraId}</span>
             </div>
             {editable && (
               <Button
@@ -1713,6 +1825,35 @@ export default function PlanillaDia({
             )}
           </div>
 
+          {/* La direccion sale de la obra y se corrige aqui cuando la de la
+              cotizacion no es la del sitio. */}
+          <div>
+            <div className="hor-card__label">Dirección</div>
+            {f.direccion === null || !editable ? (
+              <div style={{ fontSize: 14, color: "var(--text-primary)", padding: "8px 0" }} title={f.direccion === null ? VARIA : undefined}>
+                {f.direccionTexto || "—"}
+              </div>
+            ) : (
+              <CampoTarjeta
+                etiqueta="Dirección"
+                valor={f.direccion}
+                placeholder="Escribir dirección"
+                maxLength={200}
+                onGuardar={(v) => guardarDireccionFila(f, v)}
+              />
+            )}
+            {editable && f.direccionManual && f.direccionBase && (
+              <Button
+                variante="texto"
+                tam="sm"
+                title={`Vuelve a la dirección de la obra: ${f.direccionBase}`}
+                onClick={() => onEditarFila(f.obraId, { direccion: "" })}
+              >
+                Usar la de la obra
+              </Button>
+            )}
+          </div>
+
           <div className="hor-card__panel">
             <div className="hor-card__label" style={{ marginBottom: 0 }}>Punto de encuentro</div>
             {f.encuentro === null ? (
@@ -1761,7 +1902,7 @@ export default function PlanillaDia({
                 + Nueva fila en la planilla
               </div>
               <div style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}>
-                Elige cliente y trabajador; se guarda sola.
+                Elige la obra y un trabajador; se guarda sola.
               </div>
             </div>
             {nuevaEmpezada && (
@@ -1772,17 +1913,15 @@ export default function PlanillaDia({
           </div>
 
           <div>
-            <div className="hor-card__label">Cliente / obra</div>
+            <div className="hor-card__label">Obra</div>
             {obraNueva ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "10px 12px", borderRadius: 12, background: "var(--fill)" }}>
                 <div style={{ minWidth: 0 }}>
                   <span className="hor-cliente">{limpio(obraNueva.cliente) || obraNueva.id}</span>
-                  {obraNueva.proyecto && obraNueva.proyecto !== obraNueva.cliente && (
-                    <span className="hor-proyecto">{limpio(obraNueva.proyecto)}</span>
+                  {nombreDeObra(obraNueva) && (
+                    <span className="hor-proyecto">{nombreDeObra(obraNueva)}</span>
                   )}
-                  {direccionDe(obraNueva) && (
-                    <span className="hor-proyecto">{direccionDe(obraNueva)}</span>
-                  )}
+                  <span className="hor-obra-codigo">{obraNueva.id}</span>
                 </div>
                 <Button variante="texto" tam="sm" onClick={() => setNueva((prev) => ({ ...prev, obraId: "" }))}>
                   Cambiar
@@ -1791,21 +1930,16 @@ export default function PlanillaDia({
             ) : obrasLibres.length ? (
               <span className="ui-hor-picker ui-hor-picker--select ui-hor-picker--bloque">
                 <Icono nombre="mas" size={14} />
-                <span>Agregar cliente</span>
+                <span>Agregar obra</span>
                 <Icono nombre="flechaAbajo" size={13} style={{ opacity: 0.6 }} />
                 <select
                   className="hor-native-overlay"
-                  aria-label="Agregar cliente a la planilla"
+                  aria-label="Agregar obra a la planilla"
                   value=""
                   onChange={(e) => e.target.value && cambiarNueva({ obraId: e.target.value })}
                 >
-                  <option value="">＋ Agregar cliente</option>
-                  {obrasLibres.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {limpio(o.cliente) || o.id}
-                      {o.proyecto && o.proyecto !== o.cliente ? ` · ${o.proyecto}` : ""}
-                    </option>
-                  ))}
+                  <option value="">＋ Agregar obra</option>
+                  <OpcionesDeObra obras={obrasLibres} />
                 </select>
               </span>
             ) : (
@@ -1814,6 +1948,19 @@ export default function PlanillaDia({
               </span>
             )}
           </div>
+
+          {obraNueva && (
+            <div>
+              <div className="hor-card__label">Dirección</div>
+              <CampoTarjeta
+                etiqueta="Dirección"
+                valor={direccionNueva}
+                placeholder="Escribir dirección"
+                maxLength={200}
+                onGuardar={guardarDireccionNueva}
+              />
+            </div>
+          )}
 
           <div className="hor-card__grid2">
             <div>
@@ -1873,7 +2020,7 @@ export default function PlanillaDia({
               <span className="hor-pista">Agrega al menos un trabajador para guardar</span>
             )}
             {!nueva.obraId && nueva.empleadoIds.length > 0 && (
-              <span className="hor-pista">Elige el cliente para guardar</span>
+              <span className="hor-pista">Elige la obra para guardar</span>
             )}
           </div>
 
@@ -2035,7 +2182,10 @@ export function VistaPreviaImagenDia({ fecha, dia, obras, empleados }) {
     if (!marco || !hoja) return undefined;
     const recalcular = () => {
       const ancho = marco.clientWidth || 420;
-      const escala = Math.min(1, ancho / 1120);
+      // La hoja mide 1120 de ancho y se escala al marco, hacia abajo y
+      // tambien hacia arriba. Antes el tope era 1: en un marco mas ancho que
+      // 1120 la hoja no crecia y quedaba una franja blanca a la derecha.
+      const escala = ancho / 1120;
       const altoHoja = hoja.offsetHeight || 260;
       setMedida({ escala, alto: Math.max(120, Math.ceil(altoHoja * escala)) });
     };
@@ -2206,7 +2356,7 @@ export function VistaPreviaImagenDia({ fecha, dia, obras, empleados }) {
                 </div>
               </td>
               <td>
-                <span className="hor-direccion">{f.direccion || <span className="hor-vacio">—</span>}</span>
+                <span className="hor-direccion">{f.direccionTexto || <span className="hor-vacio">—</span>}</span>
               </td>
               <td className="hor-col-centro">
                 <div className="hor-fecha-bloque">

@@ -985,19 +985,39 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             </button>
           </div>
           {horariosObra.length===0&&<div style={{textAlign:"center",padding:24,color:"var(--text-subtle, #94a3b8)",fontSize:13}}>Sin turnos registrados todavía.</div>}
-          {horariosObra.sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(h=>{
+          {[...horariosObra].sort((a,b)=>String(b.fecha||"").localeCompare(String(a.fecha||""))).map(h=>{
             const emp=empleados.find(x=>x.id===h.empleadoId);
             const idx=empleados.findIndex(x=>x.id===h.empleadoId);
+            const fmtHora=(hhmm)=>{
+              if(!hhmm||!String(hhmm).includes(":")) return hhmm||"";
+              const [hs,ms="00"]=String(hhmm).trim().split(":");
+              const n=Number(hs);
+              if(Number.isNaN(n)) return hhmm;
+              return `${((n+11)%12)+1}:${ms.padStart(2,"0")} ${n>=12?"PM":"AM"}`;
+            };
+            const turnoLegible=(t)=>{
+              const partes=String(t||"").split("-").map(s=>s.trim()).filter(Boolean);
+              if(partes.length===2&&partes[0].includes(":")&&partes[1].includes(":")){
+                return `${fmtHora(partes[0])} – ${fmtHora(partes[1])}`;
+              }
+              return t||"Sin horario";
+            };
             return(
-              <div key={h.id} style={{display:"flex",alignItems:"center",gap:12,background:"var(--surface-subtle, #f8fafc)",borderRadius:10,padding:"10px 14px",marginBottom:8,border:"1px solid var(--border, #e2e8f0)"}}>
-                <Av init={emp?.avatar||"?"} color={PAL[idx%PAL.length]} size={32}/>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:13,fontWeight:600,color:"var(--text-main)"}}>{emp?.nombre||"—"}</div>
-                  <div style={{fontSize:11,color:"var(--text-muted, #475569)"}}>{h.tarea}</div>
+              <div key={h.id} style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,flexWrap:"wrap",background:"var(--surface-subtle, #f8fafc)",borderRadius:12,padding:"12px 14px",marginBottom:8,border:"1px solid var(--border, #e2e8f0)"}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:10,flex:"1 1 200px",minWidth:0}}>
+                  <Av init={emp?.avatar||"?"} color={PAL[(idx>=0?idx:0)%PAL.length]} size={32}/>
+                  <div style={{minWidth:0,flex:1}}>
+                    <div style={{fontSize:13.5,fontWeight:600,color:"var(--text-main)"}}>{emp?.nombre||"—"}</div>
+                    <div style={{fontSize:12,color:"var(--text-muted, #475569)",marginTop:2}}>
+                      {h.tarea||"Sin actividad"}
+                      {h.cantidad ? ` · Cant: ${h.cantidad}` : ""}
+                      {h.encuentro ? ` · ${h.encuentro}` : ""}
+                    </div>
+                  </div>
                 </div>
-                <div style={{textAlign:"right",fontSize:11}}>
+                <div style={{textAlign:"right",fontSize:12,flexShrink:0}}>
                   <div style={{color:"var(--text-muted, #64748b)",fontWeight:500}}>{fmtD(h.fecha)}</div>
-                  <div style={{color:"var(--text-main, #101828)",fontWeight:600}}>{h.turno}</div>
+                  <div style={{color:"var(--accent, #E0342A)",fontWeight:600,fontVariantNumeric:"tabular-nums",marginTop:2}}>{turnoLegible(h.turno)}</div>
                 </div>
               </div>
             );

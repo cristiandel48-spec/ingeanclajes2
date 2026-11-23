@@ -3,10 +3,10 @@ import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
 import SelectorEmpleados from "../../components/SelectorEmpleados";
 import PlanillaDia from "./PlanillaDia";
 import {
-  Button, Card, Callout, EmptyState, Input, Lista, ListRow,
-  PageHeader, Sheet, StatusPill, Toolbar, EspacioToolbar,
+  Button, Card, Callout, EmptyState, Icono, Input, Lista, ListRow,
+  PageHeader, Sheet, StatusPill,
 } from "../../components/ui";
-import { ESPACIO, TIPO } from "../../styles/designTokens";
+import { CIFRA, ESPACIO, TIPO } from "../../styles/designTokens";
 import { useMemo, useState } from "react";
 import { PAL } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
@@ -329,12 +329,14 @@ export default function Horarios({ctx}){
     // Los empleados asignados a turnos en esta obra viajan automáticamente al módulo de obras
     if(form.obraId && setObras){
       const idsNuevos = [...new Set(payload.map(n=>n.empleadoId).filter(Boolean))];
+      const primeraFecha = [...new Set(payload.map(n=>n.fecha).filter(Boolean))].sort()[0] || null;
       if(idsNuevos.length > 0){
         setObras(prevObras => prevObras.map(o => {
           if(o.id !== form.obraId) return o;
           const actuales = Array.isArray(o.empleados) ? o.empleados : [];
           const combinados = [...new Set([...actuales, ...idsNuevos])];
-          return { ...o, empleados: combinados };
+          const fechaInicio = o.fechaInicio || primeraFecha;
+          return { ...o, empleados: combinados, ...(fechaInicio ? { fechaInicio } : {}) };
         }));
       }
     }
@@ -616,13 +618,15 @@ export default function Horarios({ctx}){
       })),
     ]);
     // Igual que con el formulario: quien entra a un turno queda en el equipo
-    // de la obra.
+    // de la obra y, si la obra aun no tiene fecha de inicio, toma esta fecha.
     if(setObras){
       setObras((prev)=>prev.map((o)=>{
         if(o.id!==obraId) return o;
         const actuales = Array.isArray(o.empleados) ? o.empleados : [];
         const combinados = [...new Set([...actuales, ...empleadoIds])];
-        return combinados.length===actuales.length ? o : {...o, empleados:combinados};
+        const fechaInicio = o.fechaInicio || fechaF;
+        if(combinados.length===actuales.length && o.fechaInicio===fechaInicio) return o;
+        return {...o, empleados:combinados, ...(fechaInicio ? {fechaInicio} : {})};
       }));
     }
   };
@@ -664,20 +668,41 @@ export default function Horarios({ctx}){
     }));
   };
 
+  // Si se quita un trabajador de un turno y ya no tiene otros turnos en esa obra,
+  // tambien se limpia de obra.empleados para que un error no quede pegado en la obra.
+  const limpiarPersonalSinTurnos=(obraId, empleadoIdsCandidatos, horariosRestantes)=>{
+    if(!setObras || !obraId || !empleadoIdsCandidatos.length) return;
+    const sinOtrosTurnos = empleadoIdsCandidatos.filter(
+      (eid) => !horariosRestantes.some((h) => h.obraId === obraId && h.empleadoId === eid)
+    );
+    if(!sinOtrosTurnos.length) return;
+    setObras((prev)=>prev.map((o)=>{
+      if(o.id!==obraId) return o;
+      const actuales = Array.isArray(o.empleados) ? o.empleados : [];
+      const filtrados = actuales.filter((eid) => !sinOtrosTurnos.includes(eid));
+      return filtrados.length===actuales.length ? o : {...o, empleados:filtrados};
+    }));
+  };
+
   const quitarTrabajadorPlanilla=(obraId, empleadoId)=>{
-    setHorarios((p)=>p.filter((h)=>!(h.obraId===obraId && h.fecha===fechaF && h.empleadoId===empleadoId)));
+    const restantes = horarios.filter((h)=>!(h.obraId===obraId && h.fecha===fechaF && h.empleadoId===empleadoId));
+    setHorarios(restantes);
+    limpiarPersonalSinTurnos(obraId, [empleadoId], restantes);
   };
 
   const quitarFilaPlanilla=async(obraId)=>{
     const grupo = dia.filter((h)=>h.obraId===obraId);
     if(!grupo.length) return;
     const o = obras.find((x)=>x.id===obraId);
-    const personas = new Set(grupo.map((h)=>h.empleadoId)).size;
+    const idsAfectados = [...new Set(grupo.map((h)=>h.empleadoId).filter(Boolean))];
+    const personas = idsAfectados.length;
     if(!(await confirmar(
       `¿Quitar a ${normalizarMayusculas(o?.cliente || "esta obra")} de la planilla del ${fmtD(fechaF)}?\n\n` +
       `Se borran los turnos de ${personas} persona${personas!==1?"s":""} en esa obra ese día.`
     ))) return;
-    setHorarios((p)=>p.filter((h)=>!(h.obraId===obraId && h.fecha===fechaF)));
+    const restantes = horarios.filter((h)=>!(h.obraId===obraId && h.fecha===fechaF));
+    setHorarios(restantes);
+    limpiarPersonalSinTurnos(obraId, idsAfectados, restantes);
   };
 
   // Pasar una fila a otro dia: se armo en la hoja de hoy y era para mañana.
@@ -711,6 +736,124 @@ export default function Horarios({ctx}){
       .map((h)=>String(h.tarea).trim())
   )].slice(0,20), [horarios]);
 
+  // Edicion y eliminacion de cualquier turno (desde «Turnos del dia» o «Todos los turnos por obra»).
+  const [editandoTurno, setEditandoTurno] = useState(null);
+  const [busquedaHistorial, setBusquedaHistorial] = useState("");
+
+  const separarHorario = (turno) => {
+    const partes = String(turno || "").split("-").map((p) => p.trim());
+    const esHora = (v) => /^\d{1,2}:\d{2}$/.test(v);
+    return {
+      inicio: esHora(partes[0]) ? partes[0].padStart(5, "0") : "07:00",
+      fin: esHora(partes[1]) ? partes[1].padStart(5, "0") : "17:00",
+    };
+  };
+
+  const abrirEdicionTurno = (h) => {
+    const { inicio, fin } = separarHorario(h.turno);
+    setEditandoTurno({
+      id: h.id,
+      obraId: h.obraId || firstObraId,
+      empleadoId: h.empleadoId || "",
+      fecha: h.fecha || fechaF,
+      inicio,
+      fin,
+      tarea: h.tarea || "",
+      cantidad: h.cantidad || "",
+      encuentro: h.encuentro || "",
+    });
+  };
+
+  const guardarEdicionTurno = () => {
+    if (!editandoTurno) return;
+    if (!editandoTurno.obraId || !editandoTurno.empleadoId || !editandoTurno.fecha) {
+      setNotif({ ok: false, texto: "Elige obra, trabajador y fecha para guardar el turno." });
+      setTimeout(() => setNotif(null), 6000);
+      return;
+    }
+    const nuevoTurno = armarTurno(editandoTurno.inicio, editandoTurno.fin);
+    if (!nuevoTurno) {
+      setNotif({ ok: false, texto: "Indica la hora de inicio y la hora de fin del turno." });
+      setTimeout(() => setNotif(null), 6000);
+      return;
+    }
+    const anterior = horarios.find((x) => x.id === editandoTurno.id);
+    const f = firmaDeAutor();
+    const actualizados = horarios.map((h) => (
+      h.id !== editandoTurno.id ? h : {
+        ...h,
+        obraId: editandoTurno.obraId,
+        empleadoId: editandoTurno.empleadoId,
+        fecha: editandoTurno.fecha,
+        turno: nuevoTurno,
+        tarea: String(editandoTurno.tarea || "").trim(),
+        cantidad: String(editandoTurno.cantidad || "").trim(),
+        encuentro: String(editandoTurno.encuentro || "").trim(),
+        modificadoPor: f.por,
+        modificadoPorNombre: f.nombre,
+        modificadoEn: f.en,
+      }
+    ));
+    setHorarios(actualizados);
+    if (setObras && editandoTurno.obraId && editandoTurno.empleadoId) {
+      setObras((prev) => prev.map((o) => {
+        if (o.id !== editandoTurno.obraId) return o;
+        const actuales = Array.isArray(o.empleados) ? o.empleados : [];
+        const combinados = actuales.includes(editandoTurno.empleadoId)
+          ? actuales
+          : [...actuales, editandoTurno.empleadoId];
+        const fechaInicio = o.fechaInicio || editandoTurno.fecha;
+        if (combinados.length === actuales.length && o.fechaInicio === fechaInicio) return o;
+        return { ...o, empleados: combinados, ...(fechaInicio ? { fechaInicio } : {}) };
+      }));
+    }
+    if (anterior && (anterior.obraId !== editandoTurno.obraId || anterior.empleadoId !== editandoTurno.empleadoId)) {
+      limpiarPersonalSinTurnos(anterior.obraId, [anterior.empleadoId].filter(Boolean), actualizados);
+    }
+    setEditandoTurno(null);
+    setNotif({ ok: true, texto: "Turno actualizado correctamente." });
+    setTimeout(() => setNotif(null), 6000);
+  };
+
+  const eliminarTurno = async (h, cerrarModal = false) => {
+    if (!h) return;
+    const e = empleados.find((x) => x.id === h.empleadoId);
+    const o = obras.find((x) => x.id === h.obraId);
+    const ok = await confirmar(
+      `¿Eliminar el turno de ${e?.nombre || "este trabajador"} del ${fmtD(h.fecha)} en ${normalizarMayusculas(o?.cliente || "esta obra")}?\n\n` +
+      "Se quitará tanto de la planilla del día como del historial."
+    );
+    if (!ok) return;
+    const restantes = horarios.filter((x) => x.id !== h.id);
+    setHorarios(restantes);
+    limpiarPersonalSinTurnos(h.obraId, [h.empleadoId].filter(Boolean), restantes);
+    if (cerrarModal) setEditandoTurno(null);
+    setNotif({ ok: true, texto: `Turno de ${e?.nombre || "trabajador"} eliminado.` });
+    setTimeout(() => setNotif(null), 6000);
+  };
+
+  const obrasConHistorial = useMemo(() => {
+    const q = busquedaHistorial.trim().toLowerCase();
+    return obrasMasNuevasPrimero(obras)
+      .map((o) => {
+        const hs = horarios
+          .filter((h) => h.obraId === o.id)
+          .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+        if (!hs.length) return null;
+        if (!q) return { obra: o, turnos: hs };
+        const obraCoincide = [o.cliente, o.proyecto, o.ciudad, o.direccion]
+          .some((v) => String(v || "").toLowerCase().includes(q));
+        if (obraCoincide) return { obra: o, turnos: hs };
+        const turnosFiltrados = hs.filter((h) => {
+          const e = empleados.find((x) => x.id === h.empleadoId);
+          return [e?.nombre, h.tarea, h.fecha, fmtD(h.fecha), h.cantidad, h.encuentro]
+            .some((v) => String(v || "").toLowerCase().includes(q));
+        });
+        return turnosFiltrados.length ? { obra: o, turnos: turnosFiltrados } : null;
+      })
+      .filter(Boolean);
+  }, [obras, horarios, empleados, busquedaHistorial]);
+
   const reenviarDiaEmpleado=(h)=>{
     const relacionados = horarios.filter(x=>
       x.empleadoId===h.empleadoId &&
@@ -736,11 +879,19 @@ export default function Horarios({ctx}){
         subtitulo="Asigna turnos por día a trabajadores o grupos y avísales por WhatsApp"
         acciones={
           <>
-            {/* Vivia dentro del aviso «Para qué sirve asignar el turno aquí»,
-                que se quito; el boton se queda porque sigue haciendo falta. */}
             {empleados.length>0 && puedeCrearPersonal(membresia) && !nuevoEmp && (
               <Button variante="texto" icono="mas" onClick={()=>setNuevoEmp(true)}>
                 Registrar trabajador
+              </Button>
+            )}
+            {diaAnteriorConTurnos && (
+              <Button
+                variante="secondary"
+                icono="mas"
+                onClick={copiarDiaAnterior}
+                title={`Copia a este día los turnos del ${fmtD(diaAnteriorConTurnos)}`}
+              >
+                Copiar del {fmtD(diaAnteriorConTurnos)}
               </Button>
             )}
             <Button
@@ -805,58 +956,14 @@ export default function Horarios({ctx}){
       {notif&&(
         <Callout tono={notif.ok ? "exito" : "peligro"} style={SEPARA}>{notif.texto}</Callout>
       )}
-      <Toolbar>
-        {/* Pasar de un dia a otro sin abrir el calendario: es lo que mas se
-            hace aqui, revisar hoy, mañana y lo que viene. */}
-        <Button variante="texto" tam="sm" soloIcono icono="flechaIzq" aria-label="Día anterior" title="Día anterior"
-          onClick={()=>setFechaF(sumarDias(fechaF,-1))}/>
-        <Input
-          type="date"
-          value={fechaF}
-          onChange={e=>e.target.value && setFechaF(e.target.value)}
-          aria-label="Filtrar por fecha"
-          wrapStyle={{flex:"0 0 auto"}}
-          style={{width:"auto"}}
-        />
-        <Button variante="texto" tam="sm" soloIcono icono="flechaDer" aria-label="Día siguiente" title="Día siguiente"
-          onClick={()=>setFechaF(sumarDias(fechaF,1))}/>
-        {fechaF!==today() && (
-          <Button variante="texto" tam="sm" onClick={()=>setFechaF(today())}>Hoy</Button>
-        )}
-        <span style={{...TIPO.footnote,fontWeight:400,color:"var(--text-tertiary)"}}>
-          {dia.length} turno{dia.length!==1?"s":""} · {fmtD(fechaF)}
-        </span>
-        <EspacioToolbar/>
-        {diaAnteriorConTurnos && (
-          <Button
-            variante="texto"
-            icono="mas"
-            onClick={copiarDiaAnterior}
-            title={`Copia a este día los turnos del ${fmtD(diaAnteriorConTurnos)}`}
-          >
-            Copiar del {fmtD(diaAnteriorConTurnos)}
-          </Button>
-        )}
-        <Button
-          variante="secondary"
-          icono="documento"
-          onClick={abrirHorarioDelDia}
-          disabled={!dia.length}
-          title="Arma el mensaje con todos los turnos del día para pegarlo en el grupo"
-        >
-          Enviar horario al grupo
-        </Button>
-      </Toolbar>
       {/* La hoja «Actividades y clientes» es lo primero que se ve al entrar,
-          tenga o no turnos el dia: es la programacion que se manda al grupo. */}
+          con la navegacion de fecha unificada y envio listo para WhatsApp. */}
       <div style={SEPARA}>
         <PlanillaDia
-          // Sin `key`: la fila que se este empezando sobrevive al cambio de
-          // dia. Lo normal es elegir el cliente y despues caer en cuenta de
-          // que la hoja es la de mañana.
           fecha={fechaF}
           onCambiarFecha={setFechaF}
           onMoverFila={moverFilaPlanilla}
+          onAbrirTextoGrupo={abrirHorarioDelDia}
           dia={dia}
           obras={obras}
           empleados={empleados}
@@ -866,18 +973,6 @@ export default function Horarios({ctx}){
           onAgregarTrabajadores={agregarTrabajadoresPlanilla}
           onQuitarTrabajador={quitarTrabajadorPlanilla}
           onQuitarFila={quitarFilaPlanilla}
-          accionVacia={!showF && (
-            <div style={{display:"flex",gap:ESPACIO.sm,flexWrap:"wrap",justifyContent:"center"}}>
-              {diaAnteriorConTurnos && (
-                <Button variante="secondary" tam="sm" onClick={copiarDiaAnterior}>
-                  Copiar del {fmtD(diaAnteriorConTurnos)}
-                </Button>
-              )}
-              <Button variante="primary" tam="sm" icono="mas" onClick={abrirFormulario}>
-                Asignar turnos
-              </Button>
-            </div>
-          )}
         />
       </div>
       {showF&&(
@@ -1186,6 +1281,127 @@ export default function Horarios({ctx}){
         </Card>
       )}
 
+      {editandoTurno && (
+        <Sheet
+          onCerrar={() => setEditandoTurno(null)}
+          titulo="Editar turno"
+          subtitulo="Corrige cualquier dato si hubo un error y guarda los cambios."
+          pie={
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: ESPACIO.sm, width: "100%", flexWrap: "wrap" }}>
+              <Button
+                variante="destructive"
+                icono="papelera"
+                onClick={() => {
+                  const actual = horarios.find((x) => x.id === editandoTurno.id);
+                  eliminarTurno(actual || editandoTurno, true);
+                }}
+              >
+                Eliminar turno
+              </Button>
+              <div style={{ display: "flex", gap: ESPACIO.sm }}>
+                <Button variante="secondary" onClick={() => setEditandoTurno(null)}>
+                  Cancelar
+                </Button>
+                <Button variante="primary" onClick={guardarEdicionTurno}>
+                  Guardar cambios
+                </Button>
+              </div>
+            </div>
+          }
+        >
+          <div style={{ display: "grid", gap: ESPACIO.md }}>
+            <Input
+              label="Obra / cliente"
+              como="select"
+              value={editandoTurno.obraId}
+              onChange={(e) => setEditandoTurno((prev) => ({ ...prev, obraId: e.target.value }))}
+            >
+              {obrasMasNuevasPrimero(obras).map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.cliente}{o.proyecto && o.proyecto !== o.cliente ? ` · ${o.proyecto}` : ""}
+                </option>
+              ))}
+            </Input>
+
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.2fr 1fr", gap: ESPACIO.md }}>
+              <Input
+                label="Trabajador"
+                como="select"
+                value={editandoTurno.empleadoId}
+                onChange={(e) => setEditandoTurno((prev) => ({ ...prev, empleadoId: e.target.value }))}
+              >
+                {empleados.map((e) => (
+                  <option key={e.id} value={e.id}>{e.nombre}{e.cargo ? ` · ${e.cargo}` : ""}</option>
+                ))}
+              </Input>
+              <Input
+                label="Fecha"
+                type="date"
+                value={editandoTurno.fecha}
+                onChange={(e) => setEditandoTurno((prev) => ({ ...prev, fecha: e.target.value }))}
+              />
+            </div>
+
+            <div style={PANEL}>
+              <div style={{ ...TIPO.eyebrow, color: "var(--text-tertiary)", marginBottom: ESPACIO.xs }}>Horario</div>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: ESPACIO.sm, marginLeft: -6 }}>
+                {JORNADAS.map((j) => (
+                  <Button
+                    key={j.etiqueta}
+                    variante="texto"
+                    tam="sm"
+                    aria-pressed={editandoTurno.inicio === j.inicio && editandoTurno.fin === j.fin}
+                    onClick={() => setEditandoTurno((prev) => ({ ...prev, inicio: j.inicio, fin: j.fin }))}
+                  >
+                    {j.etiqueta}
+                  </Button>
+                ))}
+              </div>
+              <div className="grid-2-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: ESPACIO.md }}>
+                <Input
+                  label="Desde"
+                  type="time"
+                  value={editandoTurno.inicio}
+                  onChange={(e) => setEditandoTurno((prev) => ({ ...prev, inicio: e.target.value }))}
+                />
+                <Input
+                  label="Hasta"
+                  type="time"
+                  value={editandoTurno.fin}
+                  onChange={(e) => setEditandoTurno((prev) => ({ ...prev, fin: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <Input
+              label="Actividad / tarea"
+              value={editandoTurno.tarea}
+              list="hor-planilla-tareas"
+              placeholder="Ej: Instalación de puntos de anclaje"
+              onChange={(e) => setEditandoTurno((prev) => ({ ...prev, tarea: e.target.value }))}
+            />
+
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1.6fr", gap: ESPACIO.md }}>
+              <Input
+                label="Cantidad (opcional)"
+                value={editandoTurno.cantidad}
+                maxLength={40}
+                placeholder="Ej: 10"
+                onChange={(e) => setEditandoTurno((prev) => ({ ...prev, cantidad: e.target.value }))}
+              />
+              <Input
+                label="Punto de encuentro (opcional)"
+                value={editandoTurno.encuentro}
+                list="hor-planilla-encuentros"
+                maxLength={60}
+                placeholder="Salida desde la oficina"
+                onChange={(e) => setEditandoTurno((prev) => ({ ...prev, encuentro: e.target.value }))}
+              />
+            </div>
+          </div>
+        </Sheet>
+      )}
+
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:ESPACIO.lg,alignItems:"start"}}>
         <Card ajustado>
           <CabeceraCard titulo="Turnos del día" descripcion={fmtD(fechaF)}/>
@@ -1194,103 +1410,230 @@ export default function Horarios({ctx}){
               icono="calendario"
               titulo="No hay turnos para esta fecha"
               texto={diaAnteriorConTurnos
-                ? `Puedes repetir los del ${fmtD(diaAnteriorConTurnos)} o asignarlos desde cero.`
-                : "Asigna el primer turno de este día."}
-              accion={
-                <div style={{display:"flex",gap:ESPACIO.sm,flexWrap:"wrap",justifyContent:"center"}}>
-                  {diaAnteriorConTurnos && (
-                    <Button variante="secondary" tam="sm" onClick={copiarDiaAnterior}>
-                      Copiar del {fmtD(diaAnteriorConTurnos)}
-                    </Button>
-                  )}
-                  <Button variante="primary" tam="sm" icono="mas" onClick={abrirFormulario} disabled={showF}>
-                    Asignar turnos
-                  </Button>
-                </div>
-              }
+                ? `Agrégalos arriba en la planilla, copia los del ${fmtD(diaAnteriorConTurnos)} o usa «Asignar turnos».`
+                : "Agrégalos arriba en la planilla o usa «Asignar turnos»."}
             />
           ) : (
-            <Lista>
-              {dia.map(h=>{
-                const e=empleados.find(x=>x.id===h.empleadoId);
-                const o=obras.find(x=>x.id===h.obraId);
-                const idx=empleados.findIndex(x=>x.id===h.empleadoId);
-                const conHora=Boolean(String(h.turno||"").trim());
-                return(
-                  <ListRow
+            <div style={{ display: "flex", flexDirection: "column", gap: ESPACIO.sm }}>
+              {dia.map((h) => {
+                const e = empleados.find((x) => x.id === h.empleadoId);
+                const o = obras.find((x) => x.id === h.obraId);
+                const idx = empleados.findIndex((x) => x.id === h.empleadoId);
+                const conHora = Boolean(String(h.turno || "").trim());
+                return (
+                  <div
                     key={h.id}
-                    izquierda={<Av init={e?.avatar||"?"} color={PAL[idx%PAL.length]} size={34}/>}
-                    titulo={e?.nombre || "—"}
-                    meta={<>{o?.proyecto || "Sin obra"}{o?.ciudad ? ` · ${o.ciudad}` : ""}<br/>{h.tarea || "Sin tarea"}</>}
-                    derecha={
-                      // Un turno sin hora se marca en la fila. Antes salia un
-                      // hueco en blanco y parecia un problema de la pantalla.
-                      conHora
-                        ? <StatusPill tono="acento">{fmtTurno12Local(h.turno)}</StatusPill>
-                        : <StatusPill tono="peligro">Sin horario</StatusPill>
-                    }
-                    acciones={
-                      <>
-                        <Button
-                          variante="tertiary"
-                          tam="sm"
-                          onClick={()=>reenviarDiaEmpleado(h)}
-                          disabled={!conHora}
-                          title={conHora ? `Reenviar WhatsApp · +57 ${e?.tel||""}` : "Este turno no tiene hora, no hay nada que avisar"}
-                        >
-                          Reenviar
-                        </Button>
-                        <Button
-                          variante="tertiary"
-                          tam="sm"
-                          soloIcono
-                          icono="papelera"
-                          onClick={()=>setHorarios(p=>p.filter(x=>x.id!==h.id))}
-                          aria-label={`Quitar el turno de ${e?.nombre || "esta persona"}`}
-                          title="Quitar este turno"
-                        />
-                      </>
-                    }
-                  />
+                    style={{
+                      ...PANEL,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: ESPACIO.sm }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
+                        <Av init={e?.avatar || "?"} color={PAL[(idx >= 0 ? idx : 0) % PAL.length]} size={34} />
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ ...TIPO.callout, fontWeight: 600, color: "var(--text-primary)", overflowWrap: "break-word" }}>
+                            {e?.nombre || "—"}
+                          </div>
+                          <div style={{ ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)", marginTop: 1 }}>
+                            {o?.cliente || o?.proyecto || "Sin obra"}{o?.ciudad ? ` · ${o.ciudad}` : ""}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ flexShrink: 0 }}>
+                        {conHora
+                          ? <StatusPill tono="acento">{fmtTurno12Local(h.turno)}</StatusPill>
+                          : <StatusPill tono="peligro">Sin horario</StatusPill>}
+                      </div>
+                    </div>
+
+                    {(h.tarea || h.cantidad || h.encuentro) && (
+                      <div style={{ ...TIPO.caption, fontWeight: 400, color: "var(--text-secondary)", lineHeight: 1.45, paddingLeft: 44 }}>
+                        {h.tarea || "Sin actividad"}
+                        {h.cantidad ? ` · Cant: ${h.cantidad}` : ""}
+                        {h.encuentro ? ` · ${h.encuentro}` : ""}
+                      </div>
+                    )}
+
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, paddingTop: 4, borderTop: "1px solid var(--separator)" }}>
+                      <Button
+                        variante="secondary"
+                        tam="sm"
+                        icono="enviar"
+                        onClick={() => reenviarDiaEmpleado(h)}
+                        disabled={!conHora}
+                        title={conHora ? `Reenviar WhatsApp · +57 ${e?.tel || ""}` : "Este turno no tiene hora, no hay nada que avisar"}
+                      >
+                        Reenviar WA
+                      </Button>
+                      <Button
+                        variante="secondary"
+                        tam="sm"
+                        soloIcono
+                        icono="lapiz"
+                        onClick={() => abrirEdicionTurno(h)}
+                        aria-label={`Editar el turno de ${e?.nombre || "esta persona"}`}
+                        title="Editar turno"
+                      />
+                      <Button
+                        variante="destructive"
+                        tam="sm"
+                        soloIcono
+                        icono="papelera"
+                        onClick={() => eliminarTurno(h)}
+                        aria-label={`Eliminar el turno de ${e?.nombre || "esta persona"}`}
+                        title="Eliminar turno"
+                      />
+                    </div>
+                  </div>
                 );
               })}
-            </Lista>
+            </div>
           )}
         </Card>
 
         <Card ajustado>
-          <CabeceraCard titulo="Todos los turnos por obra" descripcion="El historial completo, agrupado por proyecto."/>
+          <CabeceraCard
+            titulo="Todos los turnos por obra"
+            descripcion="Edita o elimina cualquier turno si hubo un error."
+            accion={horarios.length > 0 && (
+              <span style={{
+                ...TIPO.caption, ...CIFRA,
+                padding: "3px 10px", borderRadius: 980,
+                background: "var(--fill)", color: "var(--text-secondary)", fontWeight: 600,
+              }}>
+                {horarios.length} turno{horarios.length !== 1 ? "s" : ""}
+              </span>
+            )}
+          />
+          {horarios.length > 0 && (
+            <div style={{ position: "relative", width: "100%", marginBottom: ESPACIO.md }}>
+              <span
+                style={{
+                  position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)",
+                  color: "var(--text-quaternary)", pointerEvents: "none", display: "flex",
+                }}
+              >
+                <Icono nombre="buscar" size={15} />
+              </span>
+              <input
+                type="search"
+                className="ui-input"
+                style={{ paddingLeft: 34, width: "100%" }}
+                value={busquedaHistorial}
+                onChange={(e) => setBusquedaHistorial(e.target.value)}
+                placeholder="Buscar por cliente, trabajador o actividad…"
+                aria-label="Buscar por cliente, trabajador o actividad"
+              />
+            </div>
+          )}
           {obras.every(o=>!horarios.some(h=>h.obraId===o.id)) ? (
             <EmptyState
               icono="obra"
               titulo="Ninguna obra tiene turnos todavía"
               texto="Los turnos que asignes van quedando aquí, agrupados por obra."
             />
-          ) : obrasMasNuevasPrimero(obras).map(o=>{
-            const hs=horarios.filter(h=>h.obraId===o.id);
-            if(!hs.length) return null;
-            return(
-              <div key={o.id} style={{...PANEL,marginBottom:ESPACIO.md}}>
-                <div style={{...TIPO.footnote,fontWeight:600,color:"var(--text-primary)"}}>{o.cliente}</div>
-                <div style={{...TIPO.caption,fontWeight:400,color:"var(--text-tertiary)",marginBottom:ESPACIO.sm}}>{o.proyecto}</div>
-                {hs.map(h=>{
-                  const e=empleados.find(x=>x.id===h.empleadoId);
-                  return(
-                    <div key={h.id} style={{
-                      display:"flex",alignItems:"center",gap:ESPACIO.sm,flexWrap:"wrap",
-                      padding:"6px 0",borderTop:"1px solid var(--separator)",
-                      ...TIPO.caption,fontWeight:400,
-                    }}>
-                      <span style={{color:"var(--text-tertiary)",minWidth:76}}>{fmtD(h.fecha)}</span>
-                      <span style={{color:"var(--text-primary)",flex:"1 1 110px",fontWeight:600}}>{e?.nombre}</span>
-                      <span style={{color:"var(--text-secondary)",flex:"1 1 120px"}}>{fmtTurno12Local(h.turno)}</span>
-                      <span style={{color:"var(--text-tertiary)",flex:"1 1 100%"}}>{h.tarea}</span>
-                    </div>
-                  );
-                })}
+          ) : obrasConHistorial.length === 0 ? (
+            <EmptyState
+              icono="buscar"
+              titulo="Sin coincidencias"
+              texto={`No encontramos turnos con «${busquedaHistorial}».`}
+              accion={
+                <Button variante="secondary" tam="sm" onClick={() => setBusquedaHistorial("")}>
+                  Ver todos
+                </Button>
+              }
+            />
+          ) : obrasConHistorial.map(({ obra: o, turnos: hs }) => (
+            <div key={o.id} style={{ ...PANEL, marginBottom: ESPACIO.md }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: ESPACIO.sm, marginBottom: ESPACIO.sm }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...TIPO.headline, fontSize: 14, color: "var(--text-primary)" }}>{o.cliente}</div>
+                  {o.proyecto && o.proyecto !== o.cliente && (
+                    <div style={{ ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)" }}>{o.proyecto}</div>
+                  )}
+                </div>
+                <span style={{
+                  ...TIPO.caption, ...CIFRA,
+                  padding: "2px 9px", borderRadius: 980, flexShrink: 0,
+                  background: "var(--surface)", border: "1px solid var(--separator)",
+                  color: "var(--text-tertiary)",
+                }}>
+                  {hs.length} turno{hs.length !== 1 ? "s" : ""}
+                </span>
               </div>
-            );
-          })}
+              {hs.map((h) => {
+                const e = empleados.find((x) => x.id === h.empleadoId);
+                return (
+                  <div
+                    key={h.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      gap: ESPACIO.sm,
+                      padding: "10px 0",
+                      borderTop: "1px solid var(--separator)",
+                    }}
+                  >
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ ...TIPO.callout, fontWeight: 600, color: "var(--text-primary)" }}>
+                          {e?.nombre || "Sin trabajador"}
+                        </span>
+                        <span style={{
+                          ...TIPO.caption, ...CIFRA,
+                          padding: "2px 8px", borderRadius: 980,
+                          background: "var(--surface)", border: "1px solid var(--separator)",
+                          color: "var(--text-secondary)",
+                        }}>
+                          {fmtD(h.fecha)}
+                        </span>
+                        {h.turno && (
+                          <span style={{
+                            ...TIPO.caption, ...CIFRA,
+                            padding: "2px 8px", borderRadius: 980,
+                            background: "var(--accent-tint)", color: "var(--accent)", fontWeight: 600,
+                          }}>
+                            {fmtTurno12Local(h.turno)}
+                          </span>
+                        )}
+                      </div>
+                      {(h.tarea || h.cantidad || h.encuentro) && (
+                        <div style={{ ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)", marginTop: 4, lineHeight: 1.45 }}>
+                          {h.tarea || "Sin actividad"}
+                          {h.cantidad ? ` · Cant: ${h.cantidad}` : ""}
+                          {h.encuentro ? ` · ${h.encuentro}` : ""}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                      <Button
+                        variante="secondary"
+                        tam="sm"
+                        soloIcono
+                        icono="lapiz"
+                        onClick={() => abrirEdicionTurno(h)}
+                        aria-label={`Editar turno de ${e?.nombre || "trabajador"} del ${fmtD(h.fecha)}`}
+                        title="Editar turno"
+                      />
+                      <Button
+                        variante="destructive"
+                        tam="sm"
+                        soloIcono
+                        icono="papelera"
+                        onClick={() => eliminarTurno(h)}
+                        aria-label={`Eliminar turno de ${e?.nombre || "trabajador"} del ${fmtD(h.fecha)}`}
+                        title="Eliminar turno"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
         </Card>
       </div>
     </div>

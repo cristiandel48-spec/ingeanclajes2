@@ -1,32 +1,29 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "../../components/ui";
+import { Button, Icono } from "../../components/ui";
+import { useIsMobile } from "../../hooks/useMediaQuery";
 import { today } from "../../lib/format";
 import { obrasMasNuevasPrimero } from "../../lib/identificadores";
-import { normalizarMayusculas } from "../../lib/normalizarEntrada";
+import { normalizarNombrePropio } from "../../lib/normalizarEntrada";
+import { FUENTE } from "../../styles/designTokens";
 
-// Planilla «Actividades y clientes» del dia: la misma hoja que se armaba a mano
-// en Excel y se mandaba como foto al grupo de WhatsApp.
+// Planilla «Actividades y clientes» del dia: edicion directa en pantalla
+// (tabla limpia estilo Apple en escritorio y tarjetas tactiles en celular) y
+// exportacion como imagen PNG lista para el grupo de WhatsApp.
 //
-// Se llena ahi mismo, como en Excel: se elige el cliente, se agregan los
-// trabajadores y se escribe en las celdas. Cada cambio se guarda solo (son los
-// mismos turnos de siempre, agrupados por obra) y la hoja se descarga como
-// imagen lista para reenviar.
-//
-// Va siempre en claro (clase doc-shell, que el modo oscuro respeta): es un
-// documento, y la imagen que se comparte tiene que verse igual que en pantalla.
-// Todo lo que es para editar -botones, listas, pistas- lleva
-// data-html2canvas-ignore y no sale en la imagen.
+// Usa los mismos tokens de color y tipografia (Inter / Apple) que toda la
+// aplicacion. En la copia que se fotografia para WhatsApp (.hor-planilla--imagen)
+// se fijan valores de papel claro para que salga nitida incluso en modo oscuro.
 
-const DIAS = ["DOMINGO", "LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO"];
+const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const MESES = [
-  "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO",
-  "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE",
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ];
 
 const fechaLarga = (iso) => {
   const d = new Date(`${iso}T12:00:00`);
   if (Number.isNaN(d.getTime())) return iso || "";
-  return `${DIAS[d.getDay()]} ${d.getDate()} DE ${MESES[d.getMonth()]} DEL ${d.getFullYear()}`;
+  return `${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}, ${d.getFullYear()}`;
 };
 
 const sumarDias = (iso, n) => {
@@ -42,8 +39,6 @@ const hora12 = (hhmm) => {
   return `${((h + 11) % 12) + 1}:${ms.padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
 };
 
-// Lo normal es salir todos de la oficina; solo se cambia cuando la cuadrilla
-// llega directo a la obra. Un turno sin punto de encuentro es este.
 const ENCUENTRO_POR_DEFECTO = "Salida desde la oficina";
 const INICIO_POR_DEFECTO = "07:00";
 
@@ -51,257 +46,605 @@ const limpio = (v) => String(v ?? "").trim();
 const inicioDelTurno = (turno) => limpio(turno).split("-")[0].trim();
 const distintos = (lista) => [...new Set(lista)];
 
-// SST se pone junto al nombre, como en la hoja: «PAOLA - SST».
 const etiquetaTrabajador = (e) => {
-  const nombre = normalizarMayusculas(limpio(e?.nombre) || "—");
-  return /\bSST\b|SEGURIDAD/i.test(String(e?.cargo || "")) ? `${nombre} - SST` : nombre;
+  const base = limpio(e?.nombre) || "—";
+  const nombre = base === base.toUpperCase() && base.length > 3 ? normalizarNombrePropio(base) : base;
+  return /\bSST\b|SEGURIDAD/i.test(String(e?.cargo || "")) ? `${nombre} · SST` : nombre;
 };
 
-const direccionDe = (o) => [o?.direccion, o?.ciudad].filter(Boolean).join(" ").toUpperCase();
+const direccionDe = (o) => [limpio(o?.direccion), limpio(o?.ciudad)].filter(Boolean).join(", ");
 
-// Hoja tipo Excel (cuadricula completa, todo centrado, cabecera azul) con
-// acabado Apple: tipografia del sistema, lineas finas, azul suave, esquinas
-// redondeadas y jerarquia por peso y gris en vez de por tamaño.
 const ESTILOS_PLANILLA = `
-  .hor-planilla {
+  .hor-shell {
     background: #ffffff;
     color: #1d1d1f;
     border: 1px solid #d5dcef;
-    border-radius: 14px;
+    border-radius: 18px;
     overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Inter, Roboto, sans-serif;
+    font-family: ${FUENTE};
     -webkit-font-smoothing: antialiased;
-    min-width: 860px;
-    box-shadow: 0 1px 2px rgba(16, 24, 64, .04), 0 8px 24px rgba(16, 24, 64, .05);
+    box-shadow: 0 1px 2px rgba(16, 24, 64, 0.04), 0 8px 24px rgba(16, 24, 64, 0.05);
   }
-  .hor-planilla__titulo {
+
+  /* ── Cabecera azul suave de la planilla con acabado Apple ── */
+  .hor-head {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 20px;
     background: #dfe6ff;
-    color: #1d1d1f;
-    text-align: center;
-    font-weight: 700;
+    border-bottom: 1px solid #c5d0f0;
+  }
+  .hor-head__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .hor-head__marca {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .hor-head__punto {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #2a3b8f;
+    flex: none;
+  }
+  .hor-head__titulo {
+    margin: 0;
     font-size: 17px;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    padding: 14px 16px 12px;
-    border-bottom: 3px double #b9c5ea;
+    line-height: 22px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: #1d1d1f;
   }
-  .hor-planilla__fecha {
-    display: block;
-    margin-top: 3px;
+  .hor-head__cuenta {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 980px;
+    background: rgba(255, 255, 255, 0.72);
+    color: #2a3b8f;
     font-size: 12px;
-    font-weight: 500;
-    letter-spacing: .04em;
-    color: #5b6478;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
+  .hor-head .ui-seg {
+    background: rgba(255, 255, 255, 0.55);
+  }
+  .hor-head .ui-seg__op {
+    color: #46506b;
+  }
+  .hor-head .ui-seg__op[aria-selected="true"] {
+    background: #ffffff;
+    color: #1d1d1f;
+  }
+
+  /* ── Navegacion unificada de fecha ── */
   .hor-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .hor-nav__grupo {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px;
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid #c5d0f0;
+    border-radius: 980px;
+    max-width: 100%;
+  }
+  .hor-nav__atajos {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .ui-hor-flecha {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .hor-planilla .hor-fecha-btn {
-    display: inline-block;
-    padding: 3px 10px;
-    border: 1px solid transparent;
-    border-radius: 7px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #2c2f3a;
-    outline: none;
-    transition: background .12s ease, border-color .12s ease;
-  }
-  .hor-planilla .hor-fecha-btn:hover, .hor-planilla .hor-fecha-btn:focus-visible {
-    background: rgba(255, 255, 255, .7);
-    border-color: #b9c5ea;
-  }
-  .hor-planilla .hor-flecha {
-    width: 26px;
-    height: 26px;
+    width: 30px;
+    height: 30px;
     padding: 0;
     border: none;
     border-radius: 50%;
     background: transparent;
-    color: #5b6478;
-    font-size: 18px;
-    line-height: 1;
+    color: #4a5578;
     cursor: pointer;
-    transition: background .12s ease;
+    flex: none;
+    transition: background var(--transicion-rapida), color var(--transicion-rapida);
   }
-  .hor-planilla .hor-flecha:hover, .hor-planilla .hor-flecha:focus-visible { background: rgba(255, 255, 255, .8); }
-  .hor-planilla .hor-chip {
-    padding: 3px 12px;
-    border: 1px solid #b9c5ea;
-    border-radius: 999px;
+  .ui-hor-flecha:hover {
+    background: #eef2ff;
+    color: #1d1d1f;
+  }
+  .ui-hor-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 30px;
+    padding: 0 13px;
+    border: 1px solid #c5d0f0;
+    border-radius: 980px;
+    background: rgba(255, 255, 255, 0.85);
+    color: #3a4668;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--transicion-rapida), color var(--transicion-rapida), border-color var(--transicion-rapida);
+  }
+  .ui-hor-chip:hover {
     background: #ffffff;
     color: #2a3b8f;
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0;
-    text-transform: none;
-    cursor: pointer;
-    transition: background .12s ease;
+    border-color: #a8b9ee;
   }
-  .hor-planilla .hor-chip:hover, .hor-planilla .hor-chip:focus-visible { background: #eef2ff; }
-  .hor-planilla table {
+  .ui-hor-chip--activo {
+    background: #2a3b8f;
+    border-color: #2a3b8f;
+    color: #ffffff;
+  }
+  .ui-hor-chip--activo:hover {
+    background: #223179;
+    border-color: #223179;
+    color: #ffffff;
+  }
+
+  /* ── Botones nativos de Hora y Fecha (tactiles en iOS/Android y clic en PC) ── */
+  .ui-hor-picker {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 4px 12px;
+    border-radius: 980px;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition: background var(--transicion-rapida), border-color var(--transicion-rapida),
+                color var(--transicion-rapida), transform var(--transicion-rapida);
+  }
+  .ui-hor-picker:active {
+    transform: scale(0.98);
+  }
+  .ui-hor-picker--fecha-head {
+    border: 1px solid transparent;
+    background: transparent;
+    color: #1d1d1f;
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 4px 10px;
+  }
+  .ui-hor-picker--fecha-head:hover {
+    background: #eef2ff;
+  }
+  .ui-hor-picker--hora {
+    background: #eef2ff;
+    color: #2a3b8f;
+    border: 1px solid #c5d0f5;
+  }
+  .ui-hor-picker--hora:hover {
+    background: #dfe6ff;
+    border-color: #a8b9ee;
+  }
+  .ui-hor-picker--hora-vacia {
+    background: #f5f7ff;
+    color: #3a4668;
+    border: 1px solid #cdd7f5;
+  }
+  .ui-hor-picker--hora-vacia:hover {
+    background: #e9eeff;
+    color: #2a3b8f;
+  }
+  .ui-hor-picker--fecha {
+    background: #ffffff;
+    color: #2a3b8f;
+    border: 1px solid #cdd7f5;
+  }
+  .ui-hor-picker--fecha:hover {
+    background: #eef2ff;
+    border-color: #a8b9ee;
+  }
+  .ui-hor-picker--select {
+    background: #f4f6ff;
+    color: #2a3b8f;
+    border: 1px solid #cdd7f5;
+    min-height: 34px;
+    padding: 5px 12px;
+  }
+  .ui-hor-picker--select:hover {
+    background: #e8eeff;
+    border-color: #a8b9ee;
+  }
+  .ui-hor-picker--bloque {
     width: 100%;
+    box-sizing: border-box;
+    min-height: 44px;
+    font-size: 14px;
+    padding: 8px 14px;
+  }
+  .ui-hor-picker:focus-within {
+    outline: 2px solid #2a3b8f;
+    outline-offset: 2px;
+  }
+  .hor-native-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    opacity: 0 !important;
+    cursor: pointer !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    font-size: 16px !important;
+    z-index: 2;
+  }
+
+  /* ── Tabla limpia estilo Apple con azul suave tipo planilla ── */
+  .hor-marco-tabla {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+  }
+  .hor-tabla {
+    width: 100%;
+    min-width: 960px;
     border-collapse: collapse;
     table-layout: auto;
+    font-family: ${FUENTE};
   }
-  .hor-planilla th {
+  .hor-tabla th {
     background: #eef2ff;
-    color: #2c2f3a;
+    color: #2c3550;
     font-weight: 600;
-    font-size: 13px;
-    letter-spacing: .07em;
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    text-align: center;
-    padding: 12px 8px;
-    border: 1px solid #d5dcef;
-    border-top: none;
+    text-align: left;
+    padding: 11px 14px;
+    border-bottom: 1px solid #d5dcef;
+    border-right: 1px solid #d5dcef;
+    white-space: nowrap;
   }
-  .hor-planilla td {
+  .hor-tabla th:last-child { border-right: none; }
+  .hor-tabla th.hor-col-centro,
+  .hor-tabla td.hor-col-centro { text-align: center; }
+
+  .hor-tabla td {
     position: relative;
     background: #ffffff;
     color: #1d1d1f;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 1.55;
-    text-transform: uppercase;
-    text-align: center;
+    font-size: 13.5px;
+    font-weight: 400;
+    line-height: 1.5;
     vertical-align: middle;
-    padding: 18px 12px;
-    border: 1px solid #e3e7f2;
-    word-break: break-word;
+    padding: 16px 14px;
+    border-bottom: 1px solid #e3e7f2;
+    border-right: 1px solid #e3e7f2;
+    overflow-wrap: break-word;
+    word-break: normal;
+    transition: background var(--transicion-rapida);
   }
-  .hor-planilla tbody tr:nth-child(even) td { background: #fafbff; }
-  .hor-planilla th:first-child, .hor-planilla td:first-child { border-left: none; }
-  .hor-planilla th:last-child, .hor-planilla td:last-child { border-right: none; }
-  .hor-planilla tbody tr:last-child td { border-bottom: none; }
-  .hor-planilla__cliente { font-weight: 600; }
-  .hor-planilla__suave {
+  .hor-tabla td:last-child { border-right: none; }
+  .hor-tabla tbody tr:last-child td { border-bottom: none; }
+  .hor-tabla tbody tr.hor-fila-datos:nth-child(even) td { background: #fafbff; }
+  .hor-tabla tbody tr.hor-fila-datos:hover td { background: #f3f6ff; }
+  .hor-tabla tbody tr.hor-fila-nueva td { background: #fbfcff; }
+
+  .hor-cliente {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    color: #1d1d1f;
+    letter-spacing: -0.008em;
+  }
+  .hor-proyecto {
     display: block;
     margin-top: 2px;
     font-size: 12px;
-    font-weight: 500;
-    color: #6e6e73;
+    color: #667085;
   }
-  .hor-planilla__cifra {
-    font-size: 20px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -.01em;
-  }
-  .hor-planilla__vacio { color: #c7c7cc; }
-  .hor-planilla td.hor-planilla__sin-datos {
-    padding: 22px 12px;
-    background: #fafbff;
-    color: #6e6e73;
+  .hor-direccion {
     font-size: 13px;
-    font-weight: 500;
-    letter-spacing: .05em;
+    color: #475467;
   }
-  .hor-planilla__hora {
+  .hor-cifra {
     display: inline-block;
-    margin-top: 6px;
-    padding: 2px 10px;
-    border-radius: 999px;
-    background: #eef2ff;
-    color: #2a3b8f;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    color: #1d1d1f;
   }
-  .hor-planilla__marco {
-    width: 100%;
-    overflow-x: auto;
-    padding: 2px 2px 10px;
-    box-sizing: border-box;
+  .hor-vacio { color: #b8c0d4; }
+  .hor-sin-datos {
+    padding: 22px 16px !important;
+    text-align: center !important;
+    color: #667085 !important;
+    font-size: 13px !important;
+    background: #fafbff !important;
   }
 
-  /* ── Edicion en la celda ── */
+  /* ── Edicion inline limpia ── */
   .hor-celda {
     display: block;
-    min-height: 22px;
-    margin: -4px -4px;
-    padding: 4px 6px;
+    min-height: 24px;
+    margin: -4px -6px;
+    padding: 5px 8px;
     border: 1px solid transparent;
-    border-radius: 7px;
+    border-radius: 10px;
     cursor: text;
     outline: none;
-    transition: background .12s ease, border-color .12s ease;
+    transition: background var(--transicion-rapida), border-color var(--transicion-rapida);
   }
   .hor-celda:hover, .hor-celda:focus-visible {
     background: #f1f4ff;
     border-color: #c5d0f5;
   }
-  .hor-celda--linea { display: inline-block; margin: 0; }
+  .hor-celda--linea { display: inline-flex; align-items: center; gap: 5px; margin: 0; }
   .hor-celda__ph {
-    color: #b4b9c6;
+    color: #98a2b3;
     font-size: 13px;
-    font-weight: 500;
-    letter-spacing: 0;
-    text-transform: none;
+    font-weight: 400;
   }
-  .hor-planilla .hor-input {
+  .hor-input {
     display: block;
     width: 100%;
     box-sizing: border-box;
-    font: inherit;
+    font-family: inherit;
     font-size: 14px;
     color: #1d1d1f;
     background: #ffffff;
-    text-align: center;
-    text-transform: uppercase;
-    border: 2px solid #0a84ff;
-    border-radius: 7px;
-    padding: 4px 6px;
-    /* El aro de foco de la app es rojo; aqui manda el azul de la celda. */
+    border: 1.5px solid #2a3b8f;
+    border-radius: 10px;
+    padding: 6px 10px;
     outline: none !important;
-    box-shadow: 0 0 0 3px rgba(10, 132, 255, .15) !important;
+    box-shadow: 0 0 0 3px rgba(42, 59, 143, 0.14) !important;
   }
-  .hor-planilla .hor-input::placeholder { color: #b4b9c6; text-transform: none; }
-  .hor-planilla .hor-agregar {
-    appearance: none;
-    -webkit-appearance: none;
-    max-width: 100%;
-    margin-top: 8px;
-    padding: 5px 14px;
-    border: 1px dashed #b9c5ea;
-    border-radius: 999px;
-    background: #f5f7ff;
-    color: #2a3b8f;
-    font: inherit;
-    font-size: 12.5px;
-    font-weight: 600;
-    letter-spacing: 0;
-    text-transform: none;
-    text-align: center;
-    text-align-last: center;
-    cursor: pointer;
-    outline: none;
-    transition: background .12s ease, border-color .12s ease;
-  }
-  .hor-planilla .hor-agregar:hover, .hor-planilla .hor-agregar:focus-visible {
-    background: #e9eeff;
-    border-color: #8fa2e6;
-  }
-  /* Ancho fijo: una lista mide lo que su opcion mas larga, y con eso
-     ensanchaba la columna entera. */
-  .hor-planilla select.hor-agregar { width: 176px; }
-  .hor-planilla .hor-agregar--solo { margin-top: 0; }
-  .hor-planilla .hor-agregar--fecha { display: inline-block; margin-top: 10px; }
-  /* Nombre y apellidos en un solo renglon: partidos en dos no se sabia donde
-     terminaba una persona y empezaba la otra. La tabla reparte el ancho segun
-     el contenido (table-layout: auto) para que el nombre mas largo quepa. */
-  .hor-trab { position: relative; padding: 0 20px; white-space: nowrap; }
+  .hor-input::placeholder { color: #98a2b3; }
 
-  /* ── La hoja como imagen ──
-     Se fotografia una copia con ancho fijo, no lo que haya en pantalla: asi la
-     imagen sale igual desde un celular o un monitor grande, la hoja la ocupa
-     entera (sin franjas en blanco a los lados) y la letra se lee en WhatsApp. */
-  .hor-planilla.hor-planilla--imagen {
+  /* ── Chips de trabajadores ── */
+  .hor-trabs-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: flex-start;
+  }
+  .hor-trab-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px 4px 11px;
+    border-radius: 980px;
+    background: #eef2ff;
+    color: #1d1d1f;
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1.3;
+    max-width: 100%;
+  }
+  .hor-trab-chip__nombre {
+    white-space: nowrap;
+  }
+  .ui-hor-x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #6e7894;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    flex: none;
+    transition: background var(--transicion-rapida), color var(--transicion-rapida);
+  }
+  .ui-hor-x:hover, .ui-hor-x:focus-visible {
+    background: #ffe5e5;
+    color: #d70015;
+  }
+  .ui-hor-x--fila {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
+    opacity: 0.55;
+  }
+  .hor-tabla tr:hover .ui-hor-x--fila { opacity: 1; }
+
+  /* ── Columna Fecha y Hora ── */
+  .hor-fecha-bloque {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+  }
+  .hor-fecha-texto {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d1d1f;
+  }
+  .hor-encuentro-texto {
+    font-size: 12px;
+    color: #475467;
+  }
+  .hor-acciones-fecha {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  .hor-pista {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #b54708;
+  }
+  .hor-pista--suave { color: #8c96ab; font-weight: 400; }
+
+  /* ── Vista Tarjetas Apple para Celular (armonia azul suave) ── */
+  .hor-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    background: #f4f6ff;
+  }
+  .hor-card {
+    background: #ffffff;
+    border: 1px solid #dce3f5;
+    border-radius: 16px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .hor-card--nueva {
+    background: #ffffff;
+    border: 1px solid #c5d0f0;
+  }
+  .hor-card__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .hor-card__label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #5b6478;
+    margin-bottom: 5px;
+  }
+  .hor-card__grid2 {
+    display: grid;
+    grid-template-columns: minmax(0, 2.2fr) minmax(88px, 1fr);
+    gap: 10px;
+  }
+  .hor-card__panel {
+    background: #f6f8ff;
+    border: 1px solid #e1e7f7;
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .hor-card__pickers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .hor-card__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .hor-card .hor-trab-chip {
+    padding: 6px 8px 6px 12px;
+    font-size: 13px;
+  }
+  .hor-card .ui-hor-x {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+  .hor-card .hor-input {
+    font-size: 16px;
+    padding: 9px 12px;
+  }
+  .hor-card .ui-hor-picker {
+    min-height: 40px;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+  .hor-card-input {
+    width: 100%;
+    box-sizing: border-box;
+    height: 42px;
+    padding: 0 12px;
+    border-radius: 12px;
+    border: 1px solid #e3e7f2;
+    background: #f8faff;
+    color: #1d1d1f;
+    font-family: inherit;
+    font-size: 16px;
+    transition: background var(--transicion-rapida), border-color var(--transicion-rapida);
+  }
+  .hor-card-input:focus {
+    outline: none;
+    background: #ffffff;
+    border-color: #2a3b8f;
+    box-shadow: 0 0 0 3px rgba(42, 59, 143, 0.14);
+  }
+  .hor-card-input::placeholder { color: #98a2b3; }
+
+  /* ── Pie de acciones de la planilla ── */
+  .hor-pie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 18px;
+    background: #f7f9ff;
+    border-top: 1px solid #e3e7f2;
+  }
+  .hor-pie__acciones {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* ── Espejo oculto para exportar PNG cuando el celular esta en vista Tarjetas ── */
+  .hor-export-offscreen {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 1120px;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* ── La hoja fotografiada para WhatsApp (fiel a la planilla azul con acabado Apple) ── */
+  .hor-shell.hor-planilla--imagen {
     position: absolute;
     left: 0;
     top: 0;
@@ -309,49 +652,51 @@ const ESTILOS_PLANILLA = `
     width: 1120px;
     min-width: 0;
     border-radius: 0;
+    border: 1px solid #d5dcef;
     box-shadow: none;
     overflow: visible;
+    background: #ffffff;
+    color: #1d1d1f;
   }
-  .hor-planilla--imagen .hor-trab { padding: 0; }
-  .hor-planilla .hor-x {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 18px;
-    height: 18px;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
+  .hor-planilla--imagen .hor-head {
+    background: #dfe6ff;
+    border-bottom: 2px solid #b9c5ea;
+    align-items: center;
+    text-align: center;
+    padding: 18px 24px 14px;
+    gap: 6px;
+  }
+  .hor-planilla--imagen .hor-head__top { justify-content: center; }
+  .hor-planilla--imagen .hor-head__punto { display: none; }
+  .hor-planilla--imagen .hor-head__titulo { font-size: 19px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .hor-planilla--imagen .hor-nav { justify-content: center; }
+  .hor-planilla--imagen .hor-nav__grupo { border: none; background: transparent; padding: 0; }
+  .hor-planilla--imagen .hor-tabla { min-width: 0; }
+  .hor-planilla--imagen .hor-trab-chip {
     background: transparent;
-    color: #a0a6b5;
-    font-size: 15px;
-    line-height: 16px;
-    cursor: pointer;
-    opacity: .45;
-    transition: opacity .12s ease, background .12s ease, color .12s ease;
-  }
-  .hor-planilla tr:hover .hor-x { opacity: 1; }
-  .hor-planilla .hor-x:hover, .hor-planilla .hor-x:focus-visible { background: #ffe5e5; color: #d70015; opacity: 1; }
-  .hor-planilla .hor-x--fila { top: 6px; right: 6px; transform: none; }
-  .hor-pista {
-    display: block;
-    margin-top: 6px;
-    font-size: 12px;
+    padding: 1px 0;
     font-weight: 500;
-    letter-spacing: 0;
-    text-transform: none;
-    color: #b25000;
+    font-size: 13.5px;
   }
-  .hor-pista--suave { color: #a0a6b5; }
+  .hor-planilla--imagen .hor-trabs-lista { align-items: center; gap: 3px; }
+  .hor-planilla--imagen .hor-tabla th,
+  .hor-planilla--imagen .hor-tabla td { text-align: center; }
+  .hor-planilla--imagen .ui-hor-picker--hora {
+    border: none;
+    padding: 3px 11px;
+    min-height: 26px;
+  }
+
+  @media (max-width: 768px) {
+    .hor-head { padding: 14px; }
+    .hor-pie { padding: 12px 14px; }
+    .ui-hor-flecha { width: 36px; height: 36px; }
+    .ui-hor-chip { height: 36px; padding: 0 13px; }
+    .ui-hor-picker--fecha-head { font-size: 13px; padding: 6px 8px; }
+    .ui-hor-x--fila { opacity: 1; width: 34px; height: 34px; }
+  }
 `;
 
-// Agrupa los turnos del dia por obra: una fila por cliente, con todos sus
-// trabajadores juntos, como la hoja original.
-//
-// Una celda se puede escribir cuando todos los turnos de la fila comparten el
-// dato. Si varia -dos turnos con tareas distintas, armados con el formulario-
-// se muestra junto y se corrige abajo, en la lista de turnos.
 function filasDeLaPlanilla(dia, obras, empleados) {
   const porObra = new Map();
   for (const h of dia) {
@@ -369,12 +714,12 @@ function filasDeLaPlanilla(dia, obras, empleados) {
     const encuentros = distintos(turnos.map((t) => limpio(t.encuentro)));
     const horas = distintos(turnos.map((t) => limpio(t.turno)));
     const inicios = horas.map(inicioDelTurno).filter(Boolean).sort();
-    const cliente = normalizarMayusculas(o?.cliente || "SIN OBRA");
-    const proyecto = normalizarMayusculas(o?.proyecto || "");
+    const cliente = limpio(o?.cliente) || "Sin obra";
+    const proyecto = limpio(o?.proyecto);
     return {
       obraId,
       cliente,
-      proyecto: proyecto && proyecto !== cliente ? proyecto : "",
+      proyecto: proyecto && proyecto.toLowerCase() !== cliente.toLowerCase() ? proyecto : "",
       trabajadores,
       direccion: direccionDe(o),
       tarea: tareas.length === 1 ? tareas[0] : null,
@@ -389,19 +734,16 @@ function filasDeLaPlanilla(dia, obras, empleados) {
   });
 }
 
-const VARIA = "Este dato cambia entre los turnos de la fila. Corrígelo abajo, en «Turnos del día».";
+const VARIA = "Este dato cambia entre los turnos de la fila. Edítalo abajo en «Turnos del día».";
 
-// Celda de texto: se ve como texto y, al hacer clic, se vuelve un campo.
-// Enter o salir de la celda guarda; Escape deja lo que habia.
 function CeldaTexto({
   valor, mostrar, placeholder, onGuardar, lista, maxLength = 160,
-  etiqueta, enLinea = false, claseTexto,
+  etiqueta, enLinea = false, claseTexto, icono = null,
 }) {
   const [editando, setEditando] = useState(false);
   const [borrador, setBorrador] = useState("");
   const cerrado = useRef(false);
 
-  // `valor` nulo = el dato varia entre turnos: solo se muestra.
   if (valor === null) {
     return <span title={VARIA} className={claseTexto}>{mostrar}</span>;
   }
@@ -423,7 +765,7 @@ function CeldaTexto({
     return (
       <input
         autoFocus
-        className="hor-input"
+        className="hor-input no-full-width"
         value={borrador}
         list={lista}
         maxLength={maxLength}
@@ -452,6 +794,7 @@ function CeldaTexto({
         if (e.key === "Enter" || e.key === " " || e.key === "F2") { e.preventDefault(); abrir(); }
       }}
     >
+      {icono && <span data-html2canvas-ignore="true" style={{ color: "var(--text-tertiary)", display: "inline-flex" }}>{icono}</span>}
       {texto
         ? <span className={claseTexto}>{texto}</span>
         : <span className="hor-celda__ph" data-html2canvas-ignore="true">{placeholder}</span>}
@@ -459,116 +802,102 @@ function CeldaTexto({
   );
 }
 
-// Hora de entrada: la etiqueta azul se vuelve un campo de hora al hacer clic.
-function CeldaHora({ inicio, mostrar, onGuardar }) {
-  const [editando, setEditando] = useState(false);
-  const [borrador, setBorrador] = useState("");
-  const cerrado = useRef(false);
+// Campo con borrador local para la vista de tarjetas moviles: guarda al salir
+// o pulsar Enter sin perder el foco en cada tecla.
+function CampoTarjeta({
+  valor, placeholder, onGuardar, lista, maxLength = 160, etiqueta, disabled = false,
+}) {
+  const [borrador, setBorrador] = useState(valor ?? "");
+  const [enfocado, setEnfocado] = useState(false);
 
-  if (inicio === null) {
-    return mostrar ? <span className="hor-planilla__hora" title={VARIA}>{mostrar}</span> : null;
-  }
-
-  const abrir = () => {
-    cerrado.current = false;
-    setBorrador(inicio || INICIO_POR_DEFECTO);
-    setEditando(true);
-  };
-  const cerrar = (guardar) => {
-    if (cerrado.current) return;
-    cerrado.current = true;
-    setEditando(false);
-    if (guardar && borrador && borrador !== inicio) onGuardar(borrador);
+  const visible = enfocado ? borrador : (valor ?? "");
+  const confirmarValor = (texto) => {
+    const nuevo = limpio(texto);
+    if (nuevo !== limpio(valor)) onGuardar(nuevo);
   };
 
-  if (editando) {
-    return (
-      <input
-        autoFocus
-        type="time"
-        className="hor-input"
-        style={{ marginTop: 6 }}
-        value={borrador}
-        aria-label="Hora de entrada"
-        onChange={(e) => setBorrador(e.target.value)}
-        onBlur={() => cerrar(true)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") { e.preventDefault(); cerrar(true); }
-          if (e.key === "Escape") { e.preventDefault(); cerrar(false); }
-        }}
-      />
-    );
+  return (
+    <input
+      className="hor-card-input"
+      value={visible}
+      list={lista}
+      maxLength={maxLength}
+      placeholder={placeholder}
+      aria-label={etiqueta}
+      disabled={disabled}
+      onFocus={() => { setBorrador(valor ?? ""); setEnfocado(true); }}
+      onChange={(e) => setBorrador(e.target.value)}
+      onBlur={(e) => { setEnfocado(false); confirmarValor(e.target.value); }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
+        if (e.key === "Escape") { setBorrador(valor ?? ""); setEnfocado(false); e.currentTarget.blur(); }
+      }}
+    />
+  );
+}
+
+// Boton tactil de hora: cubre el boton con el <input type="time"> nativo para
+// que funcione igual de bien al tocar en iPhone/Android que al hacer clic en PC.
+function BotonHora({ inicio, mostrar, onGuardar, editable }) {
+  const tieneHora = Boolean(inicio || mostrar);
+  if (!editable) {
+    return tieneHora ? (
+      <span className="ui-hor-picker ui-hor-picker--hora" style={{ cursor: "default" }}>
+        <Icono nombre="reloj" size={13} />
+        <span>{mostrar || hora12(inicio)}</span>
+      </span>
+    ) : null;
   }
 
   return (
     <span
-      role="button"
-      tabIndex={0}
-      className={inicio ? "hor-planilla__hora" : "hor-celda hor-celda--linea"}
-      style={{ cursor: "pointer" }}
-      title="Clic para cambiar la hora de entrada"
-      onClick={abrir}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " " || e.key === "F2") { e.preventDefault(); abrir(); }
-      }}
+      className={`ui-hor-picker ${tieneHora ? "ui-hor-picker--hora" : "ui-hor-picker--hora-vacia"}`}
+      title={inicio === null ? "Unificar hora de entrada de esta fila" : "Toca para cambiar o agregar la hora"}
     >
-      {inicio
-        ? hora12(inicio)
-        : <span className="hor-celda__ph" data-html2canvas-ignore="true">Agregar hora</span>}
-    </span>
-  );
-}
-
-// Fecha que abre el calendario del sistema al tocarla. El campo de fecha va
-// escondido debajo: lo que se ve -y lo que sale en la imagen- es el texto.
-function SelectorFecha({ fecha, onCambiar, className, titulo, children }) {
-  const campo = useRef(null);
-  const abrir = () => {
-    const el = campo.current;
-    if (!el) return;
-    try {
-      el.showPicker();
-    } catch {
-      el.focus();
-      el.click();
-    }
-  };
-  return (
-    <span style={{ position: "relative", display: "inline-block" }}>
-      <span
-        role="button"
-        tabIndex={0}
-        className={className}
-        style={{ cursor: "pointer" }}
-        title={titulo}
-        onClick={abrir}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " " || e.key === "F2") { e.preventDefault(); abrir(); }
-        }}
-      >
-        {children}
+      <Icono nombre="reloj" size={14} />
+      <span>{tieneHora ? (mostrar || hora12(inicio)) : "Agregar hora"}</span>
+      <span data-html2canvas-ignore="true" style={{ display: "inline-flex", opacity: 0.7 }}>
+        <Icono nombre="flechaAbajo" size={12} />
       </span>
       <input
-        ref={campo}
-        type="date"
-        className="no-full-width"
-        value={fecha}
-        tabIndex={-1}
-        aria-hidden="true"
+        type="time"
+        className="hor-native-overlay no-full-width"
+        aria-label="Elegir hora de entrada"
         data-html2canvas-ignore="true"
-        onChange={(e) => e.target.value && e.target.value !== fecha && onCambiar(e.target.value)}
-        style={{
-          position: "absolute", left: "50%", bottom: 0, width: 1, height: 1,
-          opacity: 0, pointerEvents: "none", border: 0, padding: 0,
+        value={inicio || ""}
+        onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch { /* nativo en movil */ } }}
+        onChange={(e) => {
+          if (e.target.value && e.target.value !== inicio) onGuardar(e.target.value);
         }}
       />
     </span>
   );
 }
 
-// Lista para sumar gente a la fila. Es la lista del sistema, que no se recorta
-// con los bordes de la hoja y en el celular abre el selector de siempre.
-function AgregarTrabajador({ empleados, yaEstan, equipo, ocupados, onAgregar, solo }) {
+// Boton tactil de fecha con <input type="date"> nativo superpuesto.
+function BotonFecha({ fecha, onCambiar, className, titulo, soloImagen = false, children }) {
+  if (soloImagen || !onCambiar) {
+    return <span className={className}>{children}</span>;
+  }
+  return (
+    <span className={`ui-hor-picker ${className || "ui-hor-picker--fecha"}`} title={titulo}>
+      {children}
+      <input
+        type="date"
+        className="hor-native-overlay no-full-width"
+        aria-label={titulo || "Elegir fecha"}
+        data-html2canvas-ignore="true"
+        value={fecha}
+        onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch { /* nativo en movil */ } }}
+        onChange={(e) => {
+          if (e.target.value && e.target.value !== fecha) onCambiar(e.target.value);
+        }}
+      />
+    </span>
+  );
+}
+
+function AgregarTrabajador({ empleados, yaEstan, equipo, ocupados, onAgregar, fullWidth = false }) {
   const libres = empleados.filter((e) => !yaEstan.includes(e.id));
   if (!libres.length) return null;
   const delEquipo = libres.filter((e) => equipo.includes(e.id));
@@ -577,35 +906,40 @@ function AgregarTrabajador({ empleados, yaEstan, equipo, ocupados, onAgregar, so
     <option key={e.id} value={e.id}>
       {limpio(e.nombre)}
       {e.cargo ? ` · ${e.cargo}` : ""}
-      {ocupados.has(e.id) ? ` — ya está en ${ocupados.get(e.id)}` : ""}
+      {ocupados.has(e.id) ? ` — ya en ${ocupados.get(e.id)}` : ""}
     </option>
   );
   return (
-    <select
-      className={`hor-agregar${solo ? " hor-agregar--solo" : ""}`}
+    <span
+      className={`ui-hor-picker ui-hor-picker--select${fullWidth ? " ui-hor-picker--bloque" : ""}`}
       data-html2canvas-ignore="true"
-      aria-label="Agregar trabajador a la fila"
-      value=""
-      onChange={(e) => {
-        const v = e.target.value;
-        if (!v) return;
-        onAgregar(v === "__equipo" ? delEquipo.map((x) => x.id) : [v]);
-      }}
     >
-      <option value="">＋ Agregar trabajador</option>
-      {delEquipo.length > 1 && (
-        <option value="__equipo">Todo el equipo de la obra ({delEquipo.length})</option>
-      )}
-      {delEquipo.length > 0 && <optgroup label="Equipo de la obra">{delEquipo.map(opcion)}</optgroup>}
-      {resto.length > 0 && (
-        <optgroup label={delEquipo.length ? "Resto del personal" : "Personal"}>{resto.map(opcion)}</optgroup>
-      )}
-    </select>
+      <Icono nombre="mas" size={13} />
+      <span>Agregar trabajador</span>
+      <Icono nombre="flechaAbajo" size={12} style={{ opacity: 0.6 }} />
+      <select
+        className="hor-native-overlay"
+        aria-label="Agregar trabajador a la fila"
+        value=""
+        onChange={(e) => {
+          const v = e.target.value;
+          if (!v) return;
+          onAgregar(v === "__equipo" ? delEquipo.map((x) => x.id) : [v]);
+        }}
+      >
+        <option value="">＋ Agregar trabajador</option>
+        {delEquipo.length > 1 && (
+          <option value="__equipo">Todo el equipo de la obra ({delEquipo.length})</option>
+        )}
+        {delEquipo.length > 0 && <optgroup label="Equipo de la obra">{delEquipo.map(opcion)}</optgroup>}
+        {resto.length > 0 && (
+          <optgroup label={delEquipo.length ? "Resto del personal" : "Personal"}>{resto.map(opcion)}</optgroup>
+        )}
+      </select>
+    </span>
   );
 }
 
-// El menu de compartir del sistema, cuando acepta archivos: celulares, y
-// Chrome o Edge en el computador. Firefox de escritorio no lo tiene.
 const puedeCompartirArchivos = () => {
   try {
     const prueba = new File([""], "prueba.png", { type: "image/png" });
@@ -621,33 +955,31 @@ const normalizarEncuentro = (texto) =>
   limpio(texto).toLowerCase() === ENCUENTRO_POR_DEFECTO.toLowerCase() ? "" : limpio(texto);
 
 export default function PlanillaDia({
-  fecha, dia, obras, empleados, tareasSugeridas = [], accionVacia = null,
+  fecha, dia, obras, empleados, tareasSugeridas = [],
   onCrearFila, onEditarFila, onAgregarTrabajadores, onQuitarTrabajador, onQuitarFila,
-  onCambiarFecha, onMoverFila,
+  onCambiarFecha, onMoverFila, onAbrirTextoGrupo,
 }) {
+  const isMobile = useIsMobile();
+  const [vistaMovil, setVistaMovil] = useState("tarjetas");
+  const mostrarTarjetas = isMobile && vistaMovil === "tarjetas";
+
   const hoy = today();
   const manana = sumarDias(hoy, 1);
   const hojaRef = useRef(null);
-  const [ocupado, setOcupado] = useState(false); // se esta armando la imagen
-  const [aviso, setAviso] = useState(null); // { tono, texto, enlace?, textoEnlace? }
-  // Imagen ya armada, a la espera de un toque para abrir el menu de compartir.
+  const [ocupado, setOcupado] = useState(false);
+  const [aviso, setAviso] = useState(null);
   const [pendiente, setPendiente] = useState(null);
   const [puedeCompartir] = useState(puedeCompartirArchivos);
-  // La libreria que arma la imagen se trae al abrir la pantalla, no al tocar
-  // el boton: la ventana de compartir exige abrirse casi enseguida del toque,
-  // y esa descarga era justo lo que mas demoraba.
+
   useEffect(() => {
     import("html2canvas").catch(() => {});
   }, []);
-  // La fila que se esta empezando. No es un turno todavia: se guarda sola en
-  // cuanto tiene cliente y al menos un trabajador, que es lo minimo de un turno.
+
   const [nueva, setNueva] = useState(FILA_NUEVA);
   const filas = filasDeLaPlanilla(dia, obras, empleados);
   const fechaTexto = fechaLarga(fecha);
   const editable = Boolean(onCrearFila && onEditarFila);
 
-  // Quien ya tiene turno ese dia, y con que cliente: se avisa en la lista, sin
-  // bloquear, porque a veces el dia se reparte entre dos obras.
   const ocupadosFuera = (obraId) => {
     const mapa = new Map();
     for (const h of dia) {
@@ -677,19 +1009,7 @@ export default function PlanillaDia({
     nueva.obraId || nueva.empleadoIds.length || nueva.tarea || nueva.cantidad || nueva.encuentro
   );
 
-  // ── La hoja como imagen ──────────────────────────────────────────────────
-  //
-  // WhatsApp no recibe una imagen por enlace: solo se le puede pasar por la
-  // ventana de compartir del dispositivo, o pegandola en el chat. Por eso hay
-  // tres caminos, del mas directo al mas manual:
-  //   1. «Enviar por WhatsApp»: abre la ventana de compartir (la misma de
-  //      cualquier app) y ahi se elige WhatsApp y el grupo.
-  //   2. «Copiar»: deja la imagen en el portapapeles y el enlace a WhatsApp
-  //      Web, para pegarla en el grupo con Ctrl+V desde el computador.
-  //   3. «Descargar» el PNG, para adjuntarlo a mano.
-  //
-  // Solo se manda el archivo, sin texto: con texto y archivo juntos WhatsApp
-  // en iPhone se queda con el texto y descarta la imagen.
+  // ── Exportacion como imagen PNG para WhatsApp ────────────────────────────
   const avisoTimer = useRef(null);
   const avisar = (siguiente, segundos = 8) => {
     clearTimeout(avisoTimer.current);
@@ -703,15 +1023,9 @@ export default function PlanillaDia({
       scale: 2,
       backgroundColor: "#ffffff",
       windowWidth: 1400,
-      // La copia que se fotografia se saca de la pagina y se pone sola, con su
-      // ancho fijo (clase --imagen). Sin `width`: el tamaño de la imagen es el
-      // de esa copia, justo, y no el de la pantalla. Antes se pedia el ancho de
-      // la pantalla y sobraba una franja blanca a la derecha.
       onclone: (doc, copia) => {
         copia.classList.add("hor-planilla--imagen");
         doc.body.appendChild(copia);
-        // Si un nombre muy largo no cabe en el ancho fijo, la hoja se ensancha
-        // en vez de cortarlo.
         const tabla = copia.querySelector("table");
         if (tabla && tabla.scrollWidth > copia.clientWidth) {
           copia.style.width = `${tabla.scrollWidth + 2}px`;
@@ -734,7 +1048,6 @@ export default function PlanillaDia({
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   };
 
-  // Una accion a la vez: mientras se arma la imagen los botones esperan.
   const conImagen = async (accion) => {
     if (!hojaRef.current || ocupado) return;
     setOcupado(true);
@@ -749,31 +1062,23 @@ export default function PlanillaDia({
     }
   };
 
-  // El menu de compartir exige que lo pida un toque de la persona. Armar la
-  // imagen tarda, y en iPhone ese permiso puede vencerse mientras tanto: ahi la
-  // imagen queda lista y se comparte con un segundo toque, que ya es inmediato.
   const abrirMenuCompartir = async (archivo) => {
     try {
-      await navigator.share({ files: [archivo], title: `Programación ${fechaTexto}` });
+      await navigator.share({ files: [archivo], title: `Programación · ${fechaTexto}` });
       setPendiente(null);
       avisar(null);
     } catch (error) {
-      if (error?.name === "AbortError") return; // Cerro el menu sin enviar.
+      if (error?.name === "AbortError") return;
       if (error?.name === "NotAllowedError") {
         setPendiente(archivo);
         avisar({ tono: "ok", texto: "La imagen ya está lista. Toca «Compartir ahora»." }, 0);
         return;
       }
       bajar(archivo);
-      avisar({ tono: "ok", texto: "No se pudo abrir el menú de compartir, así que se descargó la imagen: adjúntala en el grupo." }, 12);
+      avisar({ tono: "ok", texto: "Imagen descargada: adjúntala en el grupo de WhatsApp." }, 12);
     }
   };
 
-  // «Enviar por WhatsApp» abre la ventana de compartir del dispositivo, la
-  // misma de cualquier app: ahi se toca WhatsApp y se elige el grupo. Asi es
-  // en el celular, que es desde donde se arma la hoja, y tambien en el
-  // computador cuando el navegador la tiene. Solo si no existe (Firefox de
-  // escritorio) se cae a copiar la imagen para pegarla en WhatsApp Web.
   const enviarPorWhatsApp = () => conImagen(async (archivo) => {
     if (puedeCompartir) {
       await abrirMenuCompartir(archivo);
@@ -797,7 +1102,7 @@ export default function PlanillaDia({
       bajar(archivo);
       avisar({
         tono: "ok",
-        texto: "El navegador no dejó copiar la imagen, así que se descargó: adjúntala en el grupo de WhatsApp.",
+        texto: "Imagen descargada: adjúntala en el grupo de WhatsApp.",
         enlace: "https://web.whatsapp.com/",
         textoEnlace: "Abrir WhatsApp Web",
       }, 60);
@@ -809,172 +1114,184 @@ export default function PlanillaDia({
     avisar({ tono: "ok", texto: "Imagen descargada." });
   });
 
-  const celdaFecha = (encuentro, encuentroTexto, inicio, inicioTexto, guardar, alCambiarFecha, botonFecha, tituloFecha) => (
-    <td>
-      {fechaTexto}
-      <div>
-        {editable ? (
-          <CeldaTexto
-            enLinea
-            etiqueta="Punto de encuentro"
-            valor={encuentro}
-            mostrar={encuentroTexto}
-            placeholder={ENCUENTRO_POR_DEFECTO}
-            lista="hor-planilla-encuentros"
-            maxLength={60}
-            onGuardar={(v) => guardar({ encuentro: normalizarEncuentro(v) })}
-          />
-        ) : encuentroTexto}
-      </div>
-      <div>
-        {editable
-          ? <CeldaHora inicio={inicio} mostrar={inicioTexto} onGuardar={(v) => guardar({ inicio: v })} />
-          : inicioTexto && <span className="hor-planilla__hora">{inicioTexto}</span>}
-      </div>
-      {/* La fecha se cambia con un boton a la vista, igual que se agrega un
-          cliente o un trabajador: tocar el texto no se le ocurria a nadie. */}
-      {editable && alCambiarFecha && (
-        <div data-html2canvas-ignore="true">
-          <SelectorFecha
-            fecha={fecha}
-            onCambiar={alCambiarFecha}
-            className="hor-agregar hor-agregar--fecha"
-            titulo={tituloFecha}
-          >
-            {botonFecha}
-          </SelectorFecha>
+  // Cabecera compartida de la hoja (se usa en pantalla y en el espejo de exportacion)
+  const renderCabecera = (esSoloImagen = false) => (
+    <div className="hor-head">
+      <div className="hor-head__top">
+        <div className="hor-head__marca">
+          <span className="hor-head__punto" aria-hidden="true" />
+          <h2 className="hor-head__titulo">Actividades y clientes</h2>
+          {!esSoloImagen && (
+            <span className="hor-head__cuenta" data-html2canvas-ignore="true">
+              {dia.length} turno{dia.length !== 1 ? "s" : ""}
+            </span>
+          )}
         </div>
-      )}
-    </td>
+        {!esSoloImagen && isMobile && (
+          <div className="ui-seg" role="tablist" aria-label="Vista de la planilla" data-html2canvas-ignore="true">
+            <button
+              type="button"
+              role="tab"
+              className="ui-seg__op"
+              aria-selected={vistaMovil === "tarjetas"}
+              onClick={() => setVistaMovil("tarjetas")}
+            >
+              Tarjetas
+            </button>
+            <button
+              type="button"
+              role="tab"
+              className="ui-seg__op"
+              aria-selected={vistaMovil === "tabla"}
+              onClick={() => setVistaMovil("tabla")}
+            >
+              Tabla
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="hor-nav">
+        <div className="hor-nav__grupo">
+          {!esSoloImagen && onCambiarFecha && (
+            <button
+              type="button"
+              className="ui-hor-flecha"
+              data-html2canvas-ignore="true"
+              title="Día anterior"
+              aria-label="Día anterior"
+              onClick={() => onCambiarFecha(sumarDias(fecha, -1))}
+            >
+              <Icono nombre="flechaIzq" size={16} />
+            </button>
+          )}
+          <BotonFecha
+            fecha={fecha}
+            onCambiar={esSoloImagen ? null : onCambiarFecha}
+            soloImagen={esSoloImagen}
+            className="ui-hor-picker--fecha-head"
+            titulo="Elegir otro día"
+          >
+            {!esSoloImagen && <Icono nombre="calendario" size={14} style={{ color: "#2a3b8f" }} />}
+            <span>{fechaTexto}</span>
+          </BotonFecha>
+          {!esSoloImagen && onCambiarFecha && (
+            <button
+              type="button"
+              className="ui-hor-flecha"
+              data-html2canvas-ignore="true"
+              title="Día siguiente"
+              aria-label="Día siguiente"
+              onClick={() => onCambiarFecha(sumarDias(fecha, 1))}
+            >
+              <Icono nombre="flechaDer" size={16} />
+            </button>
+          )}
+        </div>
+
+        {!esSoloImagen && onCambiarFecha && (
+          <div className="hor-nav__atajos" data-html2canvas-ignore="true">
+            <button
+              type="button"
+              className={`ui-hor-chip${fecha === hoy ? " ui-hor-chip--activo" : ""}`}
+              onClick={() => onCambiarFecha(hoy)}
+            >
+              Hoy
+            </button>
+            <button
+              type="button"
+              className={`ui-hor-chip${fecha === manana ? " ui-hor-chip--activo" : ""}`}
+              onClick={() => onCambiarFecha(manana)}
+            >
+              Mañana
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 
-  return (
-    <div>
-      <style>{ESTILOS_PLANILLA}</style>
-      <div className="hor-planilla__marco">
-        <div ref={hojaRef} className="hor-planilla doc-shell">
-          <div className="hor-planilla__titulo">
-            Actividades y clientes
-            {/* El dia de la hoja se cambia aqui mismo: flechas, calendario al
-                tocar la fecha y atajos. En la imagen solo sale la fecha. */}
-            <div className="hor-planilla__fecha">
-              {onCambiarFecha ? (
-                <span className="hor-nav">
-                  <button
-                    type="button"
-                    className="hor-flecha"
-                    data-html2canvas-ignore="true"
-                    title="Día anterior"
-                    aria-label="Día anterior"
-                    onClick={() => onCambiarFecha(sumarDias(fecha, -1))}
-                  >
-                    ‹
-                  </button>
-                  <SelectorFecha
-                    fecha={fecha}
-                    onCambiar={onCambiarFecha}
-                    className="hor-fecha-btn"
-                    titulo="Clic para elegir otro día"
-                  >
-                    {fechaTexto}
-                  </SelectorFecha>
-                  <button
-                    type="button"
-                    className="hor-flecha"
-                    data-html2canvas-ignore="true"
-                    title="Día siguiente"
-                    aria-label="Día siguiente"
-                    onClick={() => onCambiarFecha(sumarDias(fecha, 1))}
-                  >
-                    ›
-                  </button>
-                  {fecha !== hoy && (
-                    <button type="button" className="hor-chip" data-html2canvas-ignore="true" onClick={() => onCambiarFecha(hoy)}>
-                      Hoy
+  // Tabla completa (editable en escritorio / tabla movil, o limpia en espejo de exportacion)
+  const renderTabla = (esSoloImagen = false) => {
+    const permiteEditar = editable && !esSoloImagen;
+    return (
+      <div className={esSoloImagen ? undefined : "hor-marco-tabla"}>
+        <table className="hor-tabla">
+          <colgroup>
+            <col style={{ width: "17%" }} />
+            <col style={{ width: "18%", minWidth: 160 }} />
+            <col style={{ width: "8%" }} />
+            <col style={{ width: "22%" }} />
+            <col style={{ width: "15%" }} />
+            <col style={{ width: "20%" }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Clientes</th>
+              <th>Actividad</th>
+              <th className="hor-col-centro">Cantidades</th>
+              <th>Trabajadores</th>
+              <th>Dirección</th>
+              <th className="hor-col-centro">Fecha y hora</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filas.map((f) => (
+              <tr key={f.obraId} className="hor-fila-datos">
+                <td>
+                  <span className="hor-cliente">{f.cliente}</span>
+                  {f.proyecto && <span className="hor-proyecto">{f.proyecto}</span>}
+                  {permiteEditar && (
+                    <button
+                      type="button"
+                      className="ui-hor-x ui-hor-x--fila"
+                      data-html2canvas-ignore="true"
+                      title="Quitar esta obra de la planilla"
+                      aria-label={`Quitar la fila de ${f.cliente}`}
+                      onClick={() => onQuitarFila(f.obraId)}
+                    >
+                      ×
                     </button>
                   )}
-                  {fecha !== manana && (
-                    <button type="button" className="hor-chip" data-html2canvas-ignore="true" onClick={() => onCambiarFecha(manana)}>
-                      Mañana
-                    </button>
+                </td>
+                <td>
+                  {permiteEditar ? (
+                    <CeldaTexto
+                      etiqueta="Actividad"
+                      valor={f.tarea}
+                      mostrar={f.tareaTexto}
+                      placeholder="Escribir actividad"
+                      lista="hor-planilla-tareas"
+                      onGuardar={(v) => onEditarFila(f.obraId, { tarea: v })}
+                    />
+                  ) : (f.tareaTexto || <span className="hor-vacio">—</span>)}
+                </td>
+                <td className="hor-col-centro">
+                  {permiteEditar ? (
+                    <CeldaTexto
+                      etiqueta="Cantidad"
+                      valor={f.cantidad}
+                      mostrar={f.cantidadTexto}
+                      placeholder="—"
+                      maxLength={40}
+                      claseTexto={/^\d+$/.test(f.cantidadTexto) ? "hor-cifra" : undefined}
+                      onGuardar={(v) => onEditarFila(f.obraId, { cantidad: v })}
+                    />
+                  ) : f.cantidadTexto ? (
+                    <span className={/^\d+$/.test(f.cantidadTexto) ? "hor-cifra" : undefined}>{f.cantidadTexto}</span>
+                  ) : (
+                    <span className="hor-vacio">—</span>
                   )}
-                </span>
-              ) : fechaTexto}
-            </div>
-          </div>
-          <table>
-            <colgroup>
-              <col style={{ width: "16%" }} />
-              <col style={{ width: "17%" }} />
-              <col style={{ width: "11%" }} />
-              <col style={{ width: "19%" }} />
-              <col style={{ width: "16%" }} />
-              <col style={{ width: "21%" }} />
-            </colgroup>
-            <thead>
-              <tr>
-                <th>Clientes</th>
-                <th>Actividad</th>
-                <th>Cantidades</th>
-                <th>Trabajadores</th>
-                <th>Dirección</th>
-                <th>Fecha y hora</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filas.map((f) => (
-                <tr key={f.obraId}>
-                  <td>
-                    <span className="hor-planilla__cliente">{f.cliente}</span>
-                    {f.proyecto && <span className="hor-planilla__suave">{f.proyecto}</span>}
-                    {editable && (
-                      <button
-                        type="button"
-                        className="hor-x hor-x--fila"
-                        data-html2canvas-ignore="true"
-                        title="Quitar esta fila de la planilla"
-                        aria-label={`Quitar la fila de ${f.cliente}`}
-                        onClick={() => onQuitarFila(f.obraId)}
-                      >
-                        ×
-                      </button>
-                    )}
-                  </td>
-                  <td>
-                    {editable ? (
-                      <CeldaTexto
-                        etiqueta="Actividad"
-                        valor={f.tarea}
-                        mostrar={f.tareaTexto}
-                        placeholder="Escribir actividad"
-                        lista="hor-planilla-tareas"
-                        onGuardar={(v) => onEditarFila(f.obraId, { tarea: v })}
-                      />
-                    ) : f.tareaTexto}
-                  </td>
-                  <td>
-                    {editable ? (
-                      <CeldaTexto
-                        etiqueta="Cantidad"
-                        valor={f.cantidad}
-                        mostrar={f.cantidadTexto}
-                        placeholder="—"
-                        maxLength={40}
-                        claseTexto={/^\d+$/.test(f.cantidadTexto) ? "hor-planilla__cifra" : undefined}
-                        onGuardar={(v) => onEditarFila(f.obraId, { cantidad: v })}
-                      />
-                    ) : f.cantidadTexto
-                      ? <span className={/^\d+$/.test(f.cantidadTexto) ? "hor-planilla__cifra" : undefined}>{f.cantidadTexto}</span>
-                      : <span className="hor-planilla__vacio">—</span>}
-                  </td>
-                  <td>
+                </td>
+                <td>
+                  <div className="hor-trabs-lista">
                     {f.trabajadores.map((t) => (
-                      <div key={t.id} className="hor-trab">
-                        {t.etiqueta}
-                        {editable && (
+                      <span key={t.id} className="hor-trab-chip">
+                        <span className="hor-trab-chip__nombre">{t.etiqueta}</span>
+                        {permiteEditar && (
                           <button
                             type="button"
-                            className="hor-x"
+                            className="ui-hor-x"
                             data-html2canvas-ignore="true"
                             title="Quitar de esta fila"
                             aria-label={`Quitar a ${t.etiqueta} de ${f.cliente}`}
@@ -983,41 +1300,87 @@ export default function PlanillaDia({
                             ×
                           </button>
                         )}
-                      </div>
+                      </span>
                     ))}
-                    {editable && (
-                      <AgregarTrabajador
-                        empleados={empleados}
-                        yaEstan={f.trabajadores.map((t) => t.id)}
-                        equipo={equipoDe(f.obraId)}
-                        ocupados={ocupadosFuera(f.obraId)}
-                        onAgregar={(ids) => onAgregarTrabajadores(f.obraId, ids)}
-                      />
+                    {permiteEditar && (
+                      <div style={{ marginTop: 4 }} data-html2canvas-ignore="true">
+                        <AgregarTrabajador
+                          empleados={empleados}
+                          yaEstan={f.trabajadores.map((t) => t.id)}
+                          equipo={equipoDe(f.obraId)}
+                          ocupados={ocupadosFuera(f.obraId)}
+                          onAgregar={(ids) => onAgregarTrabajadores(f.obraId, ids)}
+                        />
+                      </div>
                     )}
-                  </td>
-                  <td>{f.direccion}</td>
-                  {celdaFecha(f.encuentro, f.encuentroTexto, f.inicio, f.inicioTexto,
-                    (cambios) => onEditarFila(f.obraId, cambios),
-                    onMoverFila && ((iso) => onMoverFila(f.obraId, iso)),
-                    "Cambiar fecha",
-                    "Pasa esta fila, con sus trabajadores, a otro día")}
-                </tr>
-              ))}
+                  </div>
+                </td>
+                <td>
+                  <span className="hor-direccion">{f.direccion || <span className="hor-vacio">—</span>}</span>
+                </td>
+                <td className="hor-col-centro">
+                  <div className="hor-fecha-bloque">
+                    <span className="hor-fecha-texto">{fechaTexto}</span>
+                    {permiteEditar ? (
+                      <CeldaTexto
+                        enLinea
+                        etiqueta="Punto de encuentro"
+                        valor={f.encuentro}
+                        mostrar={f.encuentroTexto}
+                        placeholder={ENCUENTRO_POR_DEFECTO}
+                        lista="hor-planilla-encuentros"
+                        maxLength={60}
+                        claseTexto="hor-encuentro-texto"
+                        icono={<Icono nombre="ubicacion" size={13} />}
+                        onGuardar={(v) => onEditarFila(f.obraId, { encuentro: normalizarEncuentro(v) })}
+                      />
+                    ) : (
+                      <span className="hor-encuentro-texto">{f.encuentroTexto}</span>
+                    )}
+                    <div className="hor-acciones-fecha">
+                      <BotonHora
+                        inicio={f.inicio}
+                        mostrar={f.inicioTexto}
+                        editable={permiteEditar}
+                        onGuardar={(v) => onEditarFila(f.obraId, { inicio: v })}
+                      />
+                      {permiteEditar && onMoverFila && (
+                        <span data-html2canvas-ignore="true">
+                          <BotonFecha
+                            fecha={fecha}
+                            onCambiar={(iso) => onMoverFila(f.obraId, iso)}
+                            className="ui-hor-picker--fecha"
+                            titulo="Mover esta fila a otra fecha"
+                          >
+                            <Icono nombre="calendario" size={13} />
+                            <span>Cambiar fecha</span>
+                          </BotonFecha>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            ))}
 
-              {/* Fila para empezar un cliente nuevo. No sale en la imagen. */}
-              {editable && (
-                <tr data-html2canvas-ignore="true">
-                  <td>
-                    {obraNueva ? (
-                      <>
-                        <span className="hor-planilla__cliente">{normalizarMayusculas(obraNueva.cliente || "")}</span>
-                        {obraNueva.proyecto && obraNueva.proyecto !== obraNueva.cliente && (
-                          <span className="hor-planilla__suave">{normalizarMayusculas(obraNueva.proyecto)}</span>
-                        )}
-                      </>
-                    ) : obrasLibres.length ? (
+            {/* Fila para agregar un cliente nuevo (no aparece en la imagen exportada) */}
+            {permiteEditar && (
+              <tr className="hor-fila-nueva" data-html2canvas-ignore="true">
+                <td>
+                  {obraNueva ? (
+                    <>
+                      <span className="hor-cliente">{limpio(obraNueva.cliente) || obraNueva.id}</span>
+                      {obraNueva.proyecto && obraNueva.proyecto !== obraNueva.cliente && (
+                        <span className="hor-proyecto">{limpio(obraNueva.proyecto)}</span>
+                      )}
+                    </>
+                  ) : obrasLibres.length ? (
+                    <span className="ui-hor-picker ui-hor-picker--select">
+                      <Icono nombre="mas" size={13} />
+                      <span>Agregar cliente</span>
+                      <Icono nombre="flechaAbajo" size={12} style={{ opacity: 0.6 }} />
                       <select
-                        className="hor-agregar hor-agregar--solo"
+                        className="hor-native-overlay"
                         aria-label="Agregar cliente a la planilla"
                         value=""
                         onChange={(e) => e.target.value && cambiarNueva({ obraId: e.target.value })}
@@ -1030,158 +1393,532 @@ export default function PlanillaDia({
                           </option>
                         ))}
                       </select>
-                    ) : (
-                      <span className="hor-pista hor-pista--suave">
-                        {obras.length ? "Todas las obras ya están en la hoja" : "Crea primero la obra"}
-                      </span>
-                    )}
-                    {nuevaEmpezada && (
-                      <button
-                        type="button"
-                        className="hor-x hor-x--fila"
-                        title="Descartar esta fila"
-                        aria-label="Descartar la fila nueva"
-                        onClick={() => setNueva(FILA_NUEVA)}
-                      >
-                        ×
-                      </button>
-                    )}
-                  </td>
-                  <td>
-                    <CeldaTexto
-                      etiqueta="Actividad"
-                      valor={nueva.tarea}
-                      placeholder="Escribir actividad"
-                      lista="hor-planilla-tareas"
-                      onGuardar={(v) => cambiarNueva({ tarea: v })}
-                    />
-                  </td>
-                  <td>
-                    <CeldaTexto
-                      etiqueta="Cantidad"
-                      valor={nueva.cantidad}
-                      placeholder="—"
-                      maxLength={40}
-                      claseTexto={/^\d+$/.test(nueva.cantidad) ? "hor-planilla__cifra" : undefined}
-                      onGuardar={(v) => cambiarNueva({ cantidad: v })}
-                    />
-                  </td>
-                  <td>
+                    </span>
+                  ) : (
+                    <span className="hor-pista hor-pista--suave" style={{ marginTop: 0 }}>
+                      {obras.length ? "Todas las obras ya están en la hoja" : "Crea primero la obra"}
+                    </span>
+                  )}
+                  {nuevaEmpezada && (
+                    <button
+                      type="button"
+                      className="ui-hor-x ui-hor-x--fila"
+                      title="Limpiar fila nueva"
+                      aria-label="Descartar la fila nueva"
+                      onClick={() => setNueva(FILA_NUEVA)}
+                    >
+                      ×
+                    </button>
+                  )}
+                </td>
+                <td>
+                  <CeldaTexto
+                    etiqueta="Actividad"
+                    valor={nueva.tarea}
+                    placeholder="Escribir actividad"
+                    lista="hor-planilla-tareas"
+                    onGuardar={(v) => cambiarNueva({ tarea: v })}
+                  />
+                </td>
+                <td className="hor-col-centro">
+                  <CeldaTexto
+                    etiqueta="Cantidad"
+                    valor={nueva.cantidad}
+                    placeholder="—"
+                    maxLength={40}
+                    claseTexto={/^\d+$/.test(nueva.cantidad) ? "hor-cifra" : undefined}
+                    onGuardar={(v) => cambiarNueva({ cantidad: v })}
+                  />
+                </td>
+                <td>
+                  <div className="hor-trabs-lista">
                     {nueva.empleadoIds.map((id) => {
                       const e = empleados.find((x) => x.id === id);
                       return (
-                        <div key={id} className="hor-trab">
-                          {etiquetaTrabajador(e)}
+                        <span key={id} className="hor-trab-chip">
+                          <span className="hor-trab-chip__nombre">{etiquetaTrabajador(e)}</span>
                           <button
                             type="button"
-                            className="hor-x"
+                            className="ui-hor-x"
                             title="Quitar"
                             aria-label={`Quitar a ${limpio(e?.nombre)}`}
                             onClick={() => cambiarNueva({ empleadoIds: nueva.empleadoIds.filter((x) => x !== id) })}
                           >
                             ×
                           </button>
-                        </div>
+                        </span>
                       );
                     })}
                     <AgregarTrabajador
-                      solo={!nueva.empleadoIds.length}
                       empleados={empleados}
                       yaEstan={nueva.empleadoIds}
                       equipo={equipoDe(nueva.obraId)}
                       ocupados={ocupadosFuera(nueva.obraId)}
                       onAgregar={(ids) => cambiarNueva({ empleadoIds: [...nueva.empleadoIds, ...ids] })}
                     />
-                    {nueva.obraId && !nueva.empleadoIds.length && (
-                      <span className="hor-pista">Agrega un trabajador para guardar la fila</span>
-                    )}
-                    {!nueva.obraId && nueva.empleadoIds.length > 0 && (
-                      <span className="hor-pista">Elige el cliente para guardar la fila</span>
-                    )}
-                  </td>
-                  <td>
-                    {obraNueva
-                      ? direccionDe(obraNueva)
-                      : <span className="hor-pista hor-pista--suave" style={{ marginTop: 0 }}>Sale sola al elegir el cliente</span>}
-                  </td>
-                  {celdaFecha(nueva.encuentro, nueva.encuentro || ENCUENTRO_POR_DEFECTO, nueva.inicio, hora12(nueva.inicio),
-                    (cambios) => cambiarNueva(cambios),
-                    onCambiarFecha,
-                    "＋ Elegir fecha",
-                    "Elige el día de la hoja")}
-                </tr>
-              )}
+                  </div>
+                  {nueva.obraId && !nueva.empleadoIds.length && (
+                    <span className="hor-pista">Agrega un trabajador para guardar</span>
+                  )}
+                  {!nueva.obraId && nueva.empleadoIds.length > 0 && (
+                    <span className="hor-pista">Elige el cliente para guardar</span>
+                  )}
+                </td>
+                <td>
+                  {obraNueva ? (
+                    <span className="hor-direccion">{direccionDe(obraNueva) || "—"}</span>
+                  ) : (
+                    <span className="hor-pista hor-pista--suave" style={{ marginTop: 0 }}>
+                      Se completa al elegir cliente
+                    </span>
+                  )}
+                </td>
+                <td className="hor-col-centro">
+                  <div className="hor-fecha-bloque">
+                    <span className="hor-fecha-texto">{fechaTexto}</span>
+                    <CeldaTexto
+                      enLinea
+                      etiqueta="Punto de encuentro"
+                      valor={nueva.encuentro}
+                      mostrar={nueva.encuentro || ENCUENTRO_POR_DEFECTO}
+                      placeholder={ENCUENTRO_POR_DEFECTO}
+                      lista="hor-planilla-encuentros"
+                      maxLength={60}
+                      claseTexto="hor-encuentro-texto"
+                      icono={<Icono nombre="ubicacion" size={13} />}
+                      onGuardar={(v) => cambiarNueva({ encuentro: normalizarEncuentro(v) })}
+                    />
+                    <div className="hor-acciones-fecha">
+                      <BotonHora
+                        inicio={nueva.inicio}
+                        mostrar={hora12(nueva.inicio)}
+                        editable
+                        onGuardar={(v) => cambiarNueva({ inicio: v })}
+                      />
+                      {onCambiarFecha && (
+                        <BotonFecha
+                          fecha={fecha}
+                          onCambiar={onCambiarFecha}
+                          className="ui-hor-picker--fecha"
+                          titulo="Elegir fecha de la hoja"
+                        >
+                          <Icono nombre="calendario" size={13} />
+                          <span>Elegir fecha</span>
+                        </BotonFecha>
+                      )}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            )}
 
-              {filas.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="hor-planilla__sin-datos">
-                    Sin actividades programadas para este día
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          <datalist id="hor-planilla-tareas">
-            {tareasSugeridas.map((t) => <option key={t} value={t} />)}
-          </datalist>
-          <datalist id="hor-planilla-encuentros">
-            <option value="Salida desde la oficina" />
-            <option value="Llegada a la obra" />
-          </datalist>
-        </div>
+            {filas.length === 0 && (
+              <tr>
+                <td colSpan={6} className="hor-sin-datos">
+                  Sin actividades programadas para este día
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
-        {/* Dia vacio: no hay nada que descargar; lo que toca es asignar. */}
-        {filas.length === 0 ? accionVacia : pendiente ? (
-          // La imagen ya esta armada: este toque abre el menu al instante.
-          <Button variante="primary" icono="compartir" onClick={() => abrirMenuCompartir(pendiente)}>
-            Compartir ahora
-          </Button>
-        ) : (
-          <>
-            <Button variante="secondary" icono="enviar" onClick={enviarPorWhatsApp} disabled={ocupado}>
-              {ocupado ? "Generando imagen…" : "Enviar por WhatsApp"}
-            </Button>
-            <Button
-              variante="texto"
-              icono="documento"
-              onClick={copiarImagen}
-              disabled={ocupado}
-              title="Copia la imagen para pegarla en WhatsApp Web con Ctrl+V"
-            >
-              Copiar
-            </Button>
-            <Button variante="texto" icono="descargar" onClick={descargarImagen} disabled={ocupado}>
-              Descargar
-            </Button>
-          </>
-        )}
-        {aviso ? (
-          <span
-            role="status"
-            style={{ fontSize: 13, color: aviso.tono === "error" ? "var(--danger-text)" : "var(--success-text)" }}
-          >
-            {aviso.texto}
-            {aviso.enlace && (
-              <>
-                {" "}
-                <a
-                  href={aviso.enlace}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ fontWeight: 600, color: "inherit", textDecoration: "underline" }}
+    );
+  };
+
+  // Vista Tarjetas Apple para celular (cero scroll horizontal, botones tactiles 44px)
+  const renderTarjetasMovil = () => (
+    <div className="hor-cards">
+      {filas.map((f) => (
+        <div key={f.obraId} className="hor-card">
+          <div className="hor-card__head">
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <span className="hor-cliente" style={{ fontSize: 15.5 }}>{f.cliente}</span>
+              {f.proyecto && <span className="hor-proyecto">{f.proyecto}</span>}
+              {f.direccion && (
+                <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, color: "var(--text-tertiary)", fontSize: 12.5 }}>
+                  <Icono nombre="ubicacion" size={13} />
+                  <span>{f.direccion}</span>
+                </div>
+              )}
+            </div>
+            {editable && (
+              <Button
+                variante="destructive"
+                tam="sm"
+                soloIcono
+                icono="papelera"
+                aria-label={`Quitar la fila de ${f.cliente}`}
+                title="Quitar esta obra del día"
+                onClick={() => onQuitarFila(f.obraId)}
+              />
+            )}
+          </div>
+
+          <div className="hor-card__grid2">
+            <div>
+              <div className="hor-card__label">Actividad</div>
+              {f.tarea === null ? (
+                <div style={{ fontSize: 14, color: "var(--text-primary)", padding: "8px 0" }} title={VARIA}>
+                  {f.tareaTexto || "—"}
+                </div>
+              ) : (
+                <CampoTarjeta
+                  etiqueta="Actividad"
+                  valor={f.tarea}
+                  placeholder="Escribir actividad"
+                  lista="hor-planilla-tareas"
+                  onGuardar={(v) => onEditarFila(f.obraId, { tarea: v })}
+                />
+              )}
+            </div>
+            <div>
+              <div className="hor-card__label">Cant.</div>
+              {f.cantidad === null ? (
+                <div style={{ fontSize: 16, fontWeight: 700, padding: "8px 0" }} title={VARIA}>
+                  {f.cantidadTexto || "—"}
+                </div>
+              ) : (
+                <CampoTarjeta
+                  etiqueta="Cantidad"
+                  valor={f.cantidad}
+                  placeholder="—"
+                  maxLength={40}
+                  onGuardar={(v) => onEditarFila(f.obraId, { cantidad: v })}
+                />
+              )}
+            </div>
+          </div>
+
+          <div>
+            <div className="hor-card__label">Trabajadores ({f.trabajadores.length})</div>
+            <div className="hor-card__chips">
+              {f.trabajadores.map((t) => (
+                <span key={t.id} className="hor-trab-chip">
+                  <span>{t.etiqueta}</span>
+                  {editable && (
+                    <button
+                      type="button"
+                      className="ui-hor-x"
+                      title="Quitar trabajador"
+                      aria-label={`Quitar a ${t.etiqueta}`}
+                      onClick={() => onQuitarTrabajador(f.obraId, t.id)}
+                    >
+                      ×
+                    </button>
+                  )}
+                </span>
+              ))}
+            </div>
+            {editable && (
+              <AgregarTrabajador
+                fullWidth
+                empleados={empleados}
+                yaEstan={f.trabajadores.map((t) => t.id)}
+                equipo={equipoDe(f.obraId)}
+                ocupados={ocupadosFuera(f.obraId)}
+                onAgregar={(ids) => onAgregarTrabajadores(f.obraId, ids)}
+              />
+            )}
+          </div>
+
+          <div className="hor-card__panel">
+            <div className="hor-card__label" style={{ marginBottom: 0 }}>Punto de encuentro</div>
+            {f.encuentro === null ? (
+              <div style={{ fontSize: 13.5, color: "var(--text-secondary)" }} title={VARIA}>
+                {f.encuentroTexto}
+              </div>
+            ) : (
+              <CampoTarjeta
+                etiqueta="Punto de encuentro"
+                valor={f.encuentro || ""}
+                placeholder={ENCUENTRO_POR_DEFECTO}
+                lista="hor-planilla-encuentros"
+                maxLength={60}
+                onGuardar={(v) => onEditarFila(f.obraId, { encuentro: normalizarEncuentro(v) })}
+              />
+            )}
+            <div className="hor-card__pickers">
+              <BotonHora
+                inicio={f.inicio}
+                mostrar={f.inicioTexto}
+                editable={editable}
+                onGuardar={(v) => onEditarFila(f.obraId, { inicio: v })}
+              />
+              {editable && onMoverFila && (
+                <BotonFecha
+                  fecha={fecha}
+                  onCambiar={(iso) => onMoverFila(f.obraId, iso)}
+                  className="ui-hor-picker--fecha"
+                  titulo="Mover a otra fecha"
                 >
-                  {aviso.textoEnlace}
-                </a>
+                  <Icono nombre="calendario" size={14} />
+                  <span>Cambiar fecha</span>
+                </BotonFecha>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Tarjeta para agregar una nueva obra / cliente */}
+      {editable && (
+        <div className="hor-card hor-card--nueva">
+          <div className="hor-card__head">
+            <div>
+              <div className="hor-card__label" style={{ color: "#2a3b8f", marginBottom: 2 }}>
+                + Nueva fila en la planilla
+              </div>
+              <div style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}>
+                Elige cliente y trabajador; se guarda sola.
+              </div>
+            </div>
+            {nuevaEmpezada && (
+              <Button variante="texto" tam="sm" onClick={() => setNueva(FILA_NUEVA)}>
+                Limpiar
+              </Button>
+            )}
+          </div>
+
+          <div>
+            <div className="hor-card__label">Cliente / obra</div>
+            {obraNueva ? (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "10px 12px", borderRadius: 12, background: "var(--fill)" }}>
+                <div style={{ minWidth: 0 }}>
+                  <span className="hor-cliente">{limpio(obraNueva.cliente) || obraNueva.id}</span>
+                  {obraNueva.proyecto && obraNueva.proyecto !== obraNueva.cliente && (
+                    <span className="hor-proyecto">{limpio(obraNueva.proyecto)}</span>
+                  )}
+                  {direccionDe(obraNueva) && (
+                    <span className="hor-proyecto">{direccionDe(obraNueva)}</span>
+                  )}
+                </div>
+                <Button variante="texto" tam="sm" onClick={() => setNueva((prev) => ({ ...prev, obraId: "" }))}>
+                  Cambiar
+                </Button>
+              </div>
+            ) : obrasLibres.length ? (
+              <span className="ui-hor-picker ui-hor-picker--select ui-hor-picker--bloque">
+                <Icono nombre="mas" size={14} />
+                <span>Agregar cliente</span>
+                <Icono nombre="flechaAbajo" size={13} style={{ opacity: 0.6 }} />
+                <select
+                  className="hor-native-overlay"
+                  aria-label="Agregar cliente a la planilla"
+                  value=""
+                  onChange={(e) => e.target.value && cambiarNueva({ obraId: e.target.value })}
+                >
+                  <option value="">＋ Agregar cliente</option>
+                  {obrasLibres.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {limpio(o.cliente) || o.id}
+                      {o.proyecto && o.proyecto !== o.cliente ? ` · ${o.proyecto}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </span>
+            ) : (
+              <span className="hor-pista hor-pista--suave" style={{ marginTop: 0 }}>
+                {obras.length ? "Todas las obras ya están en la hoja" : "Crea primero la obra"}
+              </span>
+            )}
+          </div>
+
+          <div className="hor-card__grid2">
+            <div>
+              <div className="hor-card__label">Actividad</div>
+              <CampoTarjeta
+                etiqueta="Actividad"
+                valor={nueva.tarea}
+                placeholder="Escribir actividad"
+                lista="hor-planilla-tareas"
+                onGuardar={(v) => cambiarNueva({ tarea: v })}
+              />
+            </div>
+            <div>
+              <div className="hor-card__label">Cant.</div>
+              <CampoTarjeta
+                etiqueta="Cantidad"
+                valor={nueva.cantidad}
+                placeholder="—"
+                maxLength={40}
+                onGuardar={(v) => cambiarNueva({ cantidad: v })}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="hor-card__label">Trabajadores</div>
+            {nueva.empleadoIds.length > 0 && (
+              <div className="hor-card__chips">
+                {nueva.empleadoIds.map((id) => {
+                  const e = empleados.find((x) => x.id === id);
+                  return (
+                    <span key={id} className="hor-trab-chip">
+                      <span>{etiquetaTrabajador(e)}</span>
+                      <button
+                        type="button"
+                        className="ui-hor-x"
+                        title="Quitar"
+                        aria-label={`Quitar a ${limpio(e?.nombre)}`}
+                        onClick={() => cambiarNueva({ empleadoIds: nueva.empleadoIds.filter((x) => x !== id) })}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            <AgregarTrabajador
+              fullWidth
+              empleados={empleados}
+              yaEstan={nueva.empleadoIds}
+              equipo={equipoDe(nueva.obraId)}
+              ocupados={ocupadosFuera(nueva.obraId)}
+              onAgregar={(ids) => cambiarNueva({ empleadoIds: [...nueva.empleadoIds, ...ids] })}
+            />
+            {nueva.obraId && !nueva.empleadoIds.length && (
+              <span className="hor-pista">Agrega al menos un trabajador para guardar</span>
+            )}
+            {!nueva.obraId && nueva.empleadoIds.length > 0 && (
+              <span className="hor-pista">Elige el cliente para guardar</span>
+            )}
+          </div>
+
+          <div className="hor-card__panel">
+            <div className="hor-card__label" style={{ marginBottom: 0 }}>Punto de encuentro, hora y fecha</div>
+            <CampoTarjeta
+              etiqueta="Punto de encuentro"
+              valor={nueva.encuentro}
+              placeholder={ENCUENTRO_POR_DEFECTO}
+              lista="hor-planilla-encuentros"
+              maxLength={60}
+              onGuardar={(v) => cambiarNueva({ encuentro: normalizarEncuentro(v) })}
+            />
+            <div className="hor-card__pickers">
+              <BotonHora
+                inicio={nueva.inicio}
+                mostrar={hora12(nueva.inicio)}
+                editable
+                onGuardar={(v) => cambiarNueva({ inicio: v })}
+              />
+              {onCambiarFecha && (
+                <BotonFecha
+                  fecha={fecha}
+                  onCambiar={onCambiarFecha}
+                  className="ui-hor-picker--fecha"
+                  titulo="Elegir fecha de la hoja"
+                >
+                  <Icono nombre="calendario" size={14} />
+                  <span>Elegir fecha</span>
+                </BotonFecha>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {filas.length === 0 && (
+        <div style={{ textAlign: "center", fontSize: 13, color: "var(--text-tertiary)", padding: "4px 8px 8px" }}>
+          Sin actividades programadas para este día
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div>
+      <style>{ESTILOS_PLANILLA}</style>
+
+      {/* Tarjeta principal en pantalla (doc-shell mantiene la hoja clara como documento) */}
+      <div ref={mostrarTarjetas ? undefined : hojaRef} className="hor-shell doc-shell">
+        {renderCabecera(false)}
+        {mostrarTarjetas ? renderTarjetasMovil() : renderTabla(false)}
+
+        <datalist id="hor-planilla-tareas">
+          {tareasSugeridas.map((t) => <option key={t} value={t} />)}
+        </datalist>
+        <datalist id="hor-planilla-encuentros">
+          <option value="Salida desde la oficina" />
+          <option value="Llegada a la obra" />
+        </datalist>
+
+        <div className="hor-pie" data-html2canvas-ignore="true">
+          <div className="hor-pie__acciones">
+            {filas.length === 0 ? (
+              <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>
+                {mostrarTarjetas
+                  ? "Elige un cliente y un trabajador arriba · Todo se guarda solo."
+                  : "Haz clic en cualquier celda para escribir · Los cambios se guardan solos."}
+              </span>
+            ) : pendiente ? (
+              <Button variante="primary" icono="compartir" onClick={() => abrirMenuCompartir(pendiente)}>
+                Compartir ahora
+              </Button>
+            ) : (
+              <>
+                <Button variante="primary" icono="enviar" onClick={enviarPorWhatsApp} disabled={ocupado}>
+                  {ocupado ? "Generando imagen…" : "Enviar por WhatsApp"}
+                </Button>
+                <Button
+                  variante="secondary"
+                  icono="documento"
+                  onClick={copiarImagen}
+                  disabled={ocupado}
+                  title="Copia la imagen para pegarla en WhatsApp Web con Ctrl+V"
+                >
+                  Copiar imagen
+                </Button>
+                <Button variante="texto" icono="descargar" onClick={descargarImagen} disabled={ocupado}>
+                  Descargar
+                </Button>
+                {onAbrirTextoGrupo && (
+                  <Button
+                    variante="texto"
+                    icono="lista"
+                    onClick={onAbrirTextoGrupo}
+                    title="Copia el horario en texto para pegarlo en el grupo"
+                  >
+                    Texto para grupo
+                  </Button>
+                )}
               </>
             )}
-          </span>
-        ) : editable && !ocupado && (
-          <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>
-            Haz clic en una celda para escribir. Los cambios se guardan solos.
-          </span>
-        )}
+          </div>
+
+          {aviso && (
+            <span
+              role="status"
+              style={{ fontSize: 13, color: aviso.tono === "error" ? "var(--danger-text)" : "var(--success-text)" }}
+            >
+              {aviso.texto}
+              {aviso.enlace && (
+                <>
+                  {" "}
+                  <a
+                    href={aviso.enlace}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontWeight: 600, color: "inherit", textDecoration: "underline" }}
+                  >
+                    {aviso.textoEnlace}
+                  </a>
+                </>
+              )}
+            </span>
+          )}
+        </div>
       </div>
+
+      {/* Espejo oculto para exportar tabla horizontal nitida cuando el celular esta en vista Tarjetas */}
+      {mostrarTarjetas && filas.length > 0 && (
+        <div className="hor-export-offscreen" aria-hidden="true">
+          <div ref={hojaRef} className="hor-shell doc-shell">
+            {renderCabecera(true)}
+            {renderTabla(true)}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

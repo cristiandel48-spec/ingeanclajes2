@@ -252,8 +252,8 @@ export default function AvisoFirmaCoordinador() {
             }}
           >
             Sube tu <strong>firma escaneada en PDF</strong> (o en JPEG / PNG) una sola vez para dejarla
-            impresa automáticamente en el <strong>Informe de Actividades</strong> cada vez que seas
-            coordinador(a) en obra.
+            impresa automáticamente en el <strong>Informe de Actividades</strong> cada vez que seas{" "}
+            {/COORDINADORA/i.test(cargoActual) ? "coordinadora" : "coordinador"} en obra.
           </p>
 
           {/* Datos que acompañan la firma */}

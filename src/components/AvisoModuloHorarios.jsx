@@ -1,7 +1,13 @@
 import { useMemo, useState } from "react";
 import { Icono } from "./ui";
 import { useAppData } from "../context/AppDataContext";
-import { esUsuarioCamila, esUsuarioCristian } from "../lib/agendaEspecial";
+import {
+  CLAVE_AVISO_HORARIOS,
+  claveAvisoUsuario,
+  guardarMarcaAviso,
+  leerMarcaAviso,
+  personaDestinoAviso,
+} from "../lib/avisosModulos";
 import { puedeVer } from "../lib/permisos";
 import { FUENTE } from "../styles/designTokens";
 
@@ -12,41 +18,11 @@ import { FUENTE } from "../styles/designTokens";
  *
  * «Ahora no» lo oculta solo durante la sesion actual (vuelve a recordar al
  * volver a entrar). Al completar el recorrido y tocar «Ir a Horarios ahora»
- * (o «Entendido, no mostrar más»), queda marcado como visto en localStorage.
+ * (o «Ya lo vi»), queda marcado como visto en localStorage.
  */
 
-const CLAVE = "ingeanclajes_aviso_horarios_v2";
 const AZUL = "#2A3B8F";
 const ACENTO_SUAVE = "#EEF2FF";
-
-function personaDestino(membresia, authUserEmail) {
-  if (!membresia || membresia.activo === false) return null;
-  if (esUsuarioCristian(membresia, authUserEmail)) return "Cristian";
-  const email = String(membresia.email || authUserEmail || "").toLowerCase();
-  const nombre = String(membresia.nombre || "").toLowerCase();
-  const texto = `${nombre} ${email}`;
-  if (texto.includes("cristian") || texto.includes("florez") || texto.includes("flórez")) return "Cristian";
-  if (texto.includes("paola") || texto.includes("escobar")) return "Paola";
-  if (texto.includes("richard") || texto.includes("buelvas")) return "Richard";
-  if (esUsuarioCamila(membresia, authUserEmail)) return "Camila";
-  return null;
-}
-
-function leer(almacen, clave) {
-  try {
-    return almacen.getItem(clave) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function guardar(almacen, clave) {
-  try {
-    almacen.setItem(clave, "1");
-  } catch {
-    // Sin almacenamiento disponible: el aviso se cierra igual en pantalla.
-  }
-}
 
 const PASOS = [
   {
@@ -96,12 +72,12 @@ const PASOS = [
   },
 ];
 
-export default function AvisoModuloHorarios({ onIrAHorarios }) {
+export default function AvisoModuloHorarios({ onIrAHorarios, onCerrado }) {
   const { membresia, authUserEmail } = useAppData();
-  const nombre = useMemo(() => personaDestino(membresia, authUserEmail), [membresia, authUserEmail]);
+  const nombre = useMemo(() => personaDestinoAviso(membresia, authUserEmail), [membresia, authUserEmail]);
   const tieneAcceso = puedeVer(membresia, "horarios");
 
-  const clave = nombre ? `${CLAVE}:${String(membresia?.email || authUserEmail || nombre).toLowerCase()}` : "";
+  const clave = claveAvisoUsuario(CLAVE_AVISO_HORARIOS, membresia, authUserEmail, nombre);
   const [cerrado, setCerrado] = useState(false);
   const [paso, setPaso] = useState(0);
 
@@ -109,8 +85,8 @@ export default function AvisoModuloHorarios({ onIrAHorarios }) {
     Boolean(nombre) &&
     tieneAcceso &&
     !cerrado &&
-    !leer(localStorage, clave) &&
-    !leer(sessionStorage, clave);
+    !leerMarcaAviso(localStorage, clave) &&
+    !leerMarcaAviso(sessionStorage, clave);
 
   if (!mostrar) return null;
 
@@ -118,18 +94,21 @@ export default function AvisoModuloHorarios({ onIrAHorarios }) {
   const esUltimo = paso === PASOS.length - 1;
 
   const ahoraNo = () => {
-    guardar(sessionStorage, clave);
+    guardarMarcaAviso(sessionStorage, clave);
     setCerrado(true);
+    onCerrado?.();
   };
 
   const noMostrarMas = () => {
-    guardar(localStorage, clave);
+    guardarMarcaAviso(localStorage, clave);
     setCerrado(true);
+    onCerrado?.();
   };
 
   const irAHorarios = () => {
-    guardar(localStorage, clave);
+    guardarMarcaAviso(localStorage, clave);
     setCerrado(true);
+    onCerrado?.();
     onIrAHorarios?.();
   };
 

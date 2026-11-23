@@ -1,106 +1,93 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { Icono } from "./ui";
 import { useAppData } from "../context/AppDataContext";
-import { esUsuarioCamila, esUsuarioCristian } from "../lib/agendaEspecial";
+import {
+  CLAVE_AVISO_INVENTARIO,
+  claveAvisoUsuario,
+  guardarMarcaAviso,
+  leerMarcaAviso,
+  personaDestinoAviso,
+} from "../lib/avisosModulos";
 import { puedeVer } from "../lib/permisos";
 import { FUENTE } from "../styles/designTokens";
 
 /**
- * Aviso grande para presentar el modulo de Inventario a Paola Escobar,
- * Richard Buelvas y Camila Sepulveda.
+ * Aviso de bienvenida con recorrido interactivo para presentar el modulo de
+ * Inventario a Paola Escobar, Richard Buelvas, Camila Sepulveda y Cristian
+ * Florez al iniciar sesion, con la misma dinamica Apple de AvisoModuloHorarios.
  *
- * Sale al abrir el programa y los lleva en un recorrido corto de tres pasos
- * hasta el modulo. «Ahora no» lo esconde solo en esta sesion: vuelve a salir
- * la proxima vez que abran el programa. Deja de salir para siempre cuando
- * entran a Inventario (desde el aviso o por el menu).
+ * «Ahora no» lo oculta solo durante la sesion actual (vuelve a salir al volver
+ * a entrar). Al completar el recorrido y tocar «Ir a Inventario ahora» o
+ * «Ya lo vi», queda marcado como visto en localStorage.
  */
 
-const CLAVE = "ingeanclajes_aviso_inventario_v1";
 const VERDE = "#00A878";
-
-function personaDestino(membresia, authUserEmail) {
-  if (!membresia || membresia.activo === false) return null;
-  if (esUsuarioCristian(membresia, authUserEmail)) return null;
-  const email = String(membresia.email || authUserEmail || "").toLowerCase();
-  const nombre = String(membresia.nombre || "").toLowerCase();
-  const texto = `${nombre} ${email}`;
-  if (texto.includes("paola") || texto.includes("escobar")) return "Paola";
-  if (texto.includes("richard") || texto.includes("buelvas")) return "Richard";
-  if (esUsuarioCamila(membresia, authUserEmail)) return "Camila";
-  return null;
-}
-
-function leer(almacen, clave) {
-  try {
-    return almacen.getItem(clave) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function guardar(almacen, clave) {
-  try {
-    almacen.setItem(clave, "1");
-  } catch {
-    // Sin almacenamiento disponible: el aviso se cierra igual en pantalla.
-  }
-}
+const VERDE_SUAVE = "#E6F7F1";
 
 const PASOS = [
   {
-    icono: "📦",
-    etiqueta: "Nuevo en el programa",
-    titulo: (nombre) => `${nombre}, ya está listo el módulo de Inventario`,
+    icono: "obra",
+    etiqueta: "Nuevo · Módulo de Inventario",
+    titulo: (nombre) => `${nombre}, ya está listo el módulo de Inventario de bienes`,
     texto:
-      "Ahora todos los bienes de Ingeanclajes —equipos, herramientas, arneses, líneas de vida, vehículos y equipos de oficina— quedan registrados en un solo lugar. Te mostramos en un minuto cómo funciona.",
-  },
-  {
-    icono: "🧭",
-    etiqueta: "Paso 1 de 2 · Qué puedes hacer",
-    titulo: () => "Todo lo que tiene la empresa, a la mano",
-    lista: [
-      ["➕", "Registrar cada bien", "con su categoría, código, cantidad, valor y foto."],
-      ["👷", "Asignar un responsable", "para saber siempre quién tiene cada equipo."],
-      ["📅", "Controlar la calibración", "y ver qué equipos están por vencer."],
-      ["🗂️", "Dar de baja", "lo que se daña o se pierde, sin borrar su historia."],
-      ["📊", "Exportar a Excel", "el inventario completo con sus totales."],
+      "Implementamos el módulo de Inventario para que todos los bienes de Ingeanclajes —equipos de alturas, herramientas, arneses, líneas de vida, vehículos y equipos de oficina— queden controlados en un solo lugar desde el celular o el computador. Haz este recorrido rápido y empieza a usarlo hoy.",
+    destacados: [
+      { icono: "camara", titulo: "Con foto y ficha", detalle: "Código, serial, valor, estado y evidencia" },
+      { icono: "usuario", titulo: "Responsable claro", detalle: "Sabes en segundos quién tiene cada equipo" },
+      { icono: "reloj", titulo: "Alertas a tiempo", detalle: "Control automático de calibraciones por vencer" },
     ],
   },
   {
-    icono: "🚀",
-    etiqueta: "Paso 2 de 2 · Cómo empezar",
-    titulo: () => "Entra y registra tu primer bien",
+    icono: "cuadricula",
+    etiqueta: "Paso 1 de 3 · Qué puedes gestionar",
+    titulo: () => "Todo lo que tiene la empresa, siempre a la mano",
     lista: [
-      ["1", "Abre Inventario", "en el menú de la izquierda, justo debajo de «Personal y empleados»."],
-      ["2", "Toca «Nuevo bien»", "y llena los datos que tengas a la mano."],
-      ["3", "Explora los filtros", "por categoría y estado, y el buscador."],
+      ["mas", "Registrar cada bien:", "con su categoría, código consecutivo automático (INV-001), marca, serial, cantidad, valor y foto."],
+      ["usuario", "Asignar responsable u obra:", "vincula cada equipo con un trabajador, una obra en ejecución o una ubicación física."],
+      ["calendario", "Controlar calibraciones y mantenimiento:", "el sistema avisa cuáles equipos están vigentes, próximos a vencer (30 días) o vencidos."],
+      ["descargar", "Exportar a Excel y CSV:", "descarga el inventario completo con listado detallado y subtotales por categoría en un clic."],
     ],
-    nota: "Puedes volver a este módulo cuando quieras desde el menú.",
+  },
+  {
+    icono: "escudo",
+    etiqueta: "Paso 2 de 3 · Orden y trazabilidad sin perder historia",
+    titulo: () => "Control real de pérdidas, daños y estado de equipos",
+    lista: [
+      ["buscar", "Búsqueda y filtros instantáneos:", "encuentra cualquier bien por nombre, código, serial, categoría, estado o responsable sin buscar en hojas sueltas."],
+      ["alerta", "Semáforo de atención:", "ves arriba de un vistazo cuántos bienes requieren mantenimiento, recalibración o revisión."],
+      ["documento", "Dar de baja con soporte:", "cuando un equipo se daña, se pierde o sale de uso, se da de baja con motivo sin borrar su historial."],
+      ["telefono", "Cómodo desde el celular:", "consulta o registra bienes directo desde bodega o en obra sin esperar a llegar a la oficina."],
+    ],
+  },
+  {
+    icono: "check",
+    etiqueta: "Paso 3 de 3 · Empieza hoy mismo",
+    titulo: () => "Entra y registra o revisa el inventario",
+    lista: [
+      ["1", "Abre Inventario", "en el menú izquierdo, justo debajo de «Personal y empleados»."],
+      ["2", "Toca «Nuevo bien»", "y registra el equipo con los datos y la foto que tengas a la mano."],
+      ["3", "Usa los filtros y el botón Excel", "para revisar totales por categoría o equipos por calibrar."],
+    ],
+    nota: "Úsalo desde hoy: tener el inventario al día evita pérdidas de herramienta, retrasos en obra y vencimientos de calibración por sorpresa.",
   },
 ];
 
-export default function AvisoModuloInventario({ scr, onIrAInventario }) {
+export default function AvisoModuloInventario({ onIrAInventario, pausado = false }) {
   const { membresia, authUserEmail } = useAppData();
-  const nombre = useMemo(() => personaDestino(membresia, authUserEmail), [membresia, authUserEmail]);
+  const nombre = useMemo(() => personaDestinoAviso(membresia, authUserEmail), [membresia, authUserEmail]);
   const tieneAcceso = puedeVer(membresia, "inventario");
 
-  const clave = nombre ? `${CLAVE}:${String(membresia?.email || authUserEmail || nombre).toLowerCase()}` : "";
+  const clave = claveAvisoUsuario(CLAVE_AVISO_INVENTARIO, membresia, authUserEmail, nombre);
   const [cerrado, setCerrado] = useState(false);
   const [paso, setPaso] = useState(0);
 
-  // Si entra a Inventario por su cuenta, ya conoce el modulo: no se repite.
-  useEffect(() => {
-    if (clave && scr === "inventario") {
-      guardar(localStorage, clave);
-    }
-  }, [clave, scr]);
-
   const mostrar =
+    !pausado &&
     Boolean(nombre) &&
     tieneAcceso &&
     !cerrado &&
-    scr !== "inventario" &&
-    !leer(localStorage, clave) &&
-    !leer(sessionStorage, clave);
+    !leerMarcaAviso(localStorage, clave) &&
+    !leerMarcaAviso(sessionStorage, clave);
 
   if (!mostrar) return null;
 
@@ -108,12 +95,17 @@ export default function AvisoModuloInventario({ scr, onIrAInventario }) {
   const esUltimo = paso === PASOS.length - 1;
 
   const ahoraNo = () => {
-    guardar(sessionStorage, clave);
+    guardarMarcaAviso(sessionStorage, clave);
+    setCerrado(true);
+  };
+
+  const noMostrarMas = () => {
+    guardarMarcaAviso(localStorage, clave);
     setCerrado(true);
   };
 
   const irAInventario = () => {
-    guardar(localStorage, clave);
+    guardarMarcaAviso(localStorage, clave);
     setCerrado(true);
     onIrAInventario?.();
   };
@@ -127,9 +119,9 @@ export default function AvisoModuloInventario({ scr, onIrAInventario }) {
         position: "fixed",
         inset: 0,
         zIndex: 2400,
-        background: "rgba(15, 23, 42, 0.55)",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
+        background: "rgba(15, 23, 42, 0.56)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -140,8 +132,8 @@ export default function AvisoModuloInventario({ scr, onIrAInventario }) {
       <div
         style={{
           width: "100%",
-          maxWidth: 620,
-          maxHeight: "calc(100vh - 32px)",
+          maxWidth: 640,
+          maxHeight: "calc(100dvh - 32px)",
           overflowY: "auto",
           background: "var(--surface, #ffffff)",
           color: "var(--text-primary, #1d1d1f)",
@@ -151,11 +143,11 @@ export default function AvisoModuloInventario({ scr, onIrAInventario }) {
           boxSizing: "border-box",
         }}
       >
-        {/* Cabecera verde con el icono del modulo */}
+        {/* Cabecera verde/turquesa armonizada con el icono de Inventario */}
         <div
           style={{
-            background: `linear-gradient(135deg, ${VERDE} 0%, #0EA5E9 100%)`,
-            padding: "34px 28px 28px",
+            background: `linear-gradient(135deg, ${VERDE} 0%, #0D9488 55%, #0EA5E9 100%)`,
+            padding: "30px 26px 26px",
             color: "#ffffff",
             textAlign: "center",
             position: "relative",
@@ -169,23 +161,42 @@ export default function AvisoModuloInventario({ scr, onIrAInventario }) {
               position: "absolute",
               top: 14,
               right: 14,
-              width: 32,
-              height: 32,
+              width: 34,
+              height: 34,
               borderRadius: "50%",
               border: "none",
-              background: "rgba(255,255,255,0.22)",
+              background: "rgba(255,255,255,0.2)",
               color: "#ffffff",
               fontSize: 18,
               cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             ×
           </button>
-          <div style={{ fontSize: 64, lineHeight: 1, marginBottom: 12 }}>{actual.icono}</div>
+
+          <div
+            style={{
+              width: 60,
+              height: 60,
+              margin: "0 auto 14px",
+              borderRadius: 18,
+              background: "rgba(255,255,255,0.18)",
+              border: "1px solid rgba(255,255,255,0.28)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Icono nombre={actual.icono} size={30} strokeWidth={1.9} />
+          </div>
+
           <div
             style={{
               display: "inline-block",
-              background: "rgba(255,255,255,0.2)",
+              background: "rgba(255,255,255,0.18)",
               borderRadius: 999,
               padding: "4px 12px",
               fontSize: 11,
@@ -196,70 +207,139 @@ export default function AvisoModuloInventario({ scr, onIrAInventario }) {
           >
             {actual.etiqueta}
           </div>
+
           <h2
             id="titulo-aviso-inventario"
             style={{
-              margin: "14px 0 0",
-              fontSize: 28,
-              fontWeight: 800,
+              margin: "12px 0 0",
+              fontSize: 24,
+              fontWeight: 700,
               letterSpacing: "-0.02em",
-              lineHeight: 1.2,
+              lineHeight: 1.22,
+              textWrap: "balance",
             }}
           >
             {actual.titulo(nombre)}
           </h2>
         </div>
 
-        <div style={{ padding: "24px 28px 22px" }}>
+        <div style={{ padding: "22px 24px 20px" }}>
           {actual.texto && (
-            <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: "var(--text-secondary, #475467)" }}>
+            <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: "var(--text-secondary, #475467)" }}>
               {actual.texto}
             </p>
           )}
 
-          {actual.lista && (
-            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 12 }}>
-              {actual.lista.map(([marca, fuerte, resto]) => (
-                <li key={fuerte} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <span
+          {actual.destacados && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                gap: 10,
+                marginTop: 18,
+              }}
+            >
+              {actual.destacados.map((item) => (
+                <div
+                  key={item.titulo}
+                  style={{
+                    background: "var(--surface-subtle, #f8fafc)",
+                    border: "1px solid var(--separator, #eaecf0)",
+                    borderRadius: 14,
+                    padding: "12px 13px",
+                  }}
+                >
+                  <div
                     style={{
-                      flexShrink: 0,
-                      width: 34,
-                      height: 34,
-                      borderRadius: 10,
-                      background: "#E6F7F1",
+                      width: 30,
+                      height: 30,
+                      borderRadius: 9,
+                      background: VERDE_SUAVE,
                       color: VERDE,
-                      fontWeight: 800,
-                      fontSize: 16,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
+                      marginBottom: 8,
                     }}
                   >
-                    {marca}
-                  </span>
-                  <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--text-secondary, #475467)", paddingTop: 6 }}>
-                    <strong style={{ color: "var(--text-primary, #1d1d1f)" }}>{fuerte}</strong> {resto}
-                  </span>
-                </li>
+                    <Icono nombre={item.icono} size={16} />
+                  </div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary, #101828)" }}>
+                    {item.titulo}
+                  </div>
+                  <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--text-tertiary, #667085)", marginTop: 3 }}>
+                    {item.detalle}
+                  </div>
+                </div>
               ))}
+            </div>
+          )}
+
+          {actual.lista && (
+            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 12 }}>
+              {actual.lista.map(([marca, fuerte, resto]) => {
+                const esNumero = /^[0-9]+$/.test(marca);
+                return (
+                  <li key={fuerte} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    <span
+                      style={{
+                        flexShrink: 0,
+                        width: 34,
+                        height: 34,
+                        borderRadius: 10,
+                        background: VERDE_SUAVE,
+                        color: VERDE,
+                        fontWeight: 700,
+                        fontSize: 14,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {esNumero ? marca : <Icono nombre={marca} size={17} />}
+                    </span>
+                    <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--text-secondary, #475467)", paddingTop: 4 }}>
+                      <strong style={{ color: "var(--text-primary, #101828)" }}>{fuerte}</strong> {resto}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           )}
 
           {actual.nota && (
-            <p style={{ margin: "16px 0 0", fontSize: 13, color: "var(--text-tertiary, #667085)" }}>{actual.nota}</p>
+            <div
+              style={{
+                marginTop: 16,
+                padding: "11px 14px",
+                borderRadius: 12,
+                background: VERDE_SUAVE,
+                color: "#027A48",
+                fontSize: 13,
+                lineHeight: 1.5,
+                fontWeight: 500,
+              }}
+            >
+              {actual.nota}
+            </div>
           )}
 
-          {/* Puntos de avance */}
-          <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 22 }}>
+          {/* Indicador de progreso */}
+          <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 20 }}>
             {PASOS.map((_, i) => (
-              <span
+              <button
                 key={i}
+                type="button"
+                aria-label={`Ir al paso ${i + 1}`}
+                onClick={() => setPaso(i)}
                 style={{
-                  width: i === paso ? 22 : 8,
+                  width: i === paso ? 24 : 8,
                   height: 8,
+                  padding: 0,
+                  border: "none",
                   borderRadius: 999,
                   background: i === paso ? VERDE : "var(--separator, #d0d5dd)",
+                  cursor: "pointer",
                   transition: "all 0.2s ease",
                 }}
               />
@@ -273,27 +353,48 @@ export default function AvisoModuloInventario({ scr, onIrAInventario }) {
               alignItems: "center",
               gap: 10,
               marginTop: 18,
-              paddingTop: 16,
+              paddingTop: 14,
               borderTop: "1px solid var(--separator, #e2e8f0)",
               flexWrap: "wrap",
             }}
           >
-            <button
-              type="button"
-              onClick={paso === 0 ? ahoraNo : () => setPaso(paso - 1)}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--text-tertiary, #667085)",
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                padding: "10px 4px",
-              }}
-            >
-              {paso === 0 ? "Ahora no" : "← Atrás"}
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <button
+                type="button"
+                onClick={paso === 0 ? ahoraNo : () => setPaso(paso - 1)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--text-tertiary, #667085)",
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  padding: "8px 4px",
+                }}
+              >
+                {paso === 0 ? "Ahora no" : "← Atrás"}
+              </button>
+              {esUltimo && (
+                <button
+                  type="button"
+                  onClick={noMostrarMas}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "var(--text-tertiary, #667085)",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    padding: "8px 4px",
+                  }}
+                >
+                  Ya lo vi
+                </button>
+              )}
+            </div>
+
             <button
               type="button"
               onClick={esUltimo ? irAInventario : () => setPaso(paso + 1)}
@@ -301,16 +402,16 @@ export default function AvisoModuloInventario({ scr, onIrAInventario }) {
                 background: VERDE,
                 color: "#ffffff",
                 border: "none",
-                borderRadius: 12,
-                padding: "13px 24px",
-                fontSize: 15,
-                fontWeight: 700,
+                borderRadius: 980,
+                padding: "12px 22px",
+                fontSize: 14.5,
+                fontWeight: 600,
                 cursor: "pointer",
                 fontFamily: "inherit",
-                boxShadow: "0 4px 14px rgba(0, 168, 120, 0.35)",
+                boxShadow: "0 6px 18px rgba(0, 168, 120, 0.28)",
               }}
             >
-              {esUltimo ? "Entrar a Inventario →" : paso === 0 ? "Hacer el recorrido →" : "Siguiente →"}
+              {esUltimo ? "Ir a Inventario ahora →" : paso === 0 ? "Ver el recorrido →" : "Siguiente →"}
             </button>
           </div>
         </div>

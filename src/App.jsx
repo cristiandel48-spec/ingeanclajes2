@@ -1,9 +1,10 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { scrollAppToTop } from "./lib/format";
 import { AppDataProvider, useAppData } from "./context/AppDataContext";
 import AppShell from "./components/layout/AppShell";
 import { AccionesPantallaProvider } from "./context/accionesPantalla";
 import { pantallaInicial, puedeVer } from "./lib/permisos";
+import { CLAVE_AVISO_HORARIOS, avisoModuloPendiente } from "./lib/avisosModulos";
 import AvisoInteligenteAgenda from "./components/agenda/AvisoInteligenteAgenda";
 import AvisoFirmaCoordinador from "./components/AvisoFirmaCoordinador";
 import AvisoModuloInventario from "./components/AvisoModuloInventario";
@@ -157,7 +158,8 @@ Status: Connection refused / unreachable`}
 
 function AppRoot() {
   const ctx = useAppData();
-  const { scr, setScr, membresia, appBloqueada, esSuperAdminCristian } = ctx;
+  const { scr, setScr, membresia, authUserEmail, appBloqueada, esSuperAdminCristian } = ctx;
+  const [avisoHorariosCerrado, setAvisoHorariosCerrado] = useState(false);
 
   // <main> es el mismo para todos los modulos y conservaba el scroll: al ir de
   // un modulo a otro -por ejemplo «Certificar» desde un informe de abajo- el
@@ -194,6 +196,9 @@ function AppRoot() {
   }
 
   const Screen = SCREENS[destino];
+  const avisoHorariosActivo =
+    !avisoHorariosCerrado &&
+    avisoModuloPendiente(CLAVE_AVISO_HORARIOS, "horarios", membresia, authUserEmail);
 
   return (
     <AppShell scr={destino} onNavigate={setScr}>
@@ -206,8 +211,14 @@ function AppRoot() {
       </div>
       <AvisoInteligenteAgenda onIrAAgenda={() => setScr("agenda")} />
       <AvisoFirmaCoordinador />
-      <AvisoModuloInventario scr={destino} onIrAInventario={() => setScr("inventario")} />
-      <AvisoModuloHorarios onIrAHorarios={() => setScr("horarios")} />
+      <AvisoModuloHorarios
+        onIrAHorarios={() => setScr("horarios")}
+        onCerrado={() => setAvisoHorariosCerrado(true)}
+      />
+      <AvisoModuloInventario
+        pausado={avisoHorariosActivo}
+        onIrAInventario={() => setScr("inventario")}
+      />
     </AppShell>
   );
 }

@@ -263,6 +263,35 @@ function repaginarSecciones(secciones, { altoUtil, ventana }) {
     }
   }
 
+  // Lo que sobra en cada hoja se reparte entre sus cajas estirables (las
+  // fotos del informe). Sin esto, una hoja con cinco filas de fotos dejaba
+  // una franja en blanco abajo, y la ultima -dos filas, el dictamen y las
+  // firmas- un tercio de hoja vacio con las fotos pequeñas.
+  //
+  // Cada caja `[data-estirable]` dice en ese atributo cuantos pixeles puede
+  // crecer como maximo, y las de una misma fila `[data-fila-estirable]`
+  // crecen lo mismo: lo que cuenta para el alto de la hoja es la fila.
+  for (const seccion of nuevas) {
+    const cajaHoja = contenedorDe(seccion);
+    const filas = [...cajaHoja.querySelectorAll("[data-fila-estirable]")]
+      .map((fila) => [...fila.querySelectorAll("[data-estirable]")])
+      .filter((cajas) => cajas.length);
+    if (!filas.length) continue;
+    // 6px de respiro: el redondeo de cada caja no debe empujar el pie.
+    const libre = altoUtil - altoDe(cajaHoja) - 6;
+    const tope = Math.min(...filas.flat().map((c) => Number(c.getAttribute("data-estirable")) || 0));
+    const extra = Math.floor(Math.min(tope, libre / filas.length));
+    if (!(extra >= 4)) continue;
+    for (const c of filas.flat()) {
+      c.style.height = `${c.getBoundingClientRect().height + extra}px`;
+    }
+    // Si la medida no cuadro -una foto que no cede, un borde de mas-, se
+    // deshace: mejor el hueco de antes que una hoja que se pasa.
+    if (altoDe(cajaHoja) > altoUtil) {
+      for (const c of filas.flat()) c.style.height = `${c.getBoundingClientRect().height - extra}px`;
+    }
+  }
+
   // 3. Se tiran las hojas que quedaron sin usar y se renumera el pie.
   for (const seccion of secciones) {
     if (!nuevas.includes(seccion)) seccion.remove();

@@ -42,12 +42,21 @@ const MARCA = "#E0342A";
 // (~26px) quedan ~920 para el contenido.
 const MAX_ALTO_PAGINA = 915;
 
-const ALTO_HEADER_PORTADA = 94;
-const ALTO_HEADER_SECUNDARIO = 38;
-const ALTO_BANNER_ACTIVIDADES = 26;
-const ALTO_BANNER_FOTOS = 24;
-const ALTO_FILA_FOTOS = 196;
-const ALTO_FIRMA = 132;
+// Medidas con la letra un punto mas grande (11,5px en el cuerpo, la misma de
+// la cotizacion). Son estimaciones para el primer reparto: en el navegador
+// `repaginarHojas` vuelve a medir cada bloque y deja el reparto exacto.
+const ALTO_HEADER_PORTADA = 100;
+const ALTO_HEADER_SECUNDARIO = 40;
+const ALTO_BANNER_ACTIVIDADES = 28;
+const ALTO_BANNER_FOTOS = 26;
+const ALTO_FILA_FOTOS = 198;
+const ALTO_FIRMA = 142;
+
+// Alto de la caja de cada foto y cuanto puede crecer. Cuando a una hoja le
+// sobra sitio, `repaginarHojas` reparte ese sobrante entre sus filas de
+// fotos -hasta este tope por fila- en vez de dejarlo en blanco al final.
+const ALTO_FOTO = 155;
+const ESTIRE_MAX_FOTO = 110;
 
 function estimarLineas(texto, caracteresPorLinea = 82) {
   const str = String(texto || "").trim();
@@ -56,16 +65,16 @@ function estimarLineas(texto, caracteresPorLinea = 82) {
   return parrafos.reduce((total, p) => total + Math.max(1, Math.ceil(p.length / caracteresPorLinea)), 0);
 }
 
-const calcularAltoDatos = (hasFilaExtra) => (hasFilaExtra ? 140 : 116);
+const calcularAltoDatos = (hasFilaExtra) => (hasFilaExtra ? 150 : 124);
 
 const calcularAltoPersonal = (arr) => {
   if (!arr || arr.length === 0) return 40;
   const filas = Math.ceil(arr.length / 3);
-  return 24 + filas * 40 + 10;
+  return 26 + filas * 43 + 10;
 };
 
-const CARACTERES_LINEA = 81;
-const ALTO_LINEA = 15.5;
+const CARACTERES_LINEA = 74;
+const ALTO_LINEA = 17;
 
 const calcularAltoActividad = (act) => {
   const lAct = estimarLineas(act.actividadesRealizadas, CARACTERES_LINEA);
@@ -140,9 +149,9 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
 
   const celdaControl = (etiqueta, valor, { ultima = false, destacado = false } = {}) => `
     <tr>
-      <td style="padding:4.5px 9px;font-size:8.5px;font-weight:700;color:${GRIS_CLARO};text-transform:uppercase;letter-spacing:0.05em;${ultima ? "" : "border-bottom:1px solid rgba(255,255,255,0.12);"}">${etiqueta}</td>
-      <td style="padding:4.5px 9px;font-size:9.5px;font-weight:700;color:#ffffff;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;${ultima ? "" : "border-bottom:1px solid rgba(255,255,255,0.12);"}">
-        ${destacado ? `<span style="background:${MARCA};color:#ffffff;padding:1.5px 7px;border-radius:999px;font-size:9px;font-weight:800;">${valor}</span>` : valor}
+      <td style="padding:4.5px 9px;font-size:9.5px;font-weight:700;color:${GRIS_CLARO};text-transform:uppercase;letter-spacing:0.05em;${ultima ? "" : "border-bottom:1px solid rgba(255,255,255,0.12);"}">${etiqueta}</td>
+      <td style="padding:4.5px 9px;font-size:10.5px;font-weight:700;color:#ffffff;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;${ultima ? "" : "border-bottom:1px solid rgba(255,255,255,0.12);"}">
+        ${destacado ? `<span style="background:${MARCA};color:#ffffff;padding:1.5px 7px;border-radius:999px;font-size:10px;font-weight:800;">${valor}</span>` : valor}
       </td>
     </tr>`;
 
@@ -153,12 +162,12 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
           <td style="width:27%;padding:9px 12px;border-right:1px solid ${GRAFITO_BORDE};vertical-align:middle;text-align:center;">
             ${LOGO_INGEANCLAJES
               ? `<span style="display:inline-flex;align-items:center;justify-content:center;background:#ffffff;border-radius:7px;padding:5px 10px;"><img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes" style="height:36px;max-width:100%;object-fit:contain;display:block;"/></span>`
-              : `<div style="font-size:17px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;"><span style="color:${MARCA};">INGE</span>ANCLAJES</div>`}
+              : `<div style="font-size:18px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;"><span style="color:${MARCA};">INGE</span>ANCLAJES</div>`}
           </td>
           <td style="padding:9px 12px;vertical-align:middle;text-align:center;">
-            <span style="display:inline-block;background:rgba(255,255,255,0.10);color:#E4E4E7;border:1px solid rgba(255,255,255,0.20);font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:2px 8px;border-radius:999px;">Sistema de gestión de calidad</span>
-            <div style="font-size:13.5px;font-weight:800;color:#ffffff;letter-spacing:-0.01em;text-transform:uppercase;margin-top:4px;line-height:1.2;">Informe técnico de actividades en obra</div>
-            <div style="font-size:8.5px;color:${GRIS_CLARO};margin-top:3px;">Ingeanclajes S.A.S. · NIT 900.193.965-4 · PBX (604) 448 26 86</div>
+            <span style="display:inline-block;background:rgba(255,255,255,0.10);color:#E4E4E7;border:1px solid rgba(255,255,255,0.20);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:2px 8px;border-radius:999px;">Sistema de gestión de calidad</span>
+            <div style="font-size:14px;font-weight:800;color:#ffffff;letter-spacing:-0.01em;text-transform:uppercase;margin-top:4px;line-height:1.2;white-space:nowrap;">Informe técnico de actividades en obra</div>
+            <div style="font-size:9.5px;color:${GRIS_CLARO};margin-top:3px;">Ingeanclajes S.A.S. · NIT 900.193.965-4 · PBX (604) 448 26 86</div>
           </td>
           <td style="width:25%;padding:0;border-left:1px solid ${GRAFITO_BORDE};vertical-align:middle;background:rgba(255,255,255,0.04);">
             <table style="width:100%;border-collapse:collapse;">
@@ -177,11 +186,11 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
     <div style="border-radius:7px;overflow:hidden;margin-bottom:10px;border:1px solid ${GRAFITO};">
       <div style="display:flex;justify-content:space-between;align-items:center;background:${GRAFITO};padding:5px 10px;">
         <div style="display:flex;align-items:center;gap:8px;min-width:0;">
-          <span style="font-size:10.5px;font-weight:800;color:#ffffff;letter-spacing:-0.02em;white-space:nowrap;"><span style="color:${MARCA};">INGE</span>ANCLAJES</span>
-          <span style="color:${GRIS};font-size:10.5px;">·</span>
-          <span style="font-size:8.5px;font-weight:600;color:#D4D4D8;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Informe de Actividades · ${escapeHtml(proyecto)}</span>
+          <span style="font-size:11.5px;font-weight:800;color:#ffffff;letter-spacing:-0.02em;white-space:nowrap;"><span style="color:${MARCA};">INGE</span>ANCLAJES</span>
+          <span style="color:${GRIS};font-size:11.5px;">·</span>
+          <span style="font-size:9.5px;font-weight:600;color:#D4D4D8;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Informe de Actividades · ${escapeHtml(proyecto)}</span>
         </div>
-        <span style="background:${MARCA};color:#ffffff;padding:1.5px 7px;border-radius:999px;font-size:8.5px;font-variant-numeric:tabular-nums;font-weight:800;white-space:nowrap;">${escapeHtml(numDoc)}</span>
+        <span style="background:${MARCA};color:#ffffff;padding:1.5px 7px;border-radius:999px;font-size:9.5px;font-variant-numeric:tabular-nums;font-weight:800;white-space:nowrap;">${escapeHtml(numDoc)}</span>
       </div>
       <div style="height:2px;background:${MARCA};"></div>
     </div>
@@ -191,39 +200,39 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
 
   const renderDatosProyecto = () => `
     <div style="border:1px solid ${LINEA_SUAVE};border-radius:9px;padding:8px 12px;margin-bottom:10px;background:${FONDO_SUAVE};">
-      <table style="width:100%;border-collapse:collapse;font-size:9.5px;">
+      <table style="width:100%;border-collapse:collapse;font-size:10.5px;">
         <tr>
-          <td style="width:17%;font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;font-size:8.5px;">PROYECTO:</td>
-          <td style="width:39%;font-weight:700;color:${TINTA};font-size:10.5px;padding:3.5px 6px;">${escapeHtml(proyecto || "OBRA GENERAL")}</td>
-          <td style="width:17%;font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-left:1px solid ${LINEA_SUAVE};font-size:8.5px;">PERÍODO:</td>
-          <td style="width:27%;color:${TINTA};font-weight:600;font-size:9.5px;padding:3.5px 6px;">${escapeHtml(periodo)}</td>
+          <td style="width:17%;font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;font-size:9.5px;">PROYECTO:</td>
+          <td style="width:39%;font-weight:700;color:${TINTA};font-size:11.5px;padding:3.5px 6px;">${escapeHtml(proyecto || "OBRA GENERAL")}</td>
+          <td style="width:17%;font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-left:1px solid ${LINEA_SUAVE};font-size:9.5px;">PERÍODO:</td>
+          <td style="width:27%;color:${TINTA};font-weight:600;font-size:10.5px;padding:3.5px 6px;">${escapeHtml(periodo)}</td>
         </tr>
         <tr>
-          <td style="font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};font-size:8.5px;">CONTRATANTE:</td>
-          <td style="color:${TINTA};font-weight:600;font-size:10px;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};">${escapeHtml(cliente || "A QUIEN INTERESE")}</td>
-          <td style="font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-left:1px solid ${LINEA_SUAVE};border-top:1px solid ${LINEA_SUAVE};font-size:8.5px;">FECHA EMISIÓN:</td>
-          <td style="color:${TINTA};font-weight:600;font-size:9.5px;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};">${escapeHtml(fechaInforme)}</td>
+          <td style="font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};font-size:9.5px;">CONTRATANTE:</td>
+          <td style="color:${TINTA};font-weight:600;font-size:11px;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};">${escapeHtml(cliente || "A QUIEN INTERESE")}</td>
+          <td style="font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-left:1px solid ${LINEA_SUAVE};border-top:1px solid ${LINEA_SUAVE};font-size:9.5px;">FECHA EMISIÓN:</td>
+          <td style="color:${TINTA};font-weight:600;font-size:10.5px;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};">${escapeHtml(fechaInforme)}</td>
         </tr>
         <tr>
-          <td style="font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};font-size:8.5px;">LOCALIZACIÓN:</td>
-          <td style="color:${TINTA};font-weight:600;font-size:9.5px;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};">${escapeHtml(localizacion || "MEDELLÍN")}</td>
-          <td style="font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-left:1px solid ${LINEA_SUAVE};border-top:1px solid ${LINEA_SUAVE};font-size:8.5px;">NORMATIVA:</td>
+          <td style="font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};font-size:9.5px;">LOCALIZACIÓN:</td>
+          <td style="color:${TINTA};font-weight:600;font-size:10.5px;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};">${escapeHtml(localizacion || "MEDELLÍN")}</td>
+          <td style="font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-left:1px solid ${LINEA_SUAVE};border-top:1px solid ${LINEA_SUAVE};font-size:9.5px;">NORMATIVA:</td>
           <td style="padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};">
-            <span style="background:#ffffff;color:${TINTA};border:1px solid ${LINEA};font-size:8.5px;font-weight:700;padding:1.5px 7px;border-radius:999px;display:inline-block;letter-spacing:0.02em;">Res. 4272/2021 · OSHA 1926</span>
+            <span style="background:#ffffff;color:${TINTA};border:1px solid ${LINEA};font-size:9.5px;font-weight:700;padding:1.5px 7px;border-radius:999px;display:inline-block;letter-spacing:0.02em;">Res. 4272/2021 · OSHA 1926</span>
           </td>
         </tr>
         ${hasFilaExtra ? `
         <tr>
           ${cotizacionRef ? `
-            <td style="font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};font-size:8.5px;">REF. COTIZACIÓN:</td>
+            <td style="font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};font-size:9.5px;">REF. COTIZACIÓN:</td>
             <td ${coordinador?.nombre ? "" : 'colspan="3"'} style="color:${TINTA};font-weight:700;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};font-variant-numeric:tabular-nums;">
-              <span style="background:#ffffff;color:${TINTA};padding:1.5px 7px;border-radius:999px;border:1px solid ${LINEA};font-size:8.5px;">${escapeHtml(cotizacionRef)}</span>
+              <span style="background:#ffffff;color:${TINTA};padding:1.5px 7px;border-radius:999px;border:1px solid ${LINEA};font-size:9.5px;">${escapeHtml(cotizacionRef)}</span>
             </td>
           ` : ""}
           ${coordinador?.nombre ? `
-            <td style="font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;${cotizacionRef ? `border-left:1px solid ${LINEA_SUAVE};` : ""}border-top:1px solid ${LINEA_SUAVE};font-size:8.5px;">COORD. OBRA / SST:</td>
+            <td style="font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;${cotizacionRef ? `border-left:1px solid ${LINEA_SUAVE};` : ""}border-top:1px solid ${LINEA_SUAVE};font-size:9.5px;">COORD. OBRA / SST:</td>
             <td ${cotizacionRef ? "" : 'colspan="3"'} style="padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};">
-              <span style="background:${GRAFITO};color:#ffffff;border:1px solid ${GRAFITO};font-size:8.5px;font-weight:700;padding:1.5px 8px;border-radius:999px;display:inline-block;">${escapeHtml(coordinador.nombre)}</span>
+              <span style="background:${GRAFITO};color:#ffffff;border:1px solid ${GRAFITO};font-size:9.5px;font-weight:700;padding:1.5px 8px;border-radius:999px;display:inline-block;">${escapeHtml(coordinador.nombre)}</span>
             </td>
           ` : ""}
         </tr>
@@ -235,10 +244,10 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
   const renderPersonalEnObra = () => `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
       <div style="display:flex;align-items:center;gap:6px;">
-        <span style="width:18px;height:18px;border-radius:5px;background:${GRAFITO};color:#ffffff;font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;">1</span>
-        <span style="font-size:10px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:${TINTA};">Personal Técnico Asignado en Sitio</span>
+        <span style="width:18px;height:18px;border-radius:5px;background:${GRAFITO};color:#ffffff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;">1</span>
+        <span style="font-size:11px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:${TINTA};">Personal Técnico Asignado en Sitio</span>
       </div>
-      <span style="font-size:8.5px;font-weight:600;color:${GRIS};background:${FONDO};border:1px solid ${LINEA_SUAVE};padding:1.5px 7px;border-radius:999px;">Personal certificado en alturas</span>
+      <span style="font-size:9.5px;font-weight:600;color:${GRIS};background:${FONDO};border:1px solid ${LINEA_SUAVE};padding:1.5px 7px;border-radius:999px;">Personal certificado en alturas</span>
     </div>
     <div style="display:grid;grid-template-columns:repeat(${Math.min(3, Math.max(1, personal.length))}, 1fr);gap:7px;margin-bottom:10px;">
       ${personal.length > 0 ? personal.map((p, idx) => {
@@ -249,17 +258,17 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
         );
         return `
         <div style="border:1px solid ${esCoordCard ? GRIS_CLARO : LINEA_SUAVE};border-radius:8px;padding:5.5px 8px;background:${esCoordCard ? FONDO : "#ffffff"};display:flex;align-items:center;gap:7px;">
-          <div style="width:21px;height:21px;background:${esCoordCard ? GRAFITO : "#ffffff"};border-radius:5px;color:${esCoordCard ? "#ffffff" : GRIS};border:1px solid ${esCoordCard ? GRAFITO : LINEA_SUAVE};font-variant-numeric:tabular-nums;font-size:8.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <div style="width:21px;height:21px;background:${esCoordCard ? GRAFITO : "#ffffff"};border-radius:5px;color:${esCoordCard ? "#ffffff" : GRIS};border:1px solid ${esCoordCard ? GRAFITO : LINEA_SUAVE};font-variant-numeric:tabular-nums;font-size:9.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             ${String(idx + 1).padStart(2, "0")}
           </div>
           <div style="min-width:0;flex:1;">
-            <div style="font-size:8px;font-weight:700;color:${esCoordCard ? TINTA : GRIS};text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(String(p.cargo || "TÉCNICO ESPECIALISTA").toUpperCase())}</div>
-            <div style="font-size:9.5px;font-weight:700;color:${TINTA};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.nombre || "Sin nombre")}</div>
+            <div style="font-size:9px;font-weight:700;color:${esCoordCard ? TINTA : GRIS};text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(String(p.cargo || "TÉCNICO ESPECIALISTA").toUpperCase())}</div>
+            <div style="font-size:10.5px;font-weight:700;color:${TINTA};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.nombre || "Sin nombre")}</div>
           </div>
         </div>
       `;
       }).join("") : `
-        <div style="border:1px dashed ${LINEA};border-radius:8px;padding:6px 9px;color:${GRIS};font-size:9px;font-style:italic;background:${FONDO};">Personal asignado conforme a programación de cuadrilla en obra.</div>
+        <div style="border:1px dashed ${LINEA};border-radius:8px;padding:6px 9px;color:${GRIS};font-size:10px;font-style:italic;background:${FONDO};">Personal asignado conforme a programación de cuadrilla en obra.</div>
       `}
     </div>
   `;
@@ -267,10 +276,10 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
   const renderBannerActividades = () => `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-top:2px;">
       <div style="display:flex;align-items:center;gap:6px;">
-        <span style="width:18px;height:18px;border-radius:5px;background:${GRAFITO};color:#ffffff;font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;">2</span>
-        <span style="font-size:10px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:${TINTA};">Metodología y Registro de Actividades Ejecutadas</span>
+        <span style="width:18px;height:18px;border-radius:5px;background:${GRAFITO};color:#ffffff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;">2</span>
+        <span style="font-size:11px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:${TINTA};">Metodología y Registro de Actividades Ejecutadas</span>
       </div>
-      <span style="font-size:8.5px;font-weight:600;color:${GRIS};">Control y Trazabilidad Operativa</span>
+      <span style="font-size:9.5px;font-weight:600;color:${GRIS};">Control y Trazabilidad Operativa</span>
     </div>
   `;
 
@@ -278,30 +287,30 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
     <div style="border:1px solid ${LINEA_SUAVE};border-left:3.5px solid ${GRAFITO};border-radius:9px;background:#ffffff;padding:9px 12px;margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid ${LINEA_SUAVE};padding-bottom:6px;margin-bottom:7px;">
         <div style="display:flex;align-items:center;gap:7px;">
-          <span style="background:${GRAFITO};color:#ffffff;font-variant-numeric:tabular-nums;font-size:8.5px;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:0.02em;">
+          <span style="background:${GRAFITO};color:#ffffff;font-variant-numeric:tabular-nums;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:0.02em;">
             ACT-${String(idx + 1).padStart(2, "0")}
           </span>
-          <span style="font-size:11px;font-weight:700;color:${TINTA};">
+          <span style="font-size:12px;font-weight:700;color:${TINTA};">
             ${escapeHtml(act.titulo || "Actividad Ejecutada")}
           </span>
         </div>
         ${act.fecha ? `
-          <span style="font-size:8.5px;color:${GRIS};background:${FONDO};border:1px solid ${LINEA_SUAVE};padding:1.5px 7px;border-radius:999px;font-variant-numeric:tabular-nums;font-weight:600;">
+          <span style="font-size:9.5px;color:${GRIS};background:${FONDO};border:1px solid ${LINEA_SUAVE};padding:1.5px 7px;border-radius:999px;font-variant-numeric:tabular-nums;font-weight:600;">
             ${escapeHtml(fmtL(act.fecha))}
           </span>
         ` : ""}
       </div>
 
-      <div style="font-size:10.5px;color:${TINTA};line-height:1.48;text-align:justify;">
+      <div style="font-size:11.5px;color:${TINTA};line-height:1.48;text-align:justify;">
         ${(act.actividadesRealizadas || "").trim() ? `
           <div style="margin-bottom:5px;">
-            <strong style="color:${TINTA};text-transform:uppercase;font-size:8.5px;letter-spacing:0.05em;display:block;margin-bottom:1.5px;">Actividades Realizadas:</strong>
+            <strong style="color:${TINTA};text-transform:uppercase;font-size:9.5px;letter-spacing:0.05em;display:block;margin-bottom:1.5px;">Actividades Realizadas:</strong>
             ${escapeHtml(act.actividadesRealizadas)}
           </div>
         ` : ""}
         ${(act.descripcion || "").trim() ? `
           <div style="margin-bottom:4px;">
-            <strong style="color:${TINTA};text-transform:uppercase;font-size:8.5px;letter-spacing:0.05em;display:block;margin-bottom:1.5px;">Descripción Técnica:</strong>
+            <strong style="color:${TINTA};text-transform:uppercase;font-size:9.5px;letter-spacing:0.05em;display:block;margin-bottom:1.5px;">Descripción Técnica:</strong>
             ${escapeHtml(act.descripcion)}
           </div>
         ` : ""}
@@ -309,11 +318,11 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
 
       <table style="width:100%;border-collapse:collapse;margin-top:6px;border-top:1px solid ${LINEA_SUAVE};">
         <tr>
-          <td style="padding:5.5px 10px 0 0;font-size:9px;color:${TINTA};vertical-align:top;line-height:1.45;">
+          <td style="padding:5.5px 10px 0 0;font-size:10px;color:${TINTA};vertical-align:top;line-height:1.45;">
             <strong style="color:${TINTA};">✓ Conforme:</strong> ${(act.observaciones || "").trim() ? escapeHtml(act.observaciones) : "Ejecutado a conformidad sin novedades reportadas."}
           </td>
           <td style="padding:5.5px 0 0;width:1%;white-space:nowrap;vertical-align:top;text-align:right;">
-            <span style="display:inline-block;background:${GRAFITO};border:1px solid ${GRAFITO};border-radius:999px;padding:2px 8px;font-size:8px;font-weight:800;color:#ffffff;letter-spacing:0.03em;">
+            <span style="display:inline-block;background:${GRAFITO};border:1px solid ${GRAFITO};border-radius:999px;padding:2px 8px;font-size:9px;font-weight:800;color:#ffffff;letter-spacing:0.03em;">
               ESTADO: CONCLUIDO · 100%
             </span>
           </td>
@@ -324,7 +333,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
 
   const renderBannerFotos = (act, actIdx, continuacion, { oculto = false } = {}) => `
     <div${continuacion ? ' data-banner-cont="1"' : ""} style="display:${oculto ? "none" : "flex"};align-items:center;gap:7px;margin:-2px 0 6px;">
-      <span style="font-size:8.5px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#ffffff;background:${GRAFITO};border:1px solid ${GRAFITO};padding:1.5px 8px;border-radius:999px;">
+      <span style="font-size:9.5px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#ffffff;background:${GRAFITO};border:1px solid ${GRAFITO};padding:1.5px 8px;border-radius:999px;">
         Evidencias fotográficas · ACT-${String(actIdx + 1).padStart(2, "0")}${continuacion ? " (cont.)" : ""}
       </span>
       <span style="flex:1;height:1px;background:${LINEA_SUAVE};"></span>
@@ -335,13 +344,13 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
     const comentario = String(ft.comentario || "").trim();
     return `
     <div class="foto-card" style="border:1px solid ${LINEA_SUAVE};border-radius:9px;overflow:hidden;background:#ffffff;display:flex;flex-direction:column;">
-      <div style="height:155px;display:flex;align-items:center;justify-content:center;background:${FONDO};border-bottom:1px solid ${LINEA_SUAVE};overflow:hidden;position:relative;">
+      <div data-estirable="${ESTIRE_MAX_FOTO}" style="height:${ALTO_FOTO}px;display:flex;align-items:center;justify-content:center;background:${FONDO};border-bottom:1px solid ${LINEA_SUAVE};overflow:hidden;position:relative;">
         <img src="${ft.img || ft.url}" alt="Evidencia ${fotoIdx + 1}" style="width:100%;height:100%;object-fit:contain;object-position:center;display:block;background:${FONDO};"/>
-        ${comentario ? `<span style="position:absolute;top:6px;left:6px;background:rgba(24,24,27,0.84);color:#ffffff;font-size:8.5px;font-variant-numeric:tabular-nums;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:0.03em;">
+        ${comentario ? `<span style="position:absolute;top:6px;left:6px;background:rgba(24,24,27,0.84);color:#ffffff;font-size:9.5px;font-variant-numeric:tabular-nums;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:0.03em;">
           EVIDENCIA ${actIdx + 1}.${fotoIdx + 1}
         </span>` : ""}
       </div>
-      ${comentario ? `<div style="padding:5.5px 9px;font-size:9px;color:${TINTA};line-height:1.38;background:#ffffff;">
+      ${comentario ? `<div style="padding:5.5px 9px;font-size:10px;color:${TINTA};line-height:1.38;background:#ffffff;">
         ${escapeHtml(ft.comentario)}
       </div>` : ""}
     </div>
@@ -349,15 +358,15 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
   };
 
   const renderFotosFila = (parFotos, actIdx, startFotoIdx) => `
-    <div style="display:grid;grid-template-columns:${parFotos.length === 1 ? "calc(50% - 4.5px)" : "1fr 1fr"};justify-content:center;gap:9px;margin-bottom:9px;align-items:start;">
+    <div data-fila-estirable="1" style="display:grid;grid-template-columns:${parFotos.length === 1 ? "calc(50% - 4.5px)" : "1fr 1fr"};justify-content:center;gap:9px;margin-bottom:9px;align-items:start;">
       ${parFotos.map((ft, i) => renderFotoCard(ft, actIdx, startFotoIdx + i)).join("")}
     </div>
   `;
 
   const renderTablaRecomendaciones = () => `
     <div style="border:1px solid ${LINEA};border-left:3.5px solid ${GRAFITO};border-radius:9px;overflow:hidden;margin-bottom:10px;background:${FONDO};padding:9px 12px;">
-      <div style="font-size:8.5px;font-weight:800;color:${TINTA};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">DICTAMEN TÉCNICO Y RECOMENDACIONES</div>
-      <div style="font-size:10px;color:${TINTA};line-height:1.48;text-align:justify;white-space:pre-line;">${escapeHtml(recomendaciones)}</div>
+      <div style="font-size:9.5px;font-weight:800;color:${TINTA};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">DICTAMEN TÉCNICO Y RECOMENDACIONES</div>
+      <div style="font-size:11px;color:${TINTA};line-height:1.48;text-align:justify;white-space:pre-line;">${escapeHtml(recomendaciones)}</div>
     </div>
   `;
 
@@ -371,46 +380,46 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
     const cardContratista = `
       <td style="width:${anchoCol};padding:0 ${conCoord ? "5px" : "6px"} 0 0;vertical-align:stretch;">
         <div style="border:1px solid ${LINEA_SUAVE};border-top:2.5px solid ${MARCA};border-radius:9px;padding:8px 10px;background:#ffffff;height:100%;box-sizing:border-box;">
-          <div style="font-size:8px;font-weight:800;color:${TINTA};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px;">Por el Contratista Especialista</div>
+          <div style="font-size:8.5px;font-weight:800;color:${TINTA};letter-spacing:0.04em;text-transform:uppercase;margin-bottom:4px;white-space:nowrap;">Por el Contratista Especialista</div>
           <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:4px;border-bottom:1px solid ${LINEA_SUAVE};padding-bottom:3px;">
-            ${firmaImg ? `<img src="${firmaImg}" alt="Firma" style="max-height:40px;max-width:165px;object-fit:contain;"/>` : `<div style="font-family:'Segoe Script',cursive,sans-serif;font-size:13.5px;font-weight:700;color:${TINTA};">Jhon Jaime Sepúlveda L.</div>`}
+            ${firmaImg ? `<img src="${firmaImg}" alt="Firma" style="max-height:40px;max-width:165px;object-fit:contain;"/>` : `<div style="font-family:'Segoe Script',cursive,sans-serif;font-size:14.5px;font-weight:700;color:${TINTA};">Jhon Jaime Sepúlveda L.</div>`}
           </div>
-          <div style="font-weight:800;font-size:9.5px;color:${TINTA};letter-spacing:0.01em;line-height:1.25;">ING. JHON JAIME SEPÚLVEDA LONDOÑO</div>
-          <div style="font-size:8.5px;color:${GRIS};margin-top:2px;">Gerente General · MP. 05256-409949</div>
-          <div style="font-size:8.5px;color:${GRIS};margin-top:1px;">Ingeanclajes S.A.S. · NIT. 900.193.965-4</div>
+          <div style="font-weight:800;font-size:10px;color:${TINTA};letter-spacing:0;line-height:1.25;white-space:nowrap;">ING. JHON JAIME SEPÚLVEDA LONDOÑO</div>
+          <div style="font-size:9.5px;color:${GRIS};margin-top:2px;">Gerente General · MP. 05256-409949</div>
+          <div style="font-size:9.5px;color:${GRIS};margin-top:1px;">Ingeanclajes S.A.S. · NIT. 900.193.965-4</div>
         </div>
       </td>`;
 
     const cardCoordinador = conCoord ? `
       <td style="width:${anchoCol};padding:0 5px;vertical-align:stretch;">
         <div style="border:1px solid ${LINEA};border-top:2.5px solid ${GRAFITO};border-radius:9px;padding:8px 10px;background:${FONDO_SUAVE};height:100%;box-sizing:border-box;">
-          <div style="font-size:8px;font-weight:800;color:${TINTA};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px;">Coordinador de Obra / SST</div>
-          <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:4px;border-bottom:1px solid ${LINEA};padding-bottom:3px;font-size:8.5px;color:${GRIS};font-style:italic;">
+          <div style="font-size:8.5px;font-weight:800;color:${TINTA};letter-spacing:0.04em;text-transform:uppercase;margin-bottom:4px;white-space:nowrap;">Coordinador de Obra / SST</div>
+          <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:4px;border-bottom:1px solid ${LINEA};padding-bottom:3px;font-size:9.5px;color:${GRIS};font-style:italic;">
             ${firmaCoordImg
               ? `<img src="${firmaCoordImg}" alt="Firma del coordinador" style="max-height:40px;max-width:165px;object-fit:contain;display:inline-block;font-style:normal;"/>`
               : "(Firma del coordinador de obra / SST)"}
           </div>
-          <div style="font-weight:800;font-size:9.5px;color:${TINTA};line-height:1.25;text-transform:uppercase;">${escapeHtml(coordinador.nombre)}</div>
-          ${coordinador.cedula ? `<div style="font-size:8.5px;color:${TINTA};margin-top:2px;font-variant-numeric:tabular-nums;">C.C.: ${escapeHtml(coordinador.cedula)}</div>` : ""}
-          <div style="font-size:8.5px;color:${GRIS};font-weight:600;margin-top:1.5px;">${escapeHtml(coordinador.cargo || "COORDINADOR SST")}</div>
-          <div style="font-size:8px;color:${GRIS};margin-top:1px;">Encargado del personal · Ingeanclajes S.A.S.</div>
+          <div style="font-weight:800;font-size:10.5px;color:${TINTA};line-height:1.25;text-transform:uppercase;">${escapeHtml(coordinador.nombre)}</div>
+          ${coordinador.cedula ? `<div style="font-size:9.5px;color:${TINTA};margin-top:2px;font-variant-numeric:tabular-nums;">C.C.: ${escapeHtml(coordinador.cedula)}</div>` : ""}
+          <div style="font-size:9.5px;color:${GRIS};font-weight:600;margin-top:1.5px;">${escapeHtml(coordinador.cargo || "COORDINADOR SST")}</div>
+          <div style="font-size:9px;color:${GRIS};margin-top:1px;">Encargado del personal · Ingeanclajes S.A.S.</div>
         </div>
       </td>` : "";
 
     const cardCliente = `
       <td style="width:${anchoCol};padding:0 0 0 ${conCoord ? "5px" : "6px"};vertical-align:stretch;">
         <div style="border:1px solid ${firmaClienteImg ? LINEA : LINEA_SUAVE};border-top:2.5px solid ${firmaClienteImg ? GRAFITO : GRIS};border-radius:9px;padding:8px 10px;background:#ffffff;height:100%;box-sizing:border-box;">
-          <div style="font-size:8px;font-weight:800;color:${TINTA};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px;">Recibido Interventoría / Constructora</div>
-          <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:4px;border-bottom:1px solid ${firmaClienteImg ? LINEA : LINEA_SUAVE};padding-bottom:3px;font-size:8.5px;color:${GRIS};font-style:italic;">
+          <div style="font-size:8.5px;font-weight:800;color:${TINTA};letter-spacing:0.04em;text-transform:uppercase;margin-bottom:4px;white-space:nowrap;">Recibido Interventoría / Constructora</div>
+          <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:4px;border-bottom:1px solid ${firmaClienteImg ? LINEA : LINEA_SUAVE};padding-bottom:3px;font-size:9.5px;color:${GRIS};font-style:italic;">
             ${firmaClienteImg
               ? `<img src="${firmaClienteImg}" alt="Firma del cliente" style="max-height:40px;max-width:165px;object-fit:contain;display:inline-block;font-style:normal;"/>`
               : "(Firma y sello de recepción a satisfacción)"}
           </div>
-          <div style="font-weight:700;font-size:8.5px;color:${TINTA};">NOMBRE: ${nombreFirmante ? escapeHtml(nombreFirmante) : rayaNombre}</div>
-          <div style="font-size:8.5px;color:${GRIS};margin-top:2px;">C.C.: ${documentoFirmante ? escapeHtml(documentoFirmante) : rayaDoc}</div>
-          <div style="font-size:8.5px;color:${GRIS};margin-top:2px;">CARGO: ${cargoFirmante ? escapeHtml(cargoFirmante) : rayaCargo}</div>
-          <div style="font-size:8.5px;color:${GRIS};margin-top:1.5px;">EMPRESA: ${escapeHtml(cliente || "Constructora / Contratante")}</div>${fechaFirmaTexto ? `
-          <div style="font-size:7.5px;color:${TINTA};font-weight:600;margin-top:3px;">Firmado electrónicamente · ${escapeHtml(fechaFirmaTexto)}</div>` : ""}
+          <div style="font-weight:700;font-size:9.5px;color:${TINTA};">NOMBRE: ${nombreFirmante ? escapeHtml(nombreFirmante) : rayaNombre}</div>
+          <div style="font-size:9.5px;color:${GRIS};margin-top:2px;">C.C.: ${documentoFirmante ? escapeHtml(documentoFirmante) : rayaDoc}</div>
+          <div style="font-size:9.5px;color:${GRIS};margin-top:2px;">CARGO: ${cargoFirmante ? escapeHtml(cargoFirmante) : rayaCargo}</div>
+          <div style="font-size:9.5px;color:${GRIS};margin-top:1.5px;">EMPRESA: ${escapeHtml(cliente || "Constructora / Contratante")}</div>${fechaFirmaTexto ? `
+          <div style="font-size:8.5px;color:${TINTA};font-weight:600;margin-top:3px;">Firmado electrónicamente · ${escapeHtml(fechaFirmaTexto)}</div>` : ""}
         </div>
       </td>`;
 

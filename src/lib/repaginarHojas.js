@@ -319,6 +319,15 @@ export function repaginarHojas(doc, { altoUtil, ventana } = {}) {
         movidos += res.movidos;
       }
     }
+    // El pie de la cotizacion lleva «Página N de M» contando TODAS las hojas
+    // -portada, fichas y tramos-, no solo las de un tramo como la numeracion
+    // de arriba. Se renumera al final porque el reparto pudo quitar o agregar
+    // hojas, y las que se clonan heredan el numero de la que copiaron.
+    const finales = [...doc.querySelectorAll(".page")];
+    finales.forEach((seccion, i) => {
+      const marca = seccion.querySelector('[data-rol="paginacion"]');
+      if (marca) marca.textContent = `Página ${i + 1} de ${finales.length}`;
+    });
     return { hojas, movidos };
   }
 

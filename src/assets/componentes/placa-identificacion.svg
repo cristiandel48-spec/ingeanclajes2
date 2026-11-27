@@ -140,7 +140,7 @@
     <text x="10" y="18" class="txt-lbl">USO</text>
     <rect x="60" y="0" width="720" height="26" class="bdr-box"/>
     <text x="420" y="18" font-size="12.5" font-weight="900" fill="#1c2024" text-anchor="middle" letter-spacing="0.03em">
-      POSICIONAMIENTO/RESTRICCION Y DETECCIÓN
+      POSICIONAMIENTO / RESTRICCIÓN Y DETENCIÓN
     </text>
   </g>
 

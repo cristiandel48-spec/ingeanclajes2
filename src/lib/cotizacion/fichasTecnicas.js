@@ -38,8 +38,8 @@ const placaIdentificacion = absoluta(urlPlaca);
 
 // Ficha de un sistema. Recibe el encabezado y el pie de la cotizacion.
 export function crearFichaSistema({ headerHtml, footerHtml }) {
-  // Ficha de un sistema: el dibujo a la izquierda y las caracteristicas a
-  // la derecha, como texto del documento.
+  // Ficha de un sistema: la imagen y sus caracteristicas, como texto del
+  // documento. Hay dos disposiciones -«de lado» y «apilada»-, mas abajo.
   //
   // Antes era la lamina del catalogo del proveedor metida entera como
   // imagen: el logotipo de Artico impreso en la cotizacion, los textos
@@ -73,13 +73,66 @@ export function crearFichaSistema({ headerHtml, footerHtml }) {
     return `scale(${escala.toFixed(4)}) translate(${((0.5 - cx) * 100).toFixed(2)}%, ${((0.5 - cy) * 100).toFixed(2)}%)`;
   };
 
-  const fichaSistema = ({ titulo, imagen, alt, recorte, llamadas = [], notas = [], ancha = false }) => `
-    <section class="page appendix-page">
-      <div class="page-inner">
-        ${headerHtml}
-        <div class="page-content">
-          <h3 class="doc-h3">${escapeHtml(titulo)}</h3>
-          <div class="ficha-sistema${ancha ? " ficha-sistema--ancha" : ""}">
+  // Las notas -normativa, material, instalacion-. Cada una va en su propia
+  // caja para poder repartirlas en columnas. Antes eran `dt` y `dd` sueltos
+  // dentro de una rejilla de dos columnas, y la rejilla ponia el titulo en
+  // una columna y su texto en la otra: media hoja de ancho para una palabra,
+  // y el doble de alto, que era lo que montaba la ficha sobre el pie.
+  const notasHtml = (notas, clase) => `
+            <dl class="ficha-notas ${clase}">
+              ${notas.map(([k, v]) => `
+                <div class="ficha-nota">
+                  <dt>${escapeHtml(k)}</dt>
+                  <dd>${escapeHtml(v)}</dd>
+                </div>
+              `).join("")}
+            </dl>`;
+
+  // Ficha «apilada»: la imagen arriba, a lo ancho, y las notas debajo en
+  // columnas. Es la de las imagenes que no son altas y estrechas -la placa,
+  // el punto de anclaje, la camionera-. Puestas al lado del texto, como las
+  // demas, la imagen quedaba a media hoja de ancho y la mitad de abajo de la
+  // hoja en blanco.
+  //
+  // `leyenda` numera partes de la imagen: cada entrada pone un circulo con su
+  // numero sobre el punto (x, y) -en porcentaje de la imagen- y un renglon
+  // con el mismo numero debajo, que explica esa parte.
+  const cuerpoApilado = ({ imagen, alt, anchoImagen, altoImagen, panel = false, pieImagen = "", tituloLeyenda = "", leyenda = [], notas = [], columnas = 2 }) => `
+          <div class="ficha-apilada">
+            <figure class="ficha-hero${panel ? " ficha-hero--panel" : ""}">
+              <div class="ficha-hero-marco">
+                <img
+                  src="${imagen}"
+                  alt="${escapeHtml(alt)}"
+                  style="${anchoImagen ? `width:${anchoImagen};` : ""}${altoImagen ? `max-height:${altoImagen};` : ""}"
+                />
+                ${leyenda.map(({ x, y }, i) => `<span class="ficha-marca" style="left:${x};top:${y};">${i + 1}</span>`).join("")}
+              </div>
+              ${pieImagen ? `<figcaption>${escapeHtml(pieImagen)}</figcaption>` : ""}
+            </figure>
+            ${leyenda.length ? `
+              <div class="ficha-leyenda-bloque">
+                ${tituloLeyenda ? `<div class="ficha-subtitulo">${escapeHtml(tituloLeyenda)}</div>` : ""}
+                <div class="ficha-leyenda">
+                  ${leyenda.map(({ titulo, texto }, i) => `
+                    <div class="ficha-leyenda-item">
+                      <span class="ficha-marca">${i + 1}</span>
+                      <div>
+                        <b>${escapeHtml(titulo)}</b>
+                        <span>${escapeHtml(texto)}</span>
+                      </div>
+                    </div>
+                  `).join("")}
+                </div>
+              </div>
+            ` : ""}
+            ${notas.length ? notasHtml(notas, `ficha-notas--${columnas} ficha-notas--linea`) : ""}
+          </div>`;
+
+  // Ficha «de lado»: el dibujo alto y estrecho a la izquierda y el texto a
+  // la derecha (escalera, linea de vida vertical).
+  const cuerpoDeLado = ({ imagen, alt, recorte, llamadas = [], notas = [] }) => `
+          <div class="ficha-sistema${llamadas.length ? "" : " ficha-sistema--alta"}">
             <div class="ficha-sistema-img">
               <!-- Los dos hacen falta: clip-path quita lo que sobra -el
                    logotipo del proveedor y sus recuadros de texto-, y el
@@ -104,23 +157,17 @@ export function crearFichaSistema({ headerHtml, footerHtml }) {
                   </div>
                 `).join("")}
               </div>
-            ` : `
-              <dl class="ficha-sistema-datos">
-                ${notas.map(([k, v]) => `
-                  <dt>${escapeHtml(k)}</dt>
-                  <dd>${escapeHtml(v)}</dd>
-                `).join("")}
-              </dl>
-            `}
+            ` : notasHtml(notas, "ficha-notas--1")}
           </div>
-          ${llamadas.length && notas.length ? `
-            <dl class="ficha-sistema-datos ficha-sistema-datos--pie">
-              ${notas.map(([k, v]) => `
-                <dt>${escapeHtml(k)}</dt>
-                <dd>${escapeHtml(v)}</dd>
-              `).join("")}
-            </dl>
-          ` : ""}
+          ${llamadas.length && notas.length ? notasHtml(notas, "ficha-notas--2 ficha-notas--linea") : ""}`;
+
+  const fichaSistema = (ficha) => `
+    <section class="page appendix-page">
+      <div class="page-inner">
+        ${headerHtml}
+        <div class="page-content">
+          <h3 class="doc-h3">${escapeHtml(ficha.titulo)}</h3>
+          ${ficha.ancha ? cuerpoApilado(ficha) : cuerpoDeLado(ficha)}
         </div>
         ${footerHtml}
       </div>
@@ -205,10 +252,9 @@ export const FICHA_LINEA_CAMIONERA = {
   titulo: "Sistema de línea de vida camionera",
   imagen: lineaCamionera,
   alt: "Línea de vida camionera aérea sobre un carrotanque",
-  recorte: "0% 0% 0% 0%",
-  // El dibujo es casi cuadrado: en la columna estrecha de las otras fichas
-  // se le cortaban los lados.
+  // El dibujo es casi cuadrado: va arriba, entero, y las notas debajo.
   ancha: true,
+  altoImagen: "108mm",
   notas: [
     ["Normatividad",
       "Se diseña e instala conforme a la Resolución 4272 de 2021 del Ministerio del Trabajo de Colombia. El diseño de la línea horizontal sigue la norma ANSI/ASSP Z359.6, los postes y su cimentación la NSR-10, y las distancias a redes eléctricas el RETIE."],
@@ -231,21 +277,50 @@ export const FICHA_LINEA_CAMIONERA = {
 // componentes hace lo mismo con renderSingleTechnicalSheet(material).
 
 // Placa de identificacion y certificacion del sistema (Res. 4272 de 2021 y ANSI Z359.6).
+//
+// La placa va grande y con sus casillas numeradas, y debajo se explica que
+// dice cada una: es lo que el cliente va a ver atornillado junto al sistema y
+// lo que se revisa antes de usarlo. Los textos son los de siempre -serial,
+// capacidad, usuarios-, repartidos por casilla. Antes iba a media hoja de ancho
+// con cinco parrafos al lado, y la mitad de abajo de la hoja en blanco.
+//
+// `x` e `y` de la leyenda son el punto de la placa donde va cada numero, en
+// porcentaje del dibujo (900 x 580): al borde izquierdo de su fila, o al
+// derecho las dos casillas que estan en la mitad derecha. Si se redibuja la
+// placa hay que repasarlos.
 export const FICHA_PLACA_IDENTIFICACION = {
   titulo: "Placa de identificación y certificación del sistema",
   imagen: placaIdentificacion,
   alt: "Placa de identificación y certificación Ingeanclajes en acero inoxidable según Resolución 4272 de 2021",
-  recorte: "0% 0% 0% 0%",
   ancha: true,
+  panel: true,
+  anchoImagen: "118mm",
+  pieImagen: "Placa de referencia. El serial, los usuarios, la capacidad y las fechas de cada sistema se graban al momento de la entrega.",
+  tituloLeyenda: "Cómo leer la placa",
+  leyenda: [
+    { x: "4.4%", y: "26.7%", titulo: "Sistema / referencia",
+      texto: "Tipo de sistema instalado: punto de anclaje, línea de vida horizontal, línea de vida vertical u otro." },
+    { x: "4.4%", y: "32.4%", titulo: "Máximo de usuarios",
+      texto: "Número de personas que pueden estar conectadas al sistema al mismo tiempo." },
+    { x: "95.6%", y: "32.4%", titulo: "Capacidad de carga",
+      texto: "Resistencia de diseño del sistema: 5.000 lb (22,2 kN)." },
+    { x: "4.4%", y: "38.1%", titulo: "Serial",
+      texto: "Número único de cada sistema, vinculado a su memoria de cálculo estructural y a su acta de entrega técnica." },
+    { x: "95.6%", y: "38.1%", titulo: "Marca",
+      texto: "Fabricante de los componentes del sistema." },
+    { x: "4.4%", y: "43.8%", titulo: "Uso",
+      texto: "Uso permitido del sistema: posicionamiento, restricción o detención de caídas." },
+    { x: "4.4%", y: "50.2%", titulo: "Fecha de instalación",
+      texto: "Mes y año en que se instaló el sistema, marcados por troquelado sobre la placa." },
+    { x: "4.4%", y: "64%", titulo: "Fecha de certificación",
+      texto: "Mes y año de cada certificación, marcados de la misma forma en su propia matriz." },
+  ],
+  columnas: 3,
   notas: [
     ["Normatividad",
       "Cumple la Resolución 4272 de 2021 del Ministerio del Trabajo de Colombia y la norma ANSI/ASSP Z359.6. Exige rotulado e identificación indeleble en campo para verificación antes de su uso."],
     ["Material y grabado",
       "Fabricada en lámina de acero inoxidable AISI 304, resistente a la intemperie y ambientes industriales agresivos, con grabado láser de alta precisión."],
-    ["Trazabilidad y serial",
-      "Cada sistema cuenta con serial único asignado y troquelado físico, vinculado a su memoria de cálculo estructural y acta de entrega técnica."],
-    ["Capacidad y usuarios",
-      "Indica la resistencia de diseño de 5.000 lb (22,2 kN), el número máximo de usuarios simultáneos autorizados y el tipo de uso permitido."],
     ["Control de recertificación",
       "Matriz de inspección anual troquelable (2024–2035) para registrar la fecha de instalación y el cumplimiento de las recertificaciones anuales obligatorias."],
   ],
@@ -266,8 +341,8 @@ export function fichaPuntoAnclaje(material = "galvanizado") {
     titulo: `Punto de anclaje certificado en ${acero}`,
     imagen: FOTO_PUNTO_ANCLAJE[esInox ? "inoxidable" : "galvanizado"],
     alt: `Punto de anclaje certificado en ${acero}`,
-    recorte: "0% 0% 0% 0%",
     ancha: true,
+    altoImagen: "104mm",
     notas: [
       ["Normatividad",
         "Cumple la Resolución 4272 de 2021 del Ministerio del Trabajo de Colombia y la norma EN 795:2012, aplicable a los dispositivos de anclaje para protección contra caídas en trabajo en alturas."],

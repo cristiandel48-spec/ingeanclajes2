@@ -58,46 +58,36 @@ export const CSS_COTIZACION = `
       .header-sello { font-family:var(--letra); font-variant-numeric:tabular-nums; font-size:calc(var(--texto) * .92); letter-spacing:.02em; text-transform:none; color:var(--tinta); font-weight:400; margin-top:2px; }
       .header-sello b { color:var(--tinta); font-weight:700; }
 
-      /* El pie se apoya en el fondo del bloque de la hoja (margin-top:auto,
-         que viene de .page-footer) en vez de ir anclado con position:absolute
-         contra una hoja de 11 pulgadas clavadas. Asi sigue abajo, pero si el
-         contenido crece lo empuja a la hoja siguiente en lugar de quedar
-         encima del texto. */
+      /* Pie de pagina: una linea fina que termina en el numero de hoja, y
+         debajo tres columnas -sede, telefonos, contacto-, cada una con su
+         etiqueta pequeña, el dato principal en negro y el secundario en gris.
+         Sin recuadro ni iconos: la tarjeta de antes media 19 mm y competia
+         con el contenido; este mide 16, con la letra del tamaño del texto.
+         Se apoya en el fondo del bloque de la hoja (margin-top:auto) en vez
+         de ir anclado con position:absolute contra una hoja de 11 pulgadas
+         clavadas: sigue abajo, pero si el contenido crece lo empuja en lugar
+         de quedar encima del texto. */
       .footer {
         margin-top:auto;
-        padding-top:4mm;
-        border-top:1.5px solid var(--tinta);
-        display:grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap:4mm;
-        background:#fff;
-        line-height:1.35;
+        display:block;
+        break-inside:avoid;
+        page-break-inside:avoid;
       }
-      .footer-col-left { text-align:left; }
-      .footer-col-center { text-align:center; border-left:1px solid #E2E8F0; border-right:1px solid #E2E8F0; padding:0 2mm; }
-      .footer-col-right { text-align:right; }
-      .footer-label {
-        font-size:calc(var(--texto) * 1.05);
-        font-weight:800;
-        text-transform:uppercase;
-        letter-spacing:.07em;
-        color:var(--tinta);
-        margin-bottom:2px;
+      .footer-linea { display:flex; align-items:center; gap:3mm; }
+      /* La linea es un elemento y no un fondo ni un ::before: asi llega
+         hasta donde empieza el numero de hoja, mida este lo que mida. */
+      .footer-regla {
+        flex:1 1 auto; height:1.5px;
+        background:linear-gradient(90deg, #E0342A 0%, #B91C1C 26%, #d2d2d7 26%, #d2d2d7 100%);
+        -webkit-print-color-adjust:exact; print-color-adjust:exact;
       }
-      .footer-main {
-        font-weight:700;
-        color:var(--tinta);
-        font-size:calc(var(--texto) * 1.22);
-      }
-      .footer-sub {
-        font-weight:700;
-        color:var(--tinta);
-        font-size:calc(var(--texto) * 1.13);
-      }
-      .footer-brand {
-        color:#cc0000;
-        font-weight:800;
-      }
+      .footer-pagina { white-space:nowrap; font-size:10.5px; font-weight:500; color:var(--gris); line-height:1; }
+      .footer-cols { display:grid; grid-template-columns:1fr 1fr 1fr; padding-top:2.2mm; line-height:1.4; }
+      .footer-col--centro { text-align:center; border-left:.5pt solid var(--linea-suave); border-right:.5pt solid var(--linea-suave); }
+      .footer-col--derecha { text-align:right; }
+      .footer-label { font-size:9px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:#B91C1C; }
+      .footer-main { font-size:12.5px; font-weight:600; color:var(--tinta); }
+      .footer-sub { font-size:11.5px; font-weight:400; color:var(--gris); }
 
       .eyebrow { font-size: var(--texto); letter-spacing:.09em; text-transform:uppercase; color:var(--tinta); font-weight:700; text-align:center; margin:0 0 6mm; padding-bottom:3mm; border-bottom:2px solid var(--tinta); }
       .eyebrow-gap { margin-top:9mm; }
@@ -286,7 +276,8 @@ export const CSS_COTIZACION = `
       }
       .ficha-card-img-box {
         width: 100%;
-        height: 66mm;
+        /* 58mm: con 66 las cuatro tarjetas llegaban hasta el pie sin dejar aire. */
+        height: 58mm;
         background: #FAFAFA;
         border: 1px solid #E5E7EB;
         border-radius: 6px;
@@ -343,7 +334,10 @@ export const CSS_COTIZACION = `
 
       .conditions-block { margin:7mm 0 0; }
       .conditions-grid { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid #DDD; }
-      .meta-card { padding:4.5mm 6mm 4.5mm 0; border-bottom:1px solid #DDD; }
+      /* El cierre -condiciones, incluye, SST y firma- va apretado a proposito:
+         con el aire de antes media unos 4 mm mas que una hoja y se partia en
+         dos, dejando media hoja en blanco en cada una. */
+      .meta-card { padding:3.4mm 6mm 3.4mm 0; border-bottom:1px solid #DDD; }
       .meta-card.pad-left { padding-left:6mm; padding-right:0; border-left:1px solid #EEE; }
       /* Los cuatro valores de las condiciones comerciales van en mayuscula.
          La forma de pago y el tiempo de ejecucion se escriben a mano y salian
@@ -353,13 +347,17 @@ export const CSS_COTIZACION = `
       .meta-strong { font-size: var(--texto); font-weight:700; margin-top:1.6mm;
         text-transform:uppercase; color:var(--tinta); }
 
-      .sst-block { margin:6mm 0; padding-top:4mm; border-top:2px solid var(--tinta); }
+      .sst-block { margin:6mm 0; padding-top:3.5mm; border-top:2px solid var(--tinta); }
       .sst-title { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; font-weight:700; margin-bottom:2.6mm; color:var(--tinta); }
-      .sst-block p { font-size: var(--texto); line-height:1.7; margin:0; color:var(--tinta); }
+      .sst-block p { font-size: var(--texto); line-height:1.6; margin:0; color:var(--tinta); }
 
-      .signature { display:grid; grid-template-columns:1fr 1.05fr; gap:10mm; padding-top:5mm; border-top:1px solid var(--tinta); }
-      .steps-list { margin:0; padding-left:17px; font-size: var(--texto); line-height:1.8; color:var(--tinta); }
-      .contact-box { margin-top:5mm; padding:4mm 5mm; background:#F8FAFC; border:1px solid #CBD5E1; color:var(--tinta); }
+      .signature { display:grid; grid-template-columns:1fr 1.05fr; gap:10mm; padding-top:4mm; border-top:1px solid var(--tinta); }
+      /* El numero de cada paso es texto y no la viñeta de la lista: en el
+         PDF la viñeta salia montada sobre la primera letra («1Confirmar»). */
+      .steps-list { margin:0; padding:0; list-style:none; font-size: var(--texto); line-height:1.65; color:var(--tinta); }
+      .steps-list li { display:flex; gap:2mm; }
+      .steps-list .paso-n { flex:0 0 auto; min-width:3.6mm; color:var(--gris); }
+      .contact-box { margin-top:4mm; padding:3.2mm 5mm; background:#F8FAFC; border:1px solid #CBD5E1; color:var(--tinta); }
       .contact-line { font-size: var(--texto); line-height:1.6; color:var(--tinta); }
       .sig-space { height:14mm; border-bottom:1px solid var(--tinta); margin-bottom:3mm; display:flex; align-items:flex-end; }
       .sig-img { max-height:13mm; max-width:60mm; object-fit:contain; }
@@ -389,12 +387,16 @@ export const CSS_COTIZACION = `
          la altura de cada llamada es un porcentaje de su columna, asi que
          si una caja fuera mas alta que la otra las llamadas dejarian de
          caer sobre su pieza. */
-      /* 155mm: medido. Con las descripciones detalladas y el pie, la ficha
-         ocupa 205,8mm de los 208,4 que deja el area util de la hoja. Subir
-         este valor desborda a una segunda hoja; bajarlo acerca entre si
-         las dos primeras llamadas hasta que se montan. */
+      /* 164mm: medido. Con el pie de tres columnas y las notas de abajo en dos
+         columnas, la ficha mas larga -la escalera con linea de vida- deja
+         unos 6mm libres antes del pie. Subir este valor la monta sobre el
+         pie; bajarlo acerca entre si las dos primeras llamadas hasta que
+         se montan. */
       .ficha-sistema-img,
-      .ficha-llamadas { height: 155mm; }
+      .ficha-llamadas { height: 164mm; }
+      /* Sin llamadas -la escalera tipo gato- no hay notas debajo: el dibujo
+         puede ocupar casi todo el alto de la hoja. */
+      .ficha-sistema--alta .ficha-sistema-img { height: 198mm; }
       .ficha-sistema-img {
         display: flex; align-items: center; justify-content: center;
         /* Recorta lo que la ampliacion saca de la caja. */
@@ -408,16 +410,54 @@ export const CSS_COTIZACION = `
         max-width: none;
         object-fit: contain;
       }
-      /* Ficha con una ilustracion completa, mas ancha que alta para la
-         columna estrecha (la linea de vida camionera): se le da mas ancho al
-         dibujo y se muestra entero, sin recortar los lados. */
-      .ficha-sistema--ancha { grid-template-columns: 1.15fr 0.85fr; gap: 6mm; }
-      .ficha-sistema--ancha .ficha-sistema-img { height: auto; overflow: visible; }
-      .ficha-sistema--ancha .ficha-sistema-img img {
-        width: 100%; height: auto; max-height: 175mm; max-width: 100%;
-        transform: none !important; clip-path: none !important;
+      /* Ficha «apilada»: la imagen arriba, a lo ancho, y las notas debajo en
+         columnas (placa, punto de anclaje, camionera). Al lado del texto la
+         imagen quedaba a media hoja de ancho y la mitad de abajo en blanco. */
+      .ficha-apilada { display: flex; flex-direction: column; gap: 5mm; margin-top: 1.5mm; }
+      .ficha-hero { margin: 0; text-align: center; }
+      /* line-height 0: sin el, la caja mide unos pixeles mas que la imagen
+         y los numeros -que van en porcentaje de la caja- caen corridos. */
+      .ficha-hero-marco { position: relative; display: inline-block; max-width: 100%; line-height: 0; }
+      .ficha-hero-marco img {
+        display: block; width: auto; height: auto; max-width: 100%;
         border-radius: 2mm;
       }
+      .ficha-hero figcaption {
+        margin-top: 3mm;
+        font-size: calc(var(--texto) * .9); line-height: 1.4; color: var(--gris);
+      }
+      /* La placa es clara: sobre el blanco de la hoja se perdia el borde.
+         El panel gris la separa del fondo. */
+      .ficha-hero--panel {
+        background: var(--fondo-suave); border-radius: 12px; padding: 5mm 6mm 3.5mm;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+      }
+      .ficha-hero--panel .ficha-hero-marco img { border-radius: 0; }
+      /* El numero que señala una casilla de la imagen y el mismo numero en
+         la leyenda. Centrado con margenes negativos y no con transform:
+         html2canvas -el PDF- lo coloca asi sin sorpresas. */
+      .ficha-marca {
+        position: absolute;
+        width: 4.2mm; height: 4.2mm; margin: -2.1mm 0 0 -2.1mm;
+        border-radius: 50%;
+        background: #E0342A; color: #fff;
+        font-size: 8.5px; font-weight: 700; line-height: 4.2mm; text-align: center;
+        letter-spacing: 0;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+      }
+      .ficha-subtitulo {
+        font-size: calc(var(--texto) * .92); font-weight: 500; color: var(--gris);
+        margin-bottom: 3mm;
+      }
+      .ficha-leyenda { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm 9mm; }
+      .ficha-leyenda-item { display: flex; align-items: flex-start; gap: 2.6mm; }
+      .ficha-leyenda-item .ficha-marca { position: static; flex: 0 0 4.2mm; margin: .3mm 0 0; }
+      .ficha-leyenda-item b {
+        display: block; font-size: var(--texto); font-weight: 600; color: var(--tinta); line-height: 1.4;
+      }
+      /* El interlineado va en la caja y no en el span: el alto del renglon
+         lo pone la caja, y con el heredado cada renglon media 20px. */
+      .ficha-leyenda-item > div { font-size: var(--texto); line-height: 1.45; color: var(--tinta); }
       /* Llamadas: cada una a la altura de la pieza que describe, con una
          linea fina que llega hasta el dibujo. */
       .ficha-llamadas { position: relative; }
@@ -452,28 +492,17 @@ export const CSS_COTIZACION = `
         color: var(--tinta);
       }
 
-      .ficha-sistema-datos { margin: 0; }
-      /* Cuando ya hubo llamadas al lado del dibujo, lo general va debajo y
-         en dos columnas, para no estirar la hoja. */
-      .ficha-sistema-datos--pie {
-        margin-top: 4mm;
-        padding-top: 3mm;
-        border-top: 1px solid #000;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0 10mm;
-      }
-      .ficha-sistema-datos--pie dt { margin-top: 0; }
-      .ficha-sistema-datos dt {
-        font-size: calc(var(--texto) * .92);
-        font-weight: 700;
-        letter-spacing: .06em;
-        text-transform: uppercase;
-        color: var(--tinta);
-        margin-top: 5mm;
-      }
-      .ficha-sistema-datos dt:first-child { margin-top: 0; }
-      .ficha-sistema-datos dd {
+      /* Notas de la ficha -normativa, material, instalacion-: cada una en
+         su caja, repartidas en una, dos o tres columnas. */
+      .ficha-notas { margin: 0; display: grid; gap: 4mm 9mm; }
+      .ficha-notas--1 { grid-template-columns: 1fr; gap: 5mm; }
+      .ficha-notas--2 { grid-template-columns: 1fr 1fr; }
+      .ficha-notas--3 { grid-template-columns: 1fr 1fr 1fr; gap: 4mm 7mm; }
+      /* Debajo de la imagen, separadas por una linea. */
+      .ficha-notas--linea { padding-top: 4mm; border-top: .5pt solid var(--linea); }
+      .ficha-sistema + .ficha-notas--linea { margin-top: 4mm; }
+      .ficha-nota dt { font-size: calc(var(--texto) * .92); }
+      .ficha-nota dd {
         margin: 1.2mm 0 0;
         font-size: var(--texto);
         line-height: 1.55;
@@ -501,10 +530,6 @@ export const CSS_COTIZACION = `
       .header { border-bottom:.5pt solid var(--linea); }
       .header-right { text-transform:none; letter-spacing:0; font-weight:500; }
       .header-sello, .header-sello b { font-family:var(--letra); }
-      .footer { border-top:.5pt solid var(--linea); margin-top:auto; padding-top:4mm; }
-      .footer-col-center { border-color:var(--linea-suave); }
-      .footer-brand { color:var(--tinta); font-weight:500; }
-      .footer-main, .footer-sub { font-weight:400; }
 
       .eyebrow { border-bottom:.5pt solid var(--linea); }
       .cover-header { border-bottom:.5pt solid var(--linea); }
@@ -530,17 +555,17 @@ export const CSS_COTIZACION = `
       .def-list, .def-row, .incluye-list, .conditions-grid, .meta-card, .meta-card.pad-left,
       .ficha-row, .ficha-row:last-of-type { border-color:var(--linea-suave); }
       .sst-block { border-top:.5pt solid var(--linea); }
-      .signature, .sig-space, .ficha-sistema-datos--pie { border-color:var(--linea); }
+      .signature, .sig-space { border-color:var(--linea); }
       .meta-strong { font-weight:500; }
       .sig-role { font-weight:400; }
 
       /* Las etiquetas: en gris, peso medio y sin mayusculas sostenidas. */
-      .footer-label, .eyebrow, .card-label, .section-title, .subheading, .meta-label,
+      .eyebrow, .card-label, .section-title, .subheading, .meta-label,
       .cover-client .meta-label, .ccg-k, .cover-kicker, .sst-title, .photo-caption,
-      .ficha-card-tag, .ficha-llamada-texto b, .ficha-sistema-datos dt, .total-label {
+      .ficha-card-tag, .ficha-llamada-texto b, .ficha-nota dt, .total-label {
         text-transform:none; letter-spacing:0; font-weight:500; color:var(--gris);
       }
-      .header-sello, .header-sello b, .footer-sub, .cover-firm-contact, .cover-client-nit,
+      .header-sello, .header-sello b, .cover-firm-contact, .cover-client-nit,
       .cover-foot, .cover-sello, .cover-sello b, .row-num, .sig-role, .sig-meta,
       .incluye-item::before { color:var(--gris); }
 
@@ -578,7 +603,7 @@ export const CSS_COTIZACION = `
       .contact-box { background:var(--fondo-suave); border:none; border-radius:12px; }
       .ficha-llamada-guia { background:var(--linea); opacity:1; }
 
-      /* Encabezado y pie de pagina estilo Apple con identidad Ingeanclajes
+      /* Encabezado estilo Apple con identidad Ingeanclajes
          (rojo corporativo #E0342A, carbon Apple #1D1D1F y superficie perla #F8FAFC). */
       .header {
         display:flex;
@@ -631,80 +656,6 @@ export const CSS_COTIZACION = `
         background:linear-gradient(90deg, transparent 0%, #E2E8F0 18%, #E0342A 50%, #E2E8F0 82%, transparent 100%) bottom / 100% 2px no-repeat;
         -webkit-print-color-adjust:exact;
         print-color-adjust:exact;
-      }
-
-      .footer {
-        display:block;
-        margin-top:auto;
-        padding:0;
-        border:1px solid #E2E8F0;
-        border-top:none;
-        border-radius:10px;
-        overflow:hidden;
-        background:#F8FAFC;
-        break-inside:avoid;
-        page-break-inside:avoid;
-        -webkit-print-color-adjust:exact;
-        print-color-adjust:exact;
-      }
-      .footer-accent {
-        height:2.5px;
-        width:100%;
-        background:linear-gradient(90deg, #E0342A 0%, #B91C1C 55%, #1D1D1F 100%);
-        -webkit-print-color-adjust:exact;
-        print-color-adjust:exact;
-      }
-      .footer-grid {
-        display:grid;
-        grid-template-columns:1fr 1fr 1fr;
-        gap:0;
-        padding:2.6mm 3.8mm;
-        line-height:1.35;
-        align-items:center;
-      }
-      .footer-col-left { text-align:left; padding-right:3mm; }
-      .footer-col-center {
-        text-align:center;
-        border-left:1px solid #E2E8F0;
-        border-right:1px solid #E2E8F0;
-        padding:0 3mm;
-      }
-      .footer-col-right { text-align:right; padding-left:3mm; }
-      .footer-label {
-        display:inline-flex;
-        align-items:center;
-        gap:4px;
-        font-size:8.5px;
-        font-weight:700;
-        text-transform:uppercase;
-        letter-spacing:0.07em;
-        color:#C42B22;
-        margin-bottom:2px;
-      }
-      .footer-ico {
-        width:10px;
-        height:10px;
-        color:#E0342A;
-        flex-shrink:0;
-        display:block;
-      }
-      .footer-main {
-        font-weight:600;
-        color:#1D1D1F;
-        font-size:10.5px;
-        font-variant-numeric:tabular-nums;
-      }
-      .footer-sub {
-        font-weight:500;
-        color:#6E6E73;
-        font-size:9.8px;
-        margin-top:1px;
-        font-variant-numeric:tabular-nums;
-      }
-      .footer-brand {
-        color:#B91C1C;
-        font-weight:700;
-        letter-spacing:0.01em;
       }
 
       @media print {
